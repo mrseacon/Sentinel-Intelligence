@@ -85,10 +85,12 @@ def test_flat_single_ticker_close_only_fallback(monkeypatch):
     pd.testing.assert_series_equal(prices["AAPL"], raw["Close"], check_names=False)
 
 
-def test_no_price_column_at_all_raises_keyerror(monkeypatch):
+def test_no_price_column_at_all_raises_valueerror(monkeypatch):
+    # ValueError, not KeyError: all loader data errors are ValueError so
+    # the API layer can map them uniformly.
     patch_download(monkeypatch, flat_frame(["Open", "Volume"]))
 
-    with pytest.raises(KeyError, match="Adj Close"):
+    with pytest.raises(ValueError, match="Adj Close"):
         loader.load_multiple_assets(["AAPL"])
 
 

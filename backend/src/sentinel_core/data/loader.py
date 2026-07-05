@@ -20,9 +20,11 @@ def load_multiple_assets(tickers: list[str], period: str = "1y") -> pd.DataFrame
     order, using adjusted close prices (falling back to close).
 
     Raises:
-        ValueError: empty ticker list, empty yfinance response, or tickers
-            for which no data came back (named explicitly in the message).
-        KeyError: the response contains neither "Adj Close" nor "Close".
+        ValueError: empty ticker list, empty yfinance response, missing
+            price columns, or tickers for which no data came back (named
+            explicitly in the message). All data errors are ValueError so
+            the API layer can map them uniformly (deliberate deviation from
+            the legacy KeyError in KNOWLEDGE_EXTRACTION §1).
     """
     if not tickers:
         raise ValueError("No tickers given: provide at least one ticker symbol.")
@@ -64,7 +66,7 @@ def _extract_prices(data: pd.DataFrame, tickers: list[str]) -> pd.DataFrame:
     Handles the three documented layouts: MultiIndex columns like
     ("Adj Close", "AAPL"), flat OHLCV columns for a single ticker, and the
     Series that falls out of selecting one column from a flat frame.
-    Price field fallback chain: "Adj Close" -> "Close" -> KeyError.
+    Price field fallback chain: "Adj Close" -> "Close" -> ValueError.
     """
     fields = (
         data.columns.get_level_values(0)
@@ -76,7 +78,7 @@ def _extract_prices(data: pd.DataFrame, tickers: list[str]) -> pd.DataFrame:
             prices = data[field]
             break
     else:
-        raise KeyError(
+        raise ValueError(
             f"yfinance response for {', '.join(tickers)} contains neither "
             "'Adj Close' nor 'Close' columns."
         )

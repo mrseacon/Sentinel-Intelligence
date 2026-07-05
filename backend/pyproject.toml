@@ -39,3 +39,7 @@ target-version = ["py311"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# Don't rely on the editable install's .pth: Python 3.13 skips .pth files
+# carrying the macOS hidden flag, which a local tool sets on everything
+# under dot-directories like .venv (same lesson as legacy CI, §15).
+pythonpath = ["src"]
