@@ -10,6 +10,10 @@ requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.111",
     "uvicorn>=0.30",
+    # Price data source per ARCHITECTURE.md §2; pandas is used directly
+    # by sentinel_core (returns/covariance work on DataFrames).
+    "pandas>=2.0",
+    "yfinance>=0.2",
 ]
 
 [project.optional-dependencies]
