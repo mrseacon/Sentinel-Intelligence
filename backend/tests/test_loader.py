@@ -97,7 +97,7 @@ def test_no_price_column_at_all_raises_valueerror(monkeypatch):
 def test_empty_response_raises_valueerror(monkeypatch):
     patch_download(monkeypatch, pd.DataFrame())
 
-    with pytest.raises(ValueError, match="No price data returned"):
+    with pytest.raises(ValueError, match="Keine Kursdaten erhalten"):
         loader.load_multiple_assets(["AAPL"])
 
 
@@ -148,5 +148,5 @@ def test_row_where_all_assets_missing_is_dropped(monkeypatch):
 def test_empty_ticker_list_raises(monkeypatch):
     patch_download(monkeypatch, pd.DataFrame())
 
-    with pytest.raises(ValueError, match="No tickers"):
+    with pytest.raises(ValueError, match="Keine Ticker angegeben"):
         loader.load_multiple_assets([])

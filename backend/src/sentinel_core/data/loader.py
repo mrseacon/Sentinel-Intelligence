@@ -9,8 +9,11 @@ of those documented failure modes — do not simplify them away.
 
 from __future__ import annotations
 
+from datetime import datetime
+
 import pandas as pd
 import yfinance as yf
+from pydantic import BaseModel, ConfigDict
 
 
 def load_multiple_assets(tickers: list[str], period: str = "1y") -> pd.DataFrame:
@@ -27,7 +30,9 @@ def load_multiple_assets(tickers: list[str], period: str = "1y") -> pd.DataFrame
             the legacy KeyError in KNOWLEDGE_EXTRACTION §1).
     """
     if not tickers:
-        raise ValueError("No tickers given: provide at least one ticker symbol.")
+        raise ValueError(
+            "Keine Ticker angegeben: mindestens ein Tickersymbol wird benötigt."
+        )
 
     # auto_adjust=False is deliberate: newer yfinance versions default to
     # auto_adjust=True, which removes the "Adj Close" column entirely.
@@ -35,7 +40,8 @@ def load_multiple_assets(tickers: list[str], period: str = "1y") -> pd.DataFrame
 
     if data is None or data.empty:
         raise ValueError(
-            f"No price data returned for {', '.join(tickers)} (period={period!r})."
+            f"Keine Kursdaten erhalten für {', '.join(tickers)} "
+            f"(Zeitraum: {period!r})."
         )
 
     prices = _extract_prices(data, tickers)
@@ -45,9 +51,9 @@ def load_multiple_assets(tickers: list[str], period: str = "1y") -> pd.DataFrame
     missing = [t for t in tickers if t not in prices.columns or prices[t].isna().all()]
     if missing:
         raise ValueError(
-            "No price data for ticker(s): "
+            "Keine Kursdaten für Ticker: "
             + ", ".join(missing)
-            + ". Check the symbol spelling (Yahoo notation, e.g. 'BMW.DE')."
+            + ". Bitte Schreibweise prüfen (Yahoo-Notation, z.B. 'BMW.DE')."
         )
 
     # how="all": assets with shorter histories (e.g. a late IPO) must not
@@ -58,6 +64,40 @@ def load_multiple_assets(tickers: list[str], period: str = "1y") -> pd.DataFrame
     # requested order explicitly. Downstream risk code must still align by
     # ticker name (CLAUDE.md rule 2) — this is defense in depth, not the fix.
     return prices[tickers]
+
+
+class LatestPrice(BaseModel):
+    """Last available (delayed) price and its timestamp.
+
+    The timestamp is user-facing: delayed quotes are acceptable but must be
+    shown transparently ("Kurs von HH:MM", ARCHITECTURE §1).
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    price: float
+    asof: datetime
+
+
+def get_latest_prices(tickers: list[str], period: str = "5d") -> dict[str, LatestPrice]:
+    """Return the last available price per ticker with its timestamp.
+
+    period="5d" bridges weekends and holidays; per ticker the last non-NaN
+    value counts (assets can lag each other, e.g. different exchanges).
+    """
+    prices = load_multiple_assets(tickers, period=period)
+    latest: dict[str, LatestPrice] = {}
+    for ticker in tickers:
+        series = prices[ticker].dropna()
+        # load_multiple_assets already rejects all-NaN tickers by name;
+        # this guard is defensive only.
+        if series.empty:
+            raise ValueError(f"Keine Kursdaten für Ticker: {ticker}.")
+        latest[ticker] = LatestPrice(
+            price=float(series.iloc[-1]),
+            asof=series.index[-1].to_pydatetime(),
+        )
+    return latest
 
 
 def _extract_prices(data: pd.DataFrame, tickers: list[str]) -> pd.DataFrame:
@@ -79,8 +119,8 @@ def _extract_prices(data: pd.DataFrame, tickers: list[str]) -> pd.DataFrame:
             break
     else:
         raise ValueError(
-            f"yfinance response for {', '.join(tickers)} contains neither "
-            "'Adj Close' nor 'Close' columns."
+            f"Kursdaten für {', '.join(tickers)} enthalten weder eine "
+            "'Adj Close'- noch eine 'Close'-Spalte."
         )
 
     # Single-ticker responses collapse to a Series here; the rest of the
