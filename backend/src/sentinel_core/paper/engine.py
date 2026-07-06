@@ -74,18 +74,9 @@ def execute(
     The caller owns the ledger and appends the result — the engine never
     stores state (Phase 1: the list lives in localStorage).
     """
-    trade = quote(ticker, quantity, side)
-
-    if side == "BUY":
-        cash = cash_from_transactions(account.start_cash, transactions)
-        cost = trade.gross_value + trade.fees
-        if cost > cash + EPSILON:
-            raise ValueError(
-                f"Kauf von {quantity} Stück {ticker} nicht möglich: "
-                f"Kosten {cost:.2f} € (inkl. {trade.fees:.2f} € Gebühr), "
-                f"verfügbares Cash {cash:.2f} €."
-            )
-    else:
+    # Holdings check first: it needs no price, so an obviously invalid
+    # sell is rejected without a yfinance round trip.
+    if side == "SELL":
         positions = positions_from_transactions(transactions)
         held = positions[ticker].quantity if ticker in positions else 0
         if quantity > held:
@@ -93,6 +84,28 @@ def execute(
                 f"Verkauf von {quantity} Stück {ticker} nicht möglich, "
                 f"nur {held} im Depot."
             )
+
+    trade = quote(ticker, quantity, side)
+    cash = cash_from_transactions(account.start_cash, transactions)
+
+    if side == "BUY":
+        cost = trade.gross_value + trade.fees
+        if cost > cash + EPSILON:
+            raise ValueError(
+                f"Kauf von {quantity} Stück {ticker} nicht möglich: "
+                f"Kosten {cost:.2f} € (inkl. {trade.fees:.2f} € Gebühr), "
+                f"verfügbares Cash {cash:.2f} €."
+            )
+    # A sell whose proceeds don't cover the flat fee reduces cash. That is
+    # fine while cash stays >= 0, but must never drive it negative — the
+    # resulting history would be rejected as inconsistent by every later
+    # replay (no margin, ARCHITECTURE §4.1).
+    elif cash + trade.cash_delta < -EPSILON:
+        raise ValueError(
+            f"Verkaufserlös deckt die Gebühr nicht: Erlös "
+            f"{trade.gross_value:.2f} €, Gebühr {trade.fees:.2f} €, "
+            f"verfügbares Cash {cash:.2f} €."
+        )
 
     return Transaction(
         account_id=account.id,

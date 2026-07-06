@@ -45,6 +45,13 @@ def price_frame(prices: dict[str, float]) -> pd.DataFrame:
 # --- ledger: position derivation --------------------------------------------
 
 
+def test_naive_executed_at_is_rejected_at_validation():
+    # AwareDatetime: a naive client timestamp must fail cleanly here, not
+    # as a TypeError when replay sorts mixed naive/aware datetimes.
+    with pytest.raises(ValueError, match="timezone"):
+        tx("AAPL", "BUY", 10, 100.0, executed_at=datetime(2026, 1, 2, 10, 0))
+
+
 def test_fractional_quantity_is_rejected():
     # Whole shares only in v1 — pydantic's ValidationError is a ValueError,
     # so the exception family stays consistent.
@@ -183,13 +190,48 @@ def test_execute_buy_beyond_cash_is_hard_error(monkeypatch):
         engine.execute(account, [], "AAPL", "BUY", 2)
 
 
-def test_execute_sell_beyond_holdings_is_hard_error(monkeypatch):
-    patch_download(monkeypatch, price_frame({"NVDA": 100.0}))
+def test_execute_sell_beyond_holdings_is_rejected_without_price_lookup(monkeypatch):
+    # The holdings check needs no price — an invalid sell must not cost a
+    # yfinance round trip.
+    def fail_download(*args, **kwargs):
+        pytest.fail("kein Kurs-Lookup für offensichtlich ungültigen Verkauf")
+
+    monkeypatch.setattr(loader.yf, "download", fail_download)
     account = ledger.PaperAccount()
     transactions = [tx("NVDA", "BUY", 10, 90.0)]
 
     with pytest.raises(ValueError, match=r"Verkauf von 15 Stück NVDA.*nur 10"):
         engine.execute(account, transactions, "NVDA", "SELL", 15)
+
+
+def test_execute_sell_whose_proceeds_miss_the_fee_is_rejected_upfront(monkeypatch):
+    # Proceeds (0.50 €) < fee (1 €) would drive cash from 0 to -0.50 € and
+    # poison the ledger: every later replay would reject the history. The
+    # trade must fail BEFORE execution, not at the next valuation.
+    patch_download(monkeypatch, price_frame({"PENNY": 0.5}))
+    account = ledger.PaperAccount(start_cash=501.0)
+    buy = engine.execute(account, [], "PENNY", "BUY", 1000)  # cash now 0
+
+    with pytest.raises(ValueError, match=r"Verkaufserlös deckt die Gebühr nicht"):
+        engine.execute(account, [buy], "PENNY", "SELL", 1)
+
+    # the ledger stays consistent — nothing was poisoned
+    assert ledger.cash_from_transactions(account.start_cash, [buy]) == pytest.approx(
+        0.0
+    )
+
+
+def test_execute_sell_below_fee_is_allowed_while_cash_covers_it(monkeypatch):
+    # Same trade, but with enough cash: allowed — it reduces cash by 0.50 €
+    # without going negative.
+    patch_download(monkeypatch, price_frame({"PENNY": 0.5}))
+    account = ledger.PaperAccount(start_cash=1_000.0)
+    buy = engine.execute(account, [], "PENNY", "BUY", 10)
+
+    sell = engine.execute(account, [buy], "PENNY", "SELL", 1)
+
+    cash = ledger.cash_from_transactions(account.start_cash, [buy, sell])
+    assert cash == pytest.approx(1_000.0 - 6.0 - 0.5)
 
 
 def test_execute_buy_freezes_price_and_fee(monkeypatch):

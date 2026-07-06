@@ -15,7 +15,7 @@ from datetime import UTC, datetime
 from typing import Literal
 from uuid import uuid4
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
 from sentinel_core.constants import PAPER_START_CASH
 
@@ -45,7 +45,10 @@ class Transaction(BaseModel):
     price: float = Field(gt=0)
     price_asof: datetime | None = None
     fees: float = Field(ge=0)
-    executed_at: datetime
+    # Must be timezone-aware: replay sorts by executed_at, and comparing
+    # naive with aware datetimes raises TypeError. AwareDatetime rejects
+    # naive client payloads cleanly at validation time instead.
+    executed_at: AwareDatetime
 
 
 class PaperAccount(BaseModel):
