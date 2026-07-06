@@ -99,6 +99,43 @@ def test_diversification_ratio_above_one_for_uncorrelated_assets():
     assert metrics.diversification_ratio(weights, returns) > 1.0
 
 
+def test_portfolio_returns_shuffle_must_not_change_results():
+    # Mandatory shuffle case for the new entry point: portfolio_returns
+    # aligns by ticker name, so column and dict order must be irrelevant.
+    returns = sample_returns()
+    weights = {"AAPL": 0.4, "MSFT": 0.3, "NVDA": 0.2, "SAP.DE": 0.1}
+    shuffled_returns = returns[["SAP.DE", "NVDA", "MSFT", "AAPL"]]
+    shuffled_weights = dict(reversed(list(weights.items())))
+
+    pd.testing.assert_series_equal(
+        metrics.portfolio_returns(weights, returns),
+        metrics.portfolio_returns(shuffled_weights, shuffled_returns),
+    )
+
+
+def test_portfolio_returns_known_values():
+    returns = pd.DataFrame(
+        {"AAPL": [0.1, 0.2], "MSFT": [-0.1, 0.0]},
+        index=pd.date_range("2026-01-02", periods=2, freq="B"),
+    )
+
+    result = metrics.portfolio_returns({"AAPL": 0.5, "MSFT": 0.5}, returns)
+
+    assert result.tolist() == pytest.approx([0.0, 0.1])
+
+
+def test_max_drawdown_known_value():
+    # 1.0 -> 1.1 -> 0.55 -> 0.6875: trough is 50 % below the 1.1 peak
+    returns = pd.Series([0.1, -0.5, 0.25])
+
+    assert metrics.max_drawdown(returns) == pytest.approx(-0.5)
+
+
+def test_max_drawdown_of_empty_series_raises():
+    with pytest.raises(ValueError, match="Keine Renditedaten"):
+        metrics.max_drawdown(pd.Series(dtype=float))
+
+
 def test_daily_returns_are_simple_pct_change():
     prices = pd.DataFrame(
         {"AAPL": [100.0, 110.0, 121.0]},

@@ -12,6 +12,10 @@ KNOWLEDGE_EXTRACTION.md §2/§5/§7.
 # Was duplicated three times in the old project — lives ONLY here now.
 TRADING_DAYS = 252
 
+# Confidence level for historical VaR/CVaR. Fixed convention from the
+# legacy project (§4/§5): the score anchors are calibrated for 95 %.
+VAR_CONFIDENCE = 0.95
+
 # --- Risk score: normalization anchors (KNOWLEDGE_EXTRACTION §5) ------------
 # Each factor is normalized against its anchor ("= 1.0") and clamped to 0..1.
 # Deliberately explainable heuristics, not fitted parameters.

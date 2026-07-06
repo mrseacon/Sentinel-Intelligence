@@ -51,6 +51,30 @@ def daily_returns(prices: pd.DataFrame) -> pd.DataFrame:
     return prices.pct_change(fill_method=None).dropna()
 
 
+def portfolio_returns(weights: dict[str, float], returns: pd.DataFrame) -> pd.Series:
+    """Daily portfolio returns as a weighted sum of asset returns.
+
+    Same explicit name alignment as every other entry point (§3): the
+    weights are reindexed to the return columns, never matched by order.
+    """
+    aligned = _aligned_weights(weights, returns)
+    return returns @ aligned
+
+
+def max_drawdown(returns: pd.Series) -> float:
+    """Maximum peak-to-trough drawdown of a return series.
+
+    Returned as a negative value in return space (loss = negative), like
+    VaR/CVaR — downstream consumers use abs().
+    """
+    if returns.empty:
+        raise ValueError("Keine Renditedaten für die Drawdown-Berechnung.")
+    cumulative = (1 + returns).cumprod()
+    running_max = cumulative.cummax()
+    drawdown = cumulative / running_max - 1
+    return float(drawdown.min())
+
+
 def herfindahl_index(weights: dict[str, float]) -> float:
     """Concentration in (0, 1]; 1/N for equal weights.
 
