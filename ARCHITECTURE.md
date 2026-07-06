@@ -83,6 +83,8 @@ sentinel/
 │   │   ├── portfolio/             # model, optimization, upload
 │   │   ├── paper/                 # NEU: engine, ledger, valuation
 │   │   ├── education/             # NEU: ampel.py, explanations.py
+│   │   ├── stress/                # NEU: replay.py – historische Krisen-Szenarien
+│   │   │                          #   (Entscheidungen: STRESS_TEST_DECISIONS.md)
 │   │   └── ai/                    # llm_client, news, risk_adjustment
 │   ├── src/sentinel_api/
 │   │   ├── main.py
@@ -195,6 +197,10 @@ POST /portfolio/optimize             Max-Sharpe (Constraints wie Altprojekt §11
 POST /paper/quote                    Ticker+Menge → Vorschau (Preis, Gebühr, Cash danach)
 POST /paper/execute                  Transaktion validieren & "ausführen"
 POST /paper/valuation                Transaktionsliste → Positionen, Depotwert, P&L
+
+POST /stress/replay                  Portfolio+Preset-Id → historischer Verlauf,
+                                     max. Drawdown, Abdeckung, Erklärtexte
+                                     (Presets fest, s. STRESS_TEST_DECISIONS.md)
 ```
 
 - Phase 1 sind `paper/*`-Endpunkte **zustandslos**: Das Frontend sendet die
@@ -256,3 +262,14 @@ WebSockets, mehrere Depots pro Nutzer, Benchmarks/Vergleichsindizes.
 - LLM-Provider für Phase 2 (Kaskaden-Muster aus Altprojekt §8 übernehmen)
 - Codegen Pydantic→TypeScript ab wann
 - Namensschutz/Marke "Sentinel" prüfen, bevor es öffentlich Business wird
+- Stress-Replay: Mindestabdeckung (v1: 50 % Depotgewicht) mit echten Depots
+  kalibrieren; Buy&Hold-Vergleichsansicht und weitere Presets (Dotcom)
+  frühestens Phase 2
+
+**Entschieden am 2026-07-06** (Details + Trade-offs in
+STRESS_TEST_DECISIONS.md): Stress-Replay mit drei festen
+Peak-to-Trough-Presets (Finanzkrise 2007-10-09–2009-03-09, Corona
+2020-02-19–2020-03-23, Zinswende 2022-01-03–2022-10-12; verifiziert gegen
+S&P-500-Schlusskurse), Ausschluss + Renormalisierung bei fehlender
+Historie mit 50-%-Mindestabdeckung, CSV-Datei-Cache pro Preset+Ticker,
+konstante heutige Gewichte, eigenes Modul `sentinel_core/stress/`.

@@ -66,6 +66,41 @@ PAPER_START_CASH = 10_000.0
 # Flat fee per trade: teaches that trading costs money without being complex.
 PAPER_TRADE_FEE = 1.0
 
+# --- Stress test replay (STRESS_TEST_DECISIONS.md) --------------------------
+
+# Minimum share of portfolio weight that must be simulatable in a crisis
+# window; below this the replay is rejected as not meaningful.
+# Uncalibrated v1 value (ARCHITECTURE §10).
+STRESS_MIN_COVERAGE = 0.5
+
+# An asset participates only if its history starts within this many
+# trading days after the window start. Later IPOs are excluded BEFORE
+# return computation so they cannot silently truncate the window
+# (daily_returns drops rows outside the common history).
+STRESS_START_TOLERANCE_DAYS = 5
+
+# Peak-to-trough crisis windows: each starts at the pre-crash market high
+# and ends at the bear-market low. Verified against S&P 500 (^GSPC)
+# closing prices on 2026-07-06. Boundaries are domain decisions —
+# never change silently (ARCHITECTURE §10).
+STRESS_PRESETS = {
+    "gfc_2008": {
+        "title": "Finanzkrise 2008/09",
+        "start": "2007-10-09",  # S&P 500 pre-crisis high (1565.15)
+        "end": "2009-03-09",  # bear-market low (676.53)
+    },
+    "covid_2020": {
+        "title": "Corona-Crash 2020",
+        "start": "2020-02-19",  # high 3386.15
+        "end": "2020-03-23",  # low 2237.40
+    },
+    "rates_2022": {
+        "title": "Zinswende 2022",
+        "start": "2022-01-03",  # high 4796.56
+        "end": "2022-10-12",  # low 3577.03
+    },
+}
+
 # --- Risk-Ampel thresholds (ARCHITECTURE §5, v1 — uncalibrated) -------------
 # Calibration with real example portfolios is an open decision
 # (ARCHITECTURE §10). Green/yellow bounds; anything beyond yellow is red.

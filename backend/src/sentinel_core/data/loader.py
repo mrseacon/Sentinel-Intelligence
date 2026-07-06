@@ -16,11 +16,18 @@ import yfinance as yf
 from pydantic import BaseModel, ConfigDict
 
 
-def load_multiple_assets(tickers: list[str], period: str = "1y") -> pd.DataFrame:
+def load_multiple_assets(
+    tickers: list[str],
+    period: str = "1y",
+    start: str | None = None,
+    end: str | None = None,
+) -> pd.DataFrame:
     """Load daily prices for the given tickers.
 
     Returns a DataFrame with one price column per ticker, in the requested
-    order, using adjusted close prices (falling back to close).
+    order, using adjusted close prices (falling back to close). Either a
+    rolling `period` or an explicit `start`/`end` window (ISO dates; `end`
+    is exclusive, as in yfinance).
 
     Raises:
         ValueError: empty ticker list, empty yfinance response, missing
@@ -36,12 +43,19 @@ def load_multiple_assets(tickers: list[str], period: str = "1y") -> pd.DataFrame
 
     # auto_adjust=False is deliberate: newer yfinance versions default to
     # auto_adjust=True, which removes the "Adj Close" column entirely.
-    data = yf.download(tickers, period=period, auto_adjust=False, progress=False)
+    if start or end:
+        window = f"{start} bis {end}"
+        data = yf.download(
+            tickers, start=start, end=end, auto_adjust=False, progress=False
+        )
+    else:
+        window = period
+        data = yf.download(tickers, period=period, auto_adjust=False, progress=False)
 
     if data is None or data.empty:
         raise ValueError(
             f"Keine Kursdaten erhalten für {', '.join(tickers)} "
-            f"(Zeitraum: {period!r})."
+            f"(Zeitraum: {window})."
         )
 
     prices = _extract_prices(data, tickers)

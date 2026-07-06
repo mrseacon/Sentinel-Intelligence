@@ -49,6 +49,69 @@ LESSON_VOLATILITY = (
 )
 
 
+# --- stress test replay (STRESS_TEST_DECISIONS.md) ---------------------------
+# One static concept card per crisis preset, keyed by preset id. Like the
+# Ampel lessons: ticker-free, purely descriptive, past tense for history.
+
+STRESS_LESSONS = {
+    "gfc_2008": (
+        "Die Finanzkrise 2008/09 war eine systemische Krise: Fast alle "
+        "Aktien fielen gemeinsam, Korrelationen stiegen sprunghaft an. "
+        "Diversifikation innerhalb einer einzigen Anlageklasse bot nur "
+        "begrenzten Schutz – deshalb betrachtet man Streuung über "
+        "Anlageklassen, Regionen und Branchen zusammen. Der breite Markt "
+        "brauchte Jahre, um das Vorkrisenniveau wieder zu erreichen."
+    ),
+    "covid_2020": (
+        "Der Corona-Crash 2020 war der schnellste Einbruch der "
+        "Börsengeschichte: rund ein Drittel Verlust in fünf Wochen. Ebenso "
+        "ungewöhnlich war die anschließende Erholung. Wer im Tief ausstieg, "
+        "verpasste die stärksten Erholungstage – den richtigen Zeitpunkt zu "
+        "erraten gelingt selten. Volatilität bedeutet Ausschläge in beide "
+        "Richtungen."
+    ),
+    "rates_2022": (
+        "Die Zinswende 2022 zeigte einen langsamen, monatelangen Bärenmarkt "
+        "statt eines schnellen Crashs. Besonders stark fielen Wachstums- "
+        "und Technologiewerte, deren Bewertungen empfindlich auf steigende "
+        "Zinsen reagieren. Depots mit ausgeprägtem Branchen-Klumpen traf es "
+        "überdurchschnittlich – Konzentration zeigt ihre Wirkung oft erst "
+        "im Abschwung."
+    ),
+}
+
+STRESS_DISCLAIMER = (
+    "Historische Szenarien beschreiben die Vergangenheit und sind keine "
+    "Prognose. Annahme: Deine heutigen Gewichte bleiben im gesamten "
+    "Zeitraum konstant."
+)
+
+
+def stress_explanation(
+    title: str,
+    max_dd: float,
+    total_return: float,
+    coverage: float,
+    excluded: list[str],
+) -> str:
+    """Depot-specific replay text: past tense, descriptive, with numbers."""
+    direction = "verloren" if total_return < 0 else "gewonnen"
+    # "Im Szenario „X““ instead of "In der/dem X" — preset titles have
+    # different grammatical genders (die Finanzkrise, der Corona-Crash).
+    text = (
+        f"Im Szenario „{title}“ wäre dein Depot zeitweise um "
+        f"{_pct(abs(max_dd))} eingebrochen (maximaler Drawdown). Über den "
+        f"gesamten Zeitraum hätte es {_pct(abs(total_return))} {direction}."
+    )
+    if excluded:
+        text += (
+            f" Simuliert wurden {_pct(coverage)} deines Depots – nicht "
+            f"enthalten: {', '.join(excluded)} (im Zeitraum noch nicht "
+            f"handelbar)."
+        )
+    return text
+
+
 def _pct(share: float) -> str:
     """0.42 -> '42 %' (German spacing)."""
     return f"{share * 100:.0f} %"
