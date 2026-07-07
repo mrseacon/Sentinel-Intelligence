@@ -9,7 +9,7 @@ import pytest
 
 from sentinel_core.risk import var as var_module
 from sentinel_core.risk.scoring import risk_score, score_label, score_portfolio
-from sentinel_core.risk.var import historical_cvar, historical_var
+from sentinel_core.risk.var import historical_cvar, historical_var, parametric_cvar
 from test_risk_metrics import sample_returns
 
 KNOWN_RETURNS = pd.Series([-0.10, -0.05, 0.0, 0.05, 0.10])
@@ -57,6 +57,43 @@ def test_var_rejects_empty_series_and_bad_confidence():
         historical_var(pd.Series(dtype=float))
     with pytest.raises(ValueError, match="Konfidenzniveau"):
         historical_var(KNOWN_RETURNS, confidence=1.5)
+
+
+# --- parametric CVaR (Gaussian expected shortfall, §4) --------------------------
+
+
+def test_parametric_cvar_matches_hand_computed_value():
+    # KNOWN_RETURNS: mean 0, std(ddof=1) = 0.0790569. Gaussian ES factor
+    # at 95 %: pdf(ppf(0.05)) / 0.05 = 2.062713.
+    # Expected: 0 - 0.0790569 * 2.062713 = -0.163073.
+    assert parametric_cvar(KNOWN_RETURNS) == pytest.approx(-0.1631, abs=1e-4)
+
+
+def test_parametric_cvar_is_negative_and_below_the_mean():
+    result = parametric_cvar(KNOWN_RETURNS)
+
+    assert result < 0
+    assert result < float(KNOWN_RETURNS.mean())
+
+
+def test_parametric_close_to_historical_for_normal_returns():
+    # Plausibility, not identity: for normally distributed returns both
+    # estimators must land in the same ballpark.
+    rng = np.random.default_rng(29)
+    returns = pd.Series(rng.normal(0.0, 0.02, size=5000))
+
+    parametric = parametric_cvar(returns)
+    historical = historical_cvar(returns)
+
+    assert parametric == pytest.approx(historical, rel=0.15)
+    assert parametric < 0
+
+
+def test_parametric_cvar_rejects_empty_series_and_bad_confidence():
+    with pytest.raises(ValueError, match="Keine Renditedaten"):
+        parametric_cvar(pd.Series(dtype=float))
+    with pytest.raises(ValueError, match="Konfidenzniveau"):
+        parametric_cvar(KNOWN_RETURNS, confidence=0.0)
 
 
 # --- scoring ------------------------------------------------------------------

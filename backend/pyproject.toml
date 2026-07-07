@@ -14,6 +14,10 @@ dependencies = [
     # by sentinel_core (returns/covariance work on DataFrames).
     "pandas>=2.0",
     "yfinance>=0.2",
+    # First consumer-shared scientific dependency: SLSQP for the
+    # max-Sharpe optimizer (KNOWLEDGE_EXTRACTION §11) and norm.pdf/ppf
+    # for the parametric CVaR (§4).
+    "scipy>=1.11",
 ]
 
 [project.optional-dependencies]
