@@ -55,6 +55,15 @@ def optimize_max_sharpe(returns: pd.DataFrame) -> OptimizationResult:
             "Zu wenige Datenpunkte für die Optimierung: mindestens 2 "
             "Renditebeobachtungen werden benötigt."
         )
+    # NaN gaps (e.g. unequal histories passed without daily_returns())
+    # would surface as a cryptic solver abort — reject them up front.
+    if returns.isna().any().any():
+        gapped = [str(c) for c in returns.columns[returns.isna().any()]]
+        raise ValueError(
+            f"Die Renditedaten enthalten Lücken (NaN) in: {', '.join(gapped)}. "
+            "Vor der Optimierung auf die gemeinsame Historie zuschneiden "
+            "(daily_returns)."
+        )
 
     mean_daily = returns.mean().to_numpy()
     cov_daily = returns.cov().to_numpy()
@@ -97,6 +106,17 @@ def optimize_max_sharpe(returns: pd.DataFrame) -> OptimizationResult:
 
     expected_return = float(portfolio_returns(weights, returns).mean()) * TRADING_DAYS
     volatility = portfolio_volatility(weights, returns)
+    # Degenerate inputs (constant prices everywhere) can "converge" at
+    # (numerically almost) zero volatility; Sharpe is undefined there —
+    # fail speaking instead of with a ZeroDivisionError or a nonsense
+    # Sharpe in the quintillions. Tolerance because float rounding keeps
+    # the variance of constant series slightly above exact zero.
+    if volatility < 1e-12:
+        raise ValueError(
+            "Die Renditedaten sind degeneriert (Portfolio-Volatilität 0, "
+            "z.B. konstante Kurse) – eine Sharpe-Optimierung ist damit "
+            "nicht definiert."
+        )
     return OptimizationResult(
         weights=weights,
         expected_return=expected_return,

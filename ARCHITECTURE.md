@@ -118,11 +118,12 @@ PaperAccount            Transaction                Position (abgeleitet!)
 id                      id                         ticker
 name                    account_id                 quantity
 start_cash (10_000 €)   ticker                     avg_buy_price
-cash                    side (BUY|SELL)            (berechnet aus
-created_at              quantity                    Transaktionen –
-                        price   ← Kurs z. Zeitpunkt  nie gespeichert)
-                        fees    ← 1 € Pauschale
-                        executed_at
+created_at              side (BUY|SELL)            (berechnet aus
+                        quantity (int, ganze Stk.)  Transaktionen –
+cash: KEIN Feld –       price      ← Kurs z. Zeitpkt. nie gespeichert)
+abgeleitet aus          price_asof ← Kurszeitstempel
+start_cash + Historie   fees       ← 1 € Pauschale
+(wie Positionen)        executed_at (tz-aware, UTC)
 ```
 
 **Entscheidungen:**
@@ -133,7 +134,11 @@ created_at              quantity                    Transaktionen –
 - **Pauschalgebühr 1 €/Trade:** Lehrt, dass Traden kostet, ohne komplex zu
   werden. Konstante in `constants.py`.
 - Ausführungspreis = letzter verfügbarer (verzögerter) Kurs; wird in der
-  Transaktion eingefroren und in der UI als "Kurs von HH:MM" angezeigt.
+  Transaktion eingefroren (`price` + Zeitstempel `price_asof`) und in der
+  UI als "Kurs von HH:MM" angezeigt.
+- **Cash wird nie gespeichert**, sondern wie die Positionen immer aus
+  `start_cash` + Transaktionshistorie abgeleitet (konsequentes
+  Event-Sourcing; beschlossen in der Paper-Engine-Session).
 - Verkauf > Bestand und Kauf > Cash sind harte Fehler (kein Margin).
 - Phase 1: `PaperAccount` + Transaktionen liegen als JSON in
   `localStorage` (Schema identisch zum Backend-Modell → Migration in

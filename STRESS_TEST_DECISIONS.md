@@ -100,7 +100,8 @@ in ARCHITECTURE §10 dokumentieren.
 ## 3. Caching historischer Kursdaten
 
 **Empfehlung: Dateibasierter CSV-Cache pro (Preset, Ticker) auf dem
-API-Server, davor ein In-Process-Memory-Cache. Kein Redis, keine DB.**
+API-Server – v1 bewusst nur diese eine Ebene. Kein Redis, keine DB,
+kein In-Memory-Layer.**
 
 Skizze:
 
@@ -108,7 +109,9 @@ Skizze:
 backend/.cache/stress/v1/<preset_id>/<TICKER>.csv
 ```
 
-- Neue Loader-Funktion `load_preset_prices(preset, tickers)`:
+- Funktion `load_preset_prices` (lebt in `stress/replay.py`, nicht im
+  Loader – sie ist Preset-gebunden und damit Stress-Fachlogik; der Loader
+  liefert nur das generische Datumsfenster):
   1. fehlende Ticker bestimmen (Cache-Miss),
   2. nur diese gebündelt von yfinance laden (Fallback-Kette wie gehabt),
   3. pro Ticker als CSV ablegen, Ergebnis zusammensetzen.
@@ -127,9 +130,11 @@ einen erneuten yfinance-Abruf. Die endliche Preset-Menge (Frage 2) hält
 ihn klein: 3 Presets × Depot-Ticker.
 
 **Trade-offs:**
-- *Nur In-Memory (`lru_cache`):* noch einfacher, aber nach jedem
-  Deploy/Neustart kalt – yfinance wird unnötig oft getroffen (Rate-Limits!).
-  Kommt als schnelle erste Ebene **zusätzlich**, nicht statt der Dateien.
+- *In-Memory (`lru_cache`), allein oder als Zusatzebene:* verworfen.
+  Allein wäre er nach jedem Deploy/Neustart kalt (unnötige
+  yfinance-Treffer, Rate-Limits); als zweite Ebene über dem Datei-Cache
+  wäre er Overengineering – die CSV-Reads (~150 Zeilen) sind ohnehin
+  im Mikrosekundenbereich.
 - *Dateien im Repo vorhalten:* nur für feste Index-Daten denkbar, nicht
   für beliebige Nutzer-Ticker; vorerst nein.
 - *Ephemere Dateisysteme* (Railway/Render): Cache überlebt Redeploys ggf.

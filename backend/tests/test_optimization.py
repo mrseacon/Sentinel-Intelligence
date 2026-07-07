@@ -99,6 +99,23 @@ def test_non_convergence_raises_speaking_german_error(monkeypatch):
         optimize_max_sharpe(symmetric_uncorrelated_pair())
 
 
+def test_nan_gaps_are_rejected_with_speaking_error():
+    returns = sample_returns(["AAPL", "MSFT"]).copy()
+    returns.iloc[0, 0] = np.nan
+
+    with pytest.raises(ValueError, match="Lücken.*AAPL.*daily_returns"):
+        optimize_max_sharpe(returns)
+
+
+def test_constant_returns_raise_value_error_not_zero_division():
+    # Zero volatility everywhere: Sharpe is undefined. Must stay inside
+    # the project's ValueError family instead of ZeroDivisionError.
+    flat = pd.DataFrame({"A": [0.01] * 60, "B": [0.01] * 60})
+
+    with pytest.raises(ValueError, match="degeneriert|nicht konvergiert"):
+        optimize_max_sharpe(flat)
+
+
 def test_single_asset_is_rejected():
     returns = sample_returns(["AAPL"])
 

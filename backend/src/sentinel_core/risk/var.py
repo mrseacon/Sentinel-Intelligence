@@ -16,14 +16,19 @@ from scipy.stats import norm
 from sentinel_core.constants import VAR_CONFIDENCE
 
 
-def historical_var(returns: pd.Series, confidence: float = VAR_CONFIDENCE) -> float:
-    """Historical VaR: the (1 - confidence) percentile of daily returns."""
+def _validate(returns: pd.Series, confidence: float) -> None:
+    """Shared input checks for all VaR/CVaR variants."""
     if returns.empty:
-        raise ValueError("Keine Renditedaten für die VaR-Berechnung.")
+        raise ValueError("Keine Renditedaten für die VaR/CVaR-Berechnung.")
     if not 0 < confidence < 1:
         raise ValueError(
             f"Konfidenzniveau muss zwischen 0 und 1 liegen ({confidence})."
         )
+
+
+def historical_var(returns: pd.Series, confidence: float = VAR_CONFIDENCE) -> float:
+    """Historical VaR: the (1 - confidence) percentile of daily returns."""
+    _validate(returns, confidence)
     return float(np.percentile(returns, (1 - confidence) * 100))
 
 
@@ -56,12 +61,7 @@ def parametric_cvar(returns: pd.Series, confidence: float = VAR_CONFIDENCE) -> f
     historical_cvar — its anchors are calibrated for it (§5), do not
     swap the two.
     """
-    if returns.empty:
-        raise ValueError("Keine Renditedaten für die CVaR-Berechnung.")
-    if not 0 < confidence < 1:
-        raise ValueError(
-            f"Konfidenzniveau muss zwischen 0 und 1 liegen ({confidence})."
-        )
+    _validate(returns, confidence)
     alpha = 1 - confidence
     z = norm.ppf(alpha)
     mu = float(returns.mean())
