@@ -18,6 +18,12 @@ dependencies = [
     # max-Sharpe optimizer (KNOWLEDGE_EXTRACTION §11) and norm.pdf/ppf
     # for the parametric CVaR (§4).
     "scipy>=1.11",
+    # News RSS fetching (KNOWLEDGE_EXTRACTION §9). Already a transitive
+    # dependency via yfinance — declared explicitly because sentinel_core
+    # imports it directly. NOTE: 'openai' is deliberately NOT listed —
+    # it is an optional dependency, lazy-imported in ai/llm_client.py
+    # (graceful degradation, §8).
+    "requests>=2.31",
 ]
 
 [project.optional-dependencies]

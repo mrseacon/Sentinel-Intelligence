@@ -53,6 +53,22 @@ SCORE_LABEL_HIGH_MAX = 75
 
 SENTIMENT_SCORE_DELTA = {2: -6, 1: -3, 0: 0, -1: 4, -2: 8}
 
+# --- News pipeline (KNOWLEDGE_EXTRACTION §9) --------------------------------
+
+# Macro queries run first, in this order — a domain decision from the
+# legacy project (market-wide risk before company news).
+NEWS_MACRO_QUERIES = (
+    "US stock market risk",
+    "Federal Reserve interest rates",
+    "inflation outlook",
+)
+# Per-ticker feed limit; keeps company news from crowding out macro.
+NEWS_LIMIT_PER_TICKER = 4
+# Hard cap keeps the LLM prompt size bounded (§9).
+NEWS_MAX_HEADLINES = 25
+# Polite throttle between RSS requests to avoid Google rate limiting.
+NEWS_THROTTLE_SECONDS = 0.4
+
 # --- Portfolio optimization (KNOWLEDGE_EXTRACTION §11) ----------------------
 
 # Per-asset cap; without it max-Sharpe tends to put everything into a
