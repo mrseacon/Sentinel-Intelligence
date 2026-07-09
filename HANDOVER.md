@@ -1,18 +1,24 @@
-# HANDOVER – Stand nach den Fachlogik-Sessions (aktualisiert 2026-07-09)
+# HANDOVER – Fachlogik abgeschlossen, bereit für API & Frontend (2026-07-09)
 
-Orientierungshilfe für die nächste Session. **Primäre Referenz bleiben
-CLAUDE.md (Arbeitsregeln) und ARCHITECTURE.md (Entscheidungen) – zuerst
-lesen, dann hierher zurückkommen.** Dieses Dokument ist die Landkarte,
-nicht die Spezifikation.
+Orientierungshilfe für die nächsten Sessions. **Primäre Referenzen:
+CLAUDE.md (Arbeitsregeln), ARCHITECTURE.md (Grundsatzentscheidungen),
+API_CONTRACT.md (der komplette API-Vertrag für die nächste Phase).**
+Dieses Dokument ist die Landkarte, nicht die Spezifikation.
 
-## 1. Status: Fachlogik-Schicht komplett
+**Modellwechsel-Hinweis:** Die bisherige Arbeit lief auf Fable; der
+Wechsel zu Sonnet für die verbleibende Arbeit ist beabsichtigt und
+unproblematisch – alle offenen Design-Fragen sind entschieden und
+dokumentiert, was bleibt, ist sorgfältiges Handwerk nach Vertrag.
 
-`sentinel_core/` ist fertig und getestet (**146 Tests, CI grün**,
-ruff + black sauber):
+## 1. Status: Fachlogik-Schicht vollständig
+
+`sentinel_core/` ist komplett und getestet (**146 Tests, CI grün**,
+ruff + black sauber). **KNOWLEDGE_EXTRACTION.md §1–§12 ist vollständig
+portiert – es gibt keinen offenen Fachteil mehr.**
 
 | Modul | Zweck |
 |---|---|
-| `constants.py` | EINZIGE Quelle aller fachlichen Konstanten (Anker, Schwellen, Gebühren, Presets) |
+| `constants.py` | EINZIGE Quelle aller fachlichen Konstanten (Anker, Schwellen, Gebühren, Presets, Sim-Parameter) |
 | `data/loader.py` | yfinance mit voller Fallback-Kette (§1), letzte Kurse + Datumsfenster |
 | `paper/ledger.py` | Event-Sourcing: Transaktionen → Positionen/Cash, deterministisches Replay |
 | `paper/engine.py` | Quote/Execute mit harten Validierungen (kein Margin, Gebühren-Deckung) |
@@ -32,88 +38,84 @@ ruff + black sauber):
 | `ai/risk_adjustment.py` | Asymmetrische Sentiment-Adjustierung; `assess_market` wirft NIE |
 | `ai/guardrails.py` | Runtime-Filter für LLM-Text (Prinzip 3) |
 
-## 2. Bewusst NICHT gebaut (kein Versehen)
+## 2. Die nächste Phase ist fertig entschieden: API_CONTRACT.md
 
-- **API-Routen** (`sentinel_api/routers/` + Schemas) – reine Verdrahtung
-  der fertigen Core-Funktionen. Der vollständige Vertrag dafür liegt
-  bereits in **API_CONTRACT.md** (alle 13 Endpunkte inkl. CSV-Upload,
-  Fehlerformat, Konventionen) – dort nichts neu entscheiden, nur umsetzen.
-- **Frontend** jenseits des create-next-app-Skeletons.
-
-Diese Session hat gezielt die Teile gebaut, die tiefes Reasoning brauchen
-(Risiko-Mathematik, Edge Cases, Guardrails, Architektur-Entscheidungen).
-Die verbleibenden Bausteine sind wichtig, aber gut spezifiziert und
-mechanisch – sie brauchen Sorgfalt, keine schwierigen Entscheidungen.
+**API_CONTRACT.md ist die zentrale Referenz für alles Weitere:** alle
+13 Endpunkte mit Request-/Response-/Error-Schemas, einheitlichem
+`{detail, code}`-Fehlerformat samt Mapping-Registry, Querschnitts-
+Konventionen (Zahlen, Zeit, Portfolio-Übergabe) und der Liste, welche
+core-Modelle 1:1 durchgereicht werden vs. Wrapper brauchen. Die
+Implementierung ist **reines mechanisches Verdrahten pro Endpunkt** –
+dort nichts neu entscheiden.
 
 ## 3. Nicht offensichtliche Entscheidungen – nicht versehentlich brechen
 
-1. **Event-Sourcing konsequent:** Positionen UND Cash werden immer aus
-   `start_cash` + Transaktionshistorie berechnet, nie gespeichert.
-   Replay sortiert deterministisch nach `(executed_at, id)`;
-   `executed_at` ist `AwareDatetime` (naive Timestamps → Validierungsfehler).
-   `execute()` lehnt Verkäufe ab, deren Erlös die Gebühr nicht deckt –
-   sonst würde ein legitimer Trade die Historie "vergiften" (negatives
-   Cash → jedes spätere Replay wirft).
-2. **Zweistufige Prinzip-3-Absicherung:** Interne Templates
-   (Ampel/Stress) werden durch Test-Regressionswächter geprüft
-   (`FORBIDDEN_ACTION_STEMS` in `test_ampel.py`); LLM-Output läuft
+1. **Event-Sourcing konsequent (paper/):** Positionen UND Cash werden
+   immer aus `start_cash` + Transaktionshistorie berechnet, nie
+   gespeichert; Replay sortiert deterministisch nach `(executed_at,
+   id)`, `executed_at` ist tz-aware Pflicht. `execute()` lehnt Verkäufe
+   ab, deren Erlös die Gebühr nicht deckt – sonst vergiftet ein
+   legitimer Trade die Historie (negatives Cash → jedes Replay wirft).
+2. **Prinzip 3 ist zweistufig absichert:** Interne Templates
+   (Ampel/Stress/Simulation) prüft der Test-Regressionswächter
+   (`FORBIDDEN_ACTION_STEMS`, `test_ampel.py`); LLM-Output läuft
    zusätzlich durch den **Runtime**-Filter `ai/guardrails.py` (bewusst
-   über-blockend, "sell-off" fliegt mit raus). Reihenfolge beachten:
-   Parsing schneidet auf 5 Bullets, DANN filtert der Guardrail.
-3. **Ticker-Alignment & Renormalisierung:** Alle Gewichts-/Kovarianz-
-   Operationen alignen explizit über Namen (`reindex`), nie über
-   Reihenfolge. Es gibt **5 Spalten-Shuffle-Tests** (metrics,
-   portfolio_returns, contribution, optimizer, stress) – sie dürfen nie
-   entfernt werden (CLAUDE.md Regel 2). Gewichte werden an jedem
-   Eintrittspunkt renormalisiert; Aufrufer dürfen Euro-Beträge schicken.
-4. **Stress-Replay:** Assets ohne Historie am Fensterstart werden VOR
-   der Return-Berechnung ausgeschlossen – `daily_returns` truncated per
-   `dropna()` auf die gemeinsame Historie, ein Late-IPO würde sonst das
-   Krisenfenster still stauchen. Cache: nur Datei-Ebene (CSV pro
-   Preset+Ticker, unveränderlich, kein TTL), negative Ergebnisse als
-   leere Marker; Pfad ist aktuell CWD-relativ (`backend/.cache/…`) –
-   vor dem API-Deploy env-konfigurierbar machen.
-5. **Fehler-Konventionen:** Fachliche Fehler sind durchgängig
-   `ValueError` mit **deutschen**, sprechenden Meldungen (Ticker/Beträge
-   benennen) – das ist faktisch API-Vertrag. Ausnahme-Familien:
-   pydantic `ValidationError` ist eine `ValueError`-Subklasse (passt);
-   `ai/`-Einstiegspunkte (`assess_market`, `fetch_headlines`) werfen
-   NIE, sondern degradieren neutral. Scoring nutzt den **historischen**
-   CVaR (Anker darauf kalibriert) – nie gegen den parametrischen tauschen.
+   über-blockend, "sell-off" fliegt mit raus). Reihenfolge: Parsing
+   schneidet auf 5 Bullets, DANN filtert der Guardrail.
+3. **Ticker-Alignment & Renormalisierung überall:** Gewichte/Kovarianz
+   alignen explizit über Namen (`reindex`), nie über Reihenfolge;
+   Gewichte werden an jedem Eintrittspunkt renormalisiert (Aufrufer
+   dürfen €-Beträge schicken – darauf baut der `PortfolioIn`-Vertrag).
+   Die **6 Spalten-Shuffle-Tests** (metrics, portfolio_returns,
+   contribution, optimizer, stress, simulation) dürfen nie entfernt
+   werden (CLAUDE.md Regel 2).
+4. **Quant-Entscheidungen mit Begründung:** Monte-Carlo ist ein
+   **1-D-Bootstrap auf den Portfolio-Tagesrenditen** – bei konstanten
+   Gewichten erhält das die Korrelationen exakt; unabhängiges
+   Resampling pro Asset ist der verbotene Fehler (unrealistisch
+   schmaler Fächer). Der Optimizer ist long-only mit 0.6-Cap pro
+   Position und rf=0 (§11). Das Scoring nutzt den **historischen**
+   CVaR (Anker darauf kalibriert) – nie gegen den parametrischen
+   tauschen. Konstante heutige Gewichte sind DIE eine
+   Portfoliomodell-Annahme in Score, Ampel, Stress UND Simulation.
+5. **Fehler-Konvention = API-Vertrag:** Fachliche Fehler sind
+   durchgängig deutsche, sprechende `ValueError`s; die API reicht die
+   Texte als `detail` durch und mappt den `code` über die
+   Präfix-Registry in API_CONTRACT.md §1.1. **Wer eine core-Meldung
+   umformuliert, prüft die Registry.** `ai/`-Einstiegspunkte
+   (`assess_market`, `fetch_headlines`) werfen NIE – sie degradieren
+   neutral (Prinzip 2).
 
-**Umgebungs-Stolperfalle dieser Maschine:** Ein Hintergrund-Tool setzt
-Hidden-Flags auf Dotfile-Bäume; Python 3.13 ignoriert dann die
-Editable-Install-`.pth` → `ModuleNotFoundError: sentinel_core` außerhalb
-von pytest. Lösung: `PYTHONPATH=src` (pytest hat es schon in
-`pyproject.toml`). Und: kein `gh` CLI, GitHub-API unauthentifiziert nur
-60 req/h – CI-Status über
-`https://github.com/mrseacon/Sentinel-Intelligence/actions/workflows/ci.yml/badge.svg` prüfen.
+**Umgebungs-Stolperfallen dieser Maschine:** (a) Ein Hintergrund-Tool
+setzt Hidden-Flags auf Dotfile-Bäume; Python 3.13 ignoriert dann die
+Editable-Install-`.pth` → `ModuleNotFoundError` außerhalb von pytest;
+Lösung `PYTHONPATH=src`. (b) Kein `gh` CLI, GitHub-API unauthentifiziert
+nur 60 req/h – CI-Status über das Workflow-Badge
+(`…/actions/workflows/ci.yml/badge.svg`) prüfen, nie eng pollen.
 
 ## 4. Nächste Schritte (Priorität)
 
-1. **API-Routen** (`sentinel_api`) exakt nach **API_CONTRACT.md**:
-   zuerst `paper/*` + `prices/*` (Kern-Loop, zustandslos), dann
-   `risk/analyze` + `risk/ampel`, dann `stress/*`, `simulation/*`,
-   `portfolio/optimize`. Dabei: Fehler-Präfix-Registry aus dem Vertrag,
-   pydantic-Validierungstexte ins Deutsche mappen, Stress-Cache-Pfad
-   konfigurierbar machen. CORS für localhost:3000.
-2. **Frontend**: `lib/api.ts` (einziger Ort für Backend-Calls) +
-   `lib/types.ts` (Spiegel der Schemas), localStorage mit
-   `schema_version` (§7), Depot-Ansicht → Ampel-Ansicht →
-   Playwright-Smoke-Test (§9: Trade ausführen → Ampel ändert sich).
+1. **API-Routen Modul für Modul nach API_CONTRACT.md verdrahten.**
+   Reihenfolge: `paper/*` + `/prices/*` zuerst (meiste Endpunkte, am
+   engsten mit dem Frontend-Kern-Loop verzahnt), dann `risk/*`, dann
+   `portfolio/*` (optimize + upload), `stress/*`, `simulation/*`.
+   Nebenaufgaben aus dem Vertrag: Fehler-Registry, deutsche Übersetzung
+   der pydantic-Validierungstexte, Stress-Cache-Pfad env-konfigurierbar,
+   CORS für localhost:3000.
+2. **Frontend-Grundgerüst:** `lib/api.ts` (einziger Ort für
+   Backend-Calls) + `lib/types.ts` (Spiegel der Vertrags-Schemas),
+   localStorage mit `schema_version` (§7), Depot-Ansicht →
+   Ampel-Ansicht → Playwright-Smoke-Test (§9).
 
 Kleinkram, der offen ist: `tests/conftest.py` für die quer-importierten
-Test-Helfer (`sample_returns`, `patch_download`, `FORBIDDEN_ACTION_STEMS`);
-`daily_returns`-Test für ungleiche Historien.
+Test-Helfer; `daily_returns`-Test für ungleiche Historien.
 
 ## 5. Referenzen
 
 - **CLAUDE.md** – Arbeitsregeln (harte Regeln, Commits, Sprache).
-- **ARCHITECTURE.md** – alle Grundsatzentscheidungen; §10 enthält die
-  offenen Kalibrierungen.
+- **ARCHITECTURE.md** – Grundsatzentscheidungen; §10 offene Kalibrierungen.
+- **API_CONTRACT.md** – der komplette API-Vertrag (nächste Phase).
 - **STRESS_TEST_DECISIONS.md** / **MONTE_CARLO_DECISIONS.md** –
   Feature-Entscheidungen inkl. Trade-offs.
-- **API_CONTRACT.md** – der komplette API-Vertrag (Schemas,
-  Fehlerformat, Konventionen) für die Implementierungs-Sessions.
 - **KNOWLEDGE_EXTRACTION.md** – Altprojekt-Wissen (read-only); alle
-  Fachteile (§1–§12) sind inzwischen portiert.
+  Fachteile (§1–§12) sind portiert.
