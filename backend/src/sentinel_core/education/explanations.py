@@ -112,6 +112,66 @@ def stress_explanation(
     return text
 
 
+# --- Monte Carlo simulation (MONTE_CARLO_DECISIONS.md) -----------------------
+# Frequency wording instead of probability language, subjunctive, median
+# never labeled "expected" — the fan must not read as a forecast.
+
+SIM_LESSON = (
+    "Eine Monte-Carlo-Simulation beantwortet nicht, wie es kommt, sondern "
+    "wie unterschiedlich es kommen könnte: Sie mischt die tatsächlichen "
+    "vergangenen Tagesbewegungen eines Depots zufällig neu und spielt "
+    "daraus viele tausend mögliche Verläufe durch (Bootstrap-Verfahren). "
+    "Die Bandbreite wächst mit dem Zeithorizont – je weiter die Zukunft, "
+    "desto weniger lässt sie sich eingrenzen. Der mittlere Verlauf ist "
+    "kein Versprechen, sondern nur der Median der Simulationen. Und: Die "
+    "Simulation kennt nur die Vergangenheit – Ereignisse, die es dort "
+    "nicht gab, kann sie nicht zeigen."
+)
+
+SIM_DISCLAIMER = (
+    "Simulation auf Basis vergangener Tagesrenditen – keine Vorhersage. "
+    "Die tatsächliche Entwicklung kann außerhalb jeder gezeigten "
+    "Bandbreite liegen. Annahme: Deine heutigen Gewichte bleiben im "
+    "gesamten Zeitraum konstant."
+)
+
+
+def simulation_explanation(
+    horizon_years: int,
+    final_p10: float,
+    final_p50: float,
+    final_p90: float,
+    history_years: float,
+    limiting_ticker: str | None,
+    recycling_factor: float,
+    thin_history: bool,
+) -> str:
+    """Frequency-worded fan summary with mandatory data-basis transparency."""
+    year_word = "Jahr" if horizon_years == 1 else "Jahren"
+    limit_clause = f", begrenzt durch {limiting_ticker}" if limiting_ticker else ""
+    text = (
+        f"In 8 von 10 simulierten Verläufen lag der Depotwert nach "
+        f"{horizon_years} {year_word} zwischen dem {_num(final_p10)}-Fachen "
+        f"und dem {_num(final_p90)}-Fachen des heutigen Werts; der mittlere "
+        f"simulierte Verlauf endete beim {_num(final_p50)}-Fachen. "
+        f"Datenbasis: {_num1(history_years)} Jahre tägliche "
+        f"Kurshistorie{limit_clause}."
+    )
+    if thin_history:
+        text += (
+            f" Achtung, dünne Datenbasis: Für diesen Horizont wird die "
+            f"verfügbare Historie rechnerisch rund "
+            f"{_num1(recycling_factor)}-mal wiederverwendet – seltene "
+            f"Ereignisse wie Crashs fehlen darin womöglich vollständig."
+        )
+    return text
+
+
+def _num1(value: float) -> str:
+    """7.14 -> '7,1' (German decimal comma, one decimal)."""
+    return f"{value:.1f}".replace(".", ",")
+
+
 def _pct(share: float) -> str:
     """0.42 -> '42 %' (German spacing)."""
     return f"{share * 100:.0f} %"

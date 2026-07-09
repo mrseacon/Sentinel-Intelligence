@@ -85,6 +85,8 @@ sentinel/
 │   │   ├── education/             # NEU: ampel.py, explanations.py
 │   │   ├── stress/                # NEU: replay.py – historische Krisen-Szenarien
 │   │   │                          #   (Entscheidungen: STRESS_TEST_DECISIONS.md)
+│   │   ├── simulation/            # NEU: monte_carlo.py – Zukunfts-Fächer
+│   │   │                          #   (Entscheidungen: MONTE_CARLO_DECISIONS.md)
 │   │   └── ai/                    # llm_client, news, risk_adjustment
 │   ├── src/sentinel_api/
 │   │   ├── main.py
@@ -206,6 +208,11 @@ POST /paper/valuation                Transaktionsliste → Positionen, Depotwert
 POST /stress/replay                  Portfolio+Preset-Id → historischer Verlauf,
                                      max. Drawdown, Abdeckung, Erklärtexte
                                      (Presets fest, s. STRESS_TEST_DECISIONS.md)
+
+POST /simulation/monte-carlo         Portfolio+Horizont (1/5/10 J.) →
+                                     Perzentil-Fächer (p10/p50/p90),
+                                     Datenbasis-Transparenz, Erklärtexte
+                                     (s. MONTE_CARLO_DECISIONS.md)
 ```
 
 - Phase 1 sind `paper/*`-Endpunkte **zustandslos**: Das Frontend sendet die
@@ -270,6 +277,10 @@ WebSockets, mehrere Depots pro Nutzer, Benchmarks/Vergleichsindizes.
 - Stress-Replay: Mindestabdeckung (v1: 50 % Depotgewicht) mit echten Depots
   kalibrieren; Buy&Hold-Vergleichsansicht und weitere Presets (Dotcom)
   frühestens Phase 2
+- Monte-Carlo: Pfadanzahl (v1: 2000), Seed, Mindesthistorie (250
+  Handelstage) und Dünn-Historie-Schwelle (3 Jahre) sind gesetzte, aber
+  unkalibrierte Werte; t-Verteilungs-Vergleichsmodus und Block-Bootstrap
+  frühestens Phase 2
 
 **Entschieden am 2026-07-06** (Details + Trade-offs in
 STRESS_TEST_DECISIONS.md): Stress-Replay mit drei festen
@@ -278,3 +289,11 @@ Peak-to-Trough-Presets (Finanzkrise 2007-10-09–2009-03-09, Corona
 S&P-500-Schlusskurse), Ausschluss + Renormalisierung bei fehlender
 Historie mit 50-%-Mindestabdeckung, CSV-Datei-Cache pro Preset+Ticker,
 konstante heutige Gewichte, eigenes Modul `sentinel_core/stress/`.
+
+**Entschieden am 2026-07-09** (Details + Trade-offs in
+MONTE_CARLO_DECISIONS.md): Zukunftssimulation als historischer Bootstrap
+auf den Portfolio-Tagesrenditen (erhält Korrelationen exakt, keine
+Verteilungsannahme), konstante heutige Gewichte (konsistent zu Score/
+Ampel/Stress), feste Horizonte 1/5/10 Jahre, deterministischer Seed,
+Frequenz-Formulierungen statt Prognose-Sprache, eigenes Modul
+`sentinel_core/simulation/`.

@@ -117,6 +117,25 @@ STRESS_PRESETS = {
     },
 }
 
+# --- Monte Carlo simulation (MONTE_CARLO_DECISIONS.md) ----------------------
+
+# Fixed selectable horizons; free input would invite pseudo financial
+# planning (decision doc §6).
+SIM_HORIZONS_YEARS = (1, 5, 10)
+# Path count: stabilizes the 10th/50th/90th percentile well below one
+# second of compute. Set but uncalibrated (ARCHITECTURE §10).
+SIM_N_PATHS = 2000
+# Fixed seed: same input -> same fan. Without it the fan changes on
+# every reload and reads like a random oracle instead of an analysis.
+SIM_SEED = 42
+# Below this common history the simulation is rejected (~1 trading year
+# incl. at least one full earnings season). Uncalibrated (§10).
+SIM_MIN_HISTORY_DAYS = 250
+# Below this many years of history the thin-history warning is shown.
+SIM_THIN_HISTORY_YEARS = 3.0
+# Fan support points roughly monthly (in trading days).
+SIM_SUPPORT_STEP_DAYS = 21
+
 # --- Risk-Ampel thresholds (ARCHITECTURE §5, v1 — uncalibrated) -------------
 # Calibration with real example portfolios is an open decision
 # (ARCHITECTURE §10). Green/yellow bounds; anything beyond yellow is red.
