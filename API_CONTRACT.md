@@ -49,6 +49,7 @@ der API-Schicht:
 | "Zu wenig Kurshistorie" | `SIM_INSUFFICIENT_HISTORY` |
 | "…nicht konvergiert" | `OPTIMIZER_NO_CONVERGENCE` |
 | "…enthalten Lücken" / "degeneriert" / "mindestens 2 Assets" / "Zu wenige Datenpunkte" | `OPTIMIZER_INVALID_INPUT` |
+| "Die CSV" / "Pflichtspalten fehlen" / "Leere Ticker" / "Leere Gewichtswerte" / "Ungültiger Gewichtswert" | `UPLOAD_INVALID` |
 | alles andere | `DOMAIN_ERROR` (Fallback) |
 
 Präfix-Matching ist eine bewusste v1-Brücke. **Ziellösung (kleiner
@@ -383,6 +384,27 @@ class MonteCarloOut(BaseModel):      # 1:1 core MonteCarloResult
 
 Fehler: 422 `SIM_HORIZON_INVALID` / `SIM_INSUFFICIENT_HISTORY` /
 `PORTFOLIO_INVALID` / `TICKER_NOT_FOUND`, 503.
+
+### 2.12a `POST /portfolio/upload` ⚡
+
+CSV-Datei (multipart/form-data, Feld `file`) → validiertes Portfolio.
+Reine Formatvalidierung: Ob die Ticker bei Yahoo existieren, prüft erst
+der Loader beim nächsten fachlichen Endpunkt (Arbeitsteilung: Upload =
+Format, Loader = Existenz – kein doppelter yfinance-Roundtrip).
+
+```python
+# Request: multipart file (CSV; Komma ODER Semikolon+Dezimalkomma,
+#          UTF-8/BOM oder cp1252 — deutsche Excel-Exporte funktionieren)
+
+# Response 200: exakt PortfolioIn — direkt weiterreichbar an
+# risk/analyze, risk/ampel, stress/replay, simulation/monte-carlo
+class PortfolioIn(BaseModel):
+    weights: dict[str, float]
+```
+
+Duplikate in der CSV werden per Summe aggregiert (§10-Legacy-Verhalten,
+getestet). Fehler: 422 `UPLOAD_INVALID` (Format) / `PORTFOLIO_INVALID`
+(negative Gewichte, Nullsumme).
 
 ### 2.12 `GET /stress/presets` ⚡
 

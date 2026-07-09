@@ -200,6 +200,8 @@ GET  /prices/history?tickers=&period=
 POST /risk/analyze                   Portfolio → Metriken + Score + Treiber
 POST /risk/ampel                     Portfolio → 3 Ampeln inkl. Texte
 POST /portfolio/optimize             Max-Sharpe (Constraints wie Altprojekt §11)
+POST /portfolio/upload               CSV → validiertes Portfolio (Altprojekt §10;
+                                     nur Format, Existenzprüfung macht der Loader)
 
 POST /paper/quote                    Ticker+Menge → Vorschau (Preis, Gebühr, Cash danach)
 POST /paper/execute                  Transaktion validieren & "ausführen"

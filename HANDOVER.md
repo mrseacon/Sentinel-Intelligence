@@ -7,7 +7,7 @@ nicht die Spezifikation.
 
 ## 1. Status: Fachlogik-Schicht komplett
 
-`sentinel_core/` ist fertig und getestet (**131 Tests, CI grün**,
+`sentinel_core/` ist fertig und getestet (**146 Tests, CI grün**,
 ruff + black sauber):
 
 | Modul | Zweck |
@@ -26,6 +26,7 @@ ruff + black sauber):
 | `stress/replay.py` | Historische Krisen-Szenarien (3 Presets, Datei-Cache) – s. STRESS_TEST_DECISIONS.md |
 | `simulation/monte_carlo.py` | Zukunfts-Fächer per Bootstrap (1/5/10 J., deterministischer Seed) – s. MONTE_CARLO_DECISIONS.md |
 | `portfolio/optimization.py` | Max-Sharpe (SLSQP, long-only, 0.6-Cap) |
+| `portfolio/upload.py` | CSV-Validierung (§10: Duplikate summiert, deutsche Excel-Dialekte) |
 | `ai/news.py` | Google News RSS, key-los, wirft nie |
 | `ai/llm_client.py` | LLM-Kaskade: Key/Paket/Parsing-Fehler → Aufrufer fällt zurück |
 | `ai/risk_adjustment.py` | Asymmetrische Sentiment-Adjustierung; `assess_market` wirft NIE |
@@ -33,12 +34,10 @@ ruff + black sauber):
 
 ## 2. Bewusst NICHT gebaut (kein Versehen)
 
-- **CSV-Upload** (KNOWLEDGE_EXTRACTION §10) – klar spezifizierte,
-  mechanische Portierung.
 - **API-Routen** (`sentinel_api/routers/` + Schemas) – reine Verdrahtung
   der fertigen Core-Funktionen. Der vollständige Vertrag dafür liegt
-  bereits in **API_CONTRACT.md** (alle 12 Endpunkte, Fehlerformat,
-  Konventionen) – dort nichts neu entscheiden, nur umsetzen.
+  bereits in **API_CONTRACT.md** (alle 13 Endpunkte inkl. CSV-Upload,
+  Fehlerformat, Konventionen) – dort nichts neu entscheiden, nur umsetzen.
 - **Frontend** jenseits des create-next-app-Skeletons.
 
 Diese Session hat gezielt die Teile gebaut, die tiefes Reasoning brauchen
@@ -98,10 +97,7 @@ von pytest. Lösung: `PYTHONPATH=src` (pytest hat es schon in
    `portfolio/optimize`. Dabei: Fehler-Präfix-Registry aus dem Vertrag,
    pydantic-Validierungstexte ins Deutsche mappen, Stress-Cache-Pfad
    konfigurierbar machen. CORS für localhost:3000.
-2. **CSV-Upload** portieren (KNOWLEDGE_EXTRACTION §10: normalisierte
-   Spalten, Aggregation doppelter Ticker, harte Fehler bei
-   leeren/negativen Einträgen) + Tests.
-3. **Frontend**: `lib/api.ts` (einziger Ort für Backend-Calls) +
+2. **Frontend**: `lib/api.ts` (einziger Ort für Backend-Calls) +
    `lib/types.ts` (Spiegel der Schemas), localStorage mit
    `schema_version` (§7), Depot-Ansicht → Ampel-Ansicht →
    Playwright-Smoke-Test (§9: Trade ausführen → Ampel ändert sich).
@@ -119,5 +115,5 @@ Test-Helfer (`sample_returns`, `patch_download`, `FORBIDDEN_ACTION_STEMS`);
   Feature-Entscheidungen inkl. Trade-offs.
 - **API_CONTRACT.md** – der komplette API-Vertrag (Schemas,
   Fehlerformat, Konventionen) für die Implementierungs-Sessions.
-- **KNOWLEDGE_EXTRACTION.md** – Altprojekt-Wissen (read-only); §10
-  (Upload) ist der einzige noch nicht portierte Fachteil.
+- **KNOWLEDGE_EXTRACTION.md** – Altprojekt-Wissen (read-only); alle
+  Fachteile (§1–§12) sind inzwischen portiert.
