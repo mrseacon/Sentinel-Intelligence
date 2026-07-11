@@ -24,6 +24,9 @@ dependencies = [
     # it is an optional dependency, lazy-imported in ai/llm_client.py
     # (graceful degradation, §8).
     "requests>=2.31",
+    # Required by FastAPI/Starlette to parse multipart/form-data bodies
+    # (POST /portfolio/upload, API_CONTRACT §2.12a).
+    "python-multipart>=0.0.9",
 ]
 
 [project.optional-dependencies]
