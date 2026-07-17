@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict
 
 from sentinel_core.constants import PAPER_TRADE_FEE
 from sentinel_core.data.loader import get_latest_prices
+from sentinel_core.errors import SentinelError
 from sentinel_core.paper.ledger import (
     EPSILON,
     PaperAccount,
@@ -42,7 +43,7 @@ class Quote(BaseModel):
 def quote(ticker: str, quantity: int, side: Side) -> Quote:
     """Preview a trade at the last available (delayed) price."""
     if quantity <= 0:
-        raise ValueError(f"Menge muss größer als 0 sein (angefragt: {quantity}).")
+        raise SentinelError(f"Menge muss größer als 0 sein (angefragt: {quantity}).")
 
     latest = get_latest_prices([ticker])[ticker]
     gross = quantity * latest.price
@@ -80,7 +81,7 @@ def execute(
         positions = positions_from_transactions(transactions)
         held = positions[ticker].quantity if ticker in positions else 0
         if quantity > held:
-            raise ValueError(
+            raise SentinelError(
                 f"Verkauf von {quantity} Stück {ticker} nicht möglich, "
                 f"nur {held} im Depot."
             )
@@ -91,7 +92,7 @@ def execute(
     if side == "BUY":
         cost = trade.gross_value + trade.fees
         if cost > cash + EPSILON:
-            raise ValueError(
+            raise SentinelError(
                 f"Kauf von {quantity} Stück {ticker} nicht möglich: "
                 f"Kosten {cost:.2f} € (inkl. {trade.fees:.2f} € Gebühr), "
                 f"verfügbares Cash {cash:.2f} €."
@@ -101,7 +102,7 @@ def execute(
     # resulting history would be rejected as inconsistent by every later
     # replay (no margin, ARCHITECTURE §4.1).
     elif cash + trade.cash_delta < -EPSILON:
-        raise ValueError(
+        raise SentinelError(
             f"Verkaufserlös deckt die Gebühr nicht: Erlös "
             f"{trade.gross_value:.2f} €, Gebühr {trade.fees:.2f} €, "
             f"verfügbares Cash {cash:.2f} €."

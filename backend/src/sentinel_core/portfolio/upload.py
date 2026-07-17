@@ -30,38 +30,50 @@ import io
 
 import pandas as pd
 
+from sentinel_core.data.loader import validate_ticker
+from sentinel_core.errors import SentinelError
+
 REQUIRED_COLUMNS = ("ticker", "weight")
 
 
-def parse_portfolio_csv(content: bytes | str) -> dict[str, float]:
+def parse_portfolio_csv(
+    content: bytes | str, max_positions: int | None = None
+) -> dict[str, float]:
     """Parse an uploaded CSV into a PortfolioIn-shaped weights dict.
 
     The result uses whatever positive scale the file contained (fractions,
     euros, share counts) — renormalization happens at the consuming
     entry points, like everywhere else in the project.
+
+    Security audit F1/F5: every ticker passes the outbound allowlist
+    (upload = format validation, and URL-safe symbols ARE format), and
+    `max_positions` caps the position count when the API layer passes
+    its limit.
     """
     text = _decode(content)
     if not text.strip():
-        raise ValueError("Die CSV-Datei ist leer.")
+        raise SentinelError("Die CSV-Datei ist leer.")
 
     delimiter, decimal = _detect_dialect(text)
     try:
         frame = pd.read_csv(io.StringIO(text), sep=delimiter, decimal=decimal)
     except pd.errors.EmptyDataError as exc:
-        raise ValueError("Die CSV-Datei ist leer.") from exc
+        raise SentinelError("Die CSV-Datei ist leer.") from exc
     except pd.errors.ParserError as exc:
-        raise ValueError(f"Die CSV-Datei konnte nicht gelesen werden: {exc}") from exc
+        raise SentinelError(
+            f"Die CSV-Datei konnte nicht gelesen werden: {exc}"
+        ) from exc
 
     # column detection by NAME after normalization (§10)
     frame.columns = [str(column).strip().lower() for column in frame.columns]
     missing = [c for c in REQUIRED_COLUMNS if c not in frame.columns]
     if missing:
-        raise ValueError(
+        raise SentinelError(
             f"Pflichtspalten fehlen in der CSV: {', '.join(missing)}. "
             f"Benötigt werden: {', '.join(REQUIRED_COLUMNS)}."
         )
     if frame.empty:
-        raise ValueError("Die CSV-Datei enthält keine Datenzeilen.")
+        raise SentinelError("Die CSV-Datei enthält keine Datenzeilen.")
 
     tickers = frame["ticker"].astype(str).str.strip().str.upper()
     # astype(str) turns real NaN cells into "NAN" — both are empty tickers
@@ -71,28 +83,35 @@ def parse_portfolio_csv(content: bytes | str) -> dict[str, float]:
         if not ticker or ticker == "NAN"
     ]
     if empty_rows:
-        raise ValueError(f"Leere Ticker in der CSV (Zeile {', '.join(empty_rows)}).")
+        raise SentinelError(f"Leere Ticker in der CSV (Zeile {', '.join(empty_rows)}).")
 
     try:
         weights = pd.to_numeric(frame["weight"], errors="raise")
     except (ValueError, TypeError) as exc:
-        raise ValueError(f"Ungültiger Gewichtswert in der CSV: {exc}") from exc
+        raise SentinelError(f"Ungültiger Gewichtswert in der CSV: {exc}") from exc
     if weights.isna().any():
         nan_rows = [str(i + 2) for i, is_nan in enumerate(weights.isna()) if is_nan]
-        raise ValueError(
+        raise SentinelError(
             f"Leere Gewichtswerte in der CSV (Zeile {', '.join(nan_rows)})."
         )
 
     negative = sorted(set(tickers[weights < 0]))
     if negative:
-        raise ValueError(
+        raise SentinelError(
             f"Negative Gewichte sind nicht erlaubt: {', '.join(negative)}."
         )
 
     # duplicates aggregate by sum — documented §10 behaviour
     aggregated = weights.groupby(tickers).sum()
     if aggregated.sum() <= 0:
-        raise ValueError("Die Summe der Gewichte muss größer als 0 sein.")
+        raise SentinelError("Die Summe der Gewichte muss größer als 0 sein.")
+    for ticker in aggregated.index:
+        validate_ticker(str(ticker))  # outbound allowlist (F5)
+    if max_positions is not None and len(aggregated) > max_positions:
+        raise SentinelError(
+            f"Die CSV enthält zu viele Positionen ({len(aggregated)}, "
+            f"maximal {max_positions})."
+        )
     return {str(ticker): float(weight) for ticker, weight in aggregated.items()}
 
 

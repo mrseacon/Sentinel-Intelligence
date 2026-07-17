@@ -9,9 +9,11 @@ at the API layer (contract §2.6/§3.4), not in sentinel_core.
 
 from __future__ import annotations
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 
+from sentinel_api.limits import MAX_PORTFOLIO_TICKERS
 from sentinel_api.schemas.common import Period
+from sentinel_core.data.loader import validate_ticker
 
 __all__ = ["OPTIMIZE_DISCLAIMER", "OptimizeIn", "OptimizeOut"]
 
@@ -23,8 +25,14 @@ OPTIMIZE_DISCLAIMER = (
 
 
 class OptimizeIn(BaseModel):
-    tickers: list[str]
+    tickers: list[str] = Field(max_length=MAX_PORTFOLIO_TICKERS)
     period: Period = "1y"
+
+    @field_validator("tickers")
+    @classmethod
+    def _normalize_and_validate(cls, tickers: list[str]) -> list[str]:
+        # security audit F5: allowlist before any Yahoo URL is built
+        return [validate_ticker(str(t).strip().upper()) for t in tickers]
 
 
 class OptimizeOut(BaseModel):

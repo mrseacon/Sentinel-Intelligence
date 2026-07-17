@@ -19,6 +19,7 @@ from pydantic import BaseModel, ConfigDict
 from sentinel_core.ai.guardrails import filter_llm_bullets
 from sentinel_core.ai.llm_client import generate, parse_market_context
 from sentinel_core.constants import SENTIMENT_SCORE_DELTA
+from sentinel_core.errors import SentinelError
 
 
 class AiAssessment(BaseModel):
@@ -37,11 +38,11 @@ class AiAssessment(BaseModel):
 def sentiment_delta(sentiment: int, confidence: float) -> int:
     """Score delta for one sentiment step, scaled by confidence (§7)."""
     if sentiment not in SENTIMENT_SCORE_DELTA:
-        raise ValueError(
+        raise SentinelError(
             f"Sentiment muss eine ganze Zahl in [-2, 2] sein ({sentiment})."
         )
     if not 0 <= confidence <= 1:
-        raise ValueError(f"Confidence muss zwischen 0 und 1 liegen ({confidence}).")
+        raise SentinelError(f"Confidence muss zwischen 0 und 1 liegen ({confidence}).")
     return int(round(SENTIMENT_SCORE_DELTA[sentiment] * confidence))
 
 

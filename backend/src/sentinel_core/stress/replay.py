@@ -35,6 +35,7 @@ from sentinel_core.education.explanations import (
     STRESS_LESSONS,
     stress_explanation,
 )
+from sentinel_core.errors import SentinelError
 from sentinel_core.risk.metrics import (
     daily_returns,
     max_drawdown,
@@ -83,7 +84,7 @@ class StressReplayResult(BaseModel):
 def get_preset(preset_id: str) -> ScenarioPreset:
     if preset_id not in STRESS_PRESETS:
         known = ", ".join(sorted(STRESS_PRESETS))
-        raise ValueError(
+        raise SentinelError(
             f"Unbekanntes Krisen-Szenario: '{preset_id}'. Verfügbar: {known}."
         )
     raw = STRESS_PRESETS[preset_id]
@@ -156,7 +157,7 @@ def replay(
 
     coverage = float(normalized[list(included)].sum()) if included else 0.0
     if coverage < STRESS_MIN_COVERAGE:
-        raise ValueError(
+        raise SentinelError(
             f"Szenario '{preset.title}' ist für dieses Depot nicht "
             f"aussagekräftig: Nur {coverage * 100:.0f} % des Depotgewichts "
             f"waren im Zeitraum bereits handelbar (Minimum: "

@@ -252,6 +252,22 @@ POST /simulation/monte-carlo         Portfolio+Horizont (1/5/10 J.) →
 Bewusst verschoben: Preis-Caching-Layer (erst wenn yfinance-Latenz nervt),
 WebSockets, mehrere Depots pro Nutzer, Benchmarks/Vergleichsindizes.
 
+**Deploy-Checkliste Sicherheit (aus dem API-Audit, VOR dem ersten
+öffentlichen Deployment abarbeiten):**
+
+- CORS: `localhost:3000` durch den echten Vercel-Origin ersetzen,
+  HTTPS erzwingen, `TrustedHostMiddleware` mit der echten Domain (F8).
+- Reverse-Proxy-Limits setzen: Request-Timeout und Body-Größe auch für
+  Chunked-Bodies ohne Content-Length (die App-Middleware prüft nur den
+  Header) sowie Concurrency-Limit für die yfinance-Endpunkte.
+- Rate-Limiting scharf stellen (F9): globale Middleware in
+  `sentinel_api/main.py` ist die vorgesehene Stelle — schützt primär
+  unsere Yahoo-Ausgangs-IP vor Sperrung durch Amplifikations-Requests.
+- Frontend-Hinweis (F6): Falls je Nutzer-Portfolios als CSV/Excel zum
+  Download angeboten werden, klassische CSV-Injection beachten
+  (Zellen mit führendem `=`/`+`/`-`/`@` escapen); backendseitig ist der
+  Upload durch die Ticker-Allowlist bereits geschützt.
+
 ---
 
 ## 9. Qualitätssicherung

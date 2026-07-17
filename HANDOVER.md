@@ -107,6 +107,16 @@ nur 60 req/h – CI-Status über das Workflow-Badge
    localStorage mit `schema_version` (§7), Depot-Ansicht →
    Ampel-Ansicht → Playwright-Smoke-Test (§9).
 
+**Sicherheits-Audit (erledigt):** Die API ist gegen die kritischen
+DoS-/Injection-Vektoren gehärtet — Schutz-Limits in
+`sentinel_api/limits.py` (50 Ticker, 10 000 Transaktionen, 2 MB Body,
+1 MB CSV streamend), Ticker-Allowlist an jedem Eingang UND im Loader
+vor jedem Yahoo-Request, yfinance-Timeout, `SentinelError`-Basisklasse
+(fremde `ValueError`s → generischer 500 statt Bibliotheks-Leak),
+einheitlicher 500er mit `INTERNAL_ERROR`. Offen als **Deploy-Checkliste
+in ARCHITECTURE §8**: CORS/HTTPS/TrustedHost, Proxy-Limits für
+Chunked-Bodies, Rate-Limiting, CSV-Injection-Hinweis fürs Frontend.
+
 Kleinkram, der offen ist: `tests/conftest.py` für die quer-importierten
 Test-Helfer; `daily_returns`-Test für ungleiche Historien.
 

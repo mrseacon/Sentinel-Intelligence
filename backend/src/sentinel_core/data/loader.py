@@ -9,11 +9,40 @@ of those documented failure modes — do not simplify them away.
 
 from __future__ import annotations
 
+import re
 from datetime import datetime
 
 import pandas as pd
 import yfinance as yf
 from pydantic import BaseModel, ConfigDict
+
+from sentinel_core.errors import SentinelError
+
+# Outbound-boundary guard (security audit F5): tickers flow into Yahoo
+# request URLs, so only real symbol characters may pass — never path or
+# query metacharacters. Covers all Yahoo notations we use ('BMW.DE',
+# 'BRK-B', '^GSPC', 'EURUSD=X').
+TICKER_PATTERN = re.compile(r"^[A-Z0-9.\-^=]{1,15}$")
+
+# A hanging Yahoo socket must not pin a threadpool thread forever
+# (security audit F3); yfinance forwards this to requests.
+_REQUEST_TIMEOUT_SECONDS = 15
+
+
+def validate_ticker(ticker: str) -> str:
+    """Validate a single ticker against the outbound allowlist.
+
+    Called by load_multiple_assets for EVERY outbound request (covers all
+    core paths incl. valuation-derived tickers) and by the API schemas
+    for early, field-located errors. Expects normalized (uppercase)
+    input — normalization is the caller's job, not silent repair here.
+    """
+    if not TICKER_PATTERN.match(ticker):
+        raise SentinelError(
+            f"Ungültiges Tickersymbol: '{ticker}'. Erlaubt sind 1-15 "
+            "Zeichen aus A-Z, 0-9, '.', '-', '^' und '='."
+        )
+    return ticker
 
 
 def load_multiple_assets(
@@ -37,23 +66,36 @@ def load_multiple_assets(
             the legacy KeyError in KNOWLEDGE_EXTRACTION §1).
     """
     if not tickers:
-        raise ValueError(
+        raise SentinelError(
             "Keine Ticker angegeben: mindestens ein Tickersymbol wird benötigt."
         )
+    for ticker in tickers:
+        validate_ticker(ticker)
 
     # auto_adjust=False is deliberate: newer yfinance versions default to
     # auto_adjust=True, which removes the "Adj Close" column entirely.
     if start or end:
         window = f"{start} bis {end}"
         data = yf.download(
-            tickers, start=start, end=end, auto_adjust=False, progress=False
+            tickers,
+            start=start,
+            end=end,
+            auto_adjust=False,
+            progress=False,
+            timeout=_REQUEST_TIMEOUT_SECONDS,
         )
     else:
         window = period
-        data = yf.download(tickers, period=period, auto_adjust=False, progress=False)
+        data = yf.download(
+            tickers,
+            period=period,
+            auto_adjust=False,
+            progress=False,
+            timeout=_REQUEST_TIMEOUT_SECONDS,
+        )
 
     if data is None or data.empty:
-        raise ValueError(
+        raise SentinelError(
             f"Keine Kursdaten erhalten für {', '.join(tickers)} "
             f"(Zeitraum: {window})."
         )
@@ -64,7 +106,7 @@ def load_multiple_assets(
     # back as silent all-NaN columns. Reject them by name instead.
     missing = [t for t in tickers if t not in prices.columns or prices[t].isna().all()]
     if missing:
-        raise ValueError(
+        raise SentinelError(
             "Keine Kursdaten für Ticker: "
             + ", ".join(missing)
             + ". Bitte Schreibweise prüfen (Yahoo-Notation, z.B. 'BMW.DE')."
@@ -106,7 +148,7 @@ def get_latest_prices(tickers: list[str], period: str = "5d") -> dict[str, Lates
         # load_multiple_assets already rejects all-NaN tickers by name;
         # this guard is defensive only.
         if series.empty:
-            raise ValueError(f"Keine Kursdaten für Ticker: {ticker}.")
+            raise SentinelError(f"Keine Kursdaten für Ticker: {ticker}.")
         latest[ticker] = LatestPrice(
             price=float(series.iloc[-1]),
             asof=series.index[-1].to_pydatetime(),
@@ -132,7 +174,7 @@ def _extract_prices(data: pd.DataFrame, tickers: list[str]) -> pd.DataFrame:
             prices = data[field]
             break
     else:
-        raise ValueError(
+        raise SentinelError(
             f"Kursdaten für {', '.join(tickers)} enthalten weder eine "
             "'Adj Close'- noch eine 'Close'-Spalte."
         )

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import pandas as pd
 
+from sentinel_core.errors import SentinelError
 from sentinel_core.risk.metrics import _aligned_weights
 
 
@@ -24,7 +25,7 @@ def risk_contribution(weights: dict[str, float], returns: pd.DataFrame) -> pd.Se
     marginal = covariance @ aligned
     portfolio_variance = float(aligned @ marginal)
     if portfolio_variance == 0:
-        raise ValueError(
+        raise SentinelError(
             "Portfolio-Varianz ist 0 – Risikobeiträge sind nicht definiert."
         )
     return aligned * marginal / portfolio_variance

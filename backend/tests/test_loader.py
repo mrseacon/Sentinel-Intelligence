@@ -32,10 +32,13 @@ def flat_frame(fields: list[str], dates: pd.DatetimeIndex = DATES) -> pd.DataFra
 
 
 def patch_download(monkeypatch: pytest.MonkeyPatch, frame: pd.DataFrame) -> None:
-    def fake_download(tickers, period="1y", auto_adjust=None, progress=None):
-        # Regression guard: without auto_adjust=False newer yfinance
-        # versions drop "Adj Close" entirely (KNOWLEDGE_EXTRACTION §1).
+    def fake_download(tickers, period="1y", auto_adjust=None, progress=None, **kwargs):
+        # Regression guards: without auto_adjust=False newer yfinance
+        # versions drop "Adj Close" entirely (KNOWLEDGE_EXTRACTION §1),
+        # and without a timeout a hanging Yahoo socket pins a threadpool
+        # thread forever (security audit F3).
         assert auto_adjust is False
+        assert kwargs.get("timeout") == loader._REQUEST_TIMEOUT_SECONDS
         return frame
 
     monkeypatch.setattr(loader.yf, "download", fake_download)

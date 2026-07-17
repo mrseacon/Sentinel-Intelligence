@@ -20,6 +20,7 @@ import numpy as np
 import pandas as pd
 
 from sentinel_core.constants import TRADING_DAYS
+from sentinel_core.errors import SentinelError
 
 
 def normalize_weights(weights: dict[str, float]) -> pd.Series:
@@ -30,15 +31,15 @@ def normalize_weights(weights: dict[str, float]) -> pd.Series:
     """
     series = pd.Series(weights, dtype=float)
     if series.empty:
-        raise ValueError("Keine Gewichte angegeben: das Portfolio ist leer.")
+        raise SentinelError("Keine Gewichte angegeben: das Portfolio ist leer.")
     negative = series[series < 0]
     if not negative.empty:
-        raise ValueError(
+        raise SentinelError(
             f"Negative Gewichte sind nicht erlaubt: {', '.join(negative.index)}."
         )
     total = series.sum()
     if total <= 0:
-        raise ValueError("Die Summe der Gewichte muss größer als 0 sein.")
+        raise SentinelError("Die Summe der Gewichte muss größer als 0 sein.")
     return series / total
 
 
@@ -68,7 +69,7 @@ def max_drawdown(returns: pd.Series) -> float:
     VaR/CVaR — downstream consumers use abs().
     """
     if returns.empty:
-        raise ValueError("Keine Renditedaten für die Drawdown-Berechnung.")
+        raise SentinelError("Keine Renditedaten für die Drawdown-Berechnung.")
     cumulative = (1 + returns).cumprod()
     running_max = cumulative.cummax()
     drawdown = cumulative / running_max - 1
@@ -108,7 +109,7 @@ def diversification_ratio(weights: dict[str, float], returns: pd.DataFrame) -> f
     weighted_avg_vol = float((aligned * single_vols).sum())
     portfolio_vol = float(np.sqrt(aligned @ returns.cov() @ aligned))
     if portfolio_vol == 0:
-        raise ValueError(
+        raise SentinelError(
             "Portfolio-Volatilität ist 0 – Diversification Ratio ist "
             "nicht definiert."
         )
@@ -124,5 +125,5 @@ def _aligned_weights(weights: dict[str, float], returns: pd.DataFrame) -> pd.Ser
     normalized = normalize_weights(weights)
     missing = [t for t in normalized.index if t not in returns.columns]
     if missing:
-        raise ValueError(f"Keine Renditedaten für Ticker: {', '.join(missing)}.")
+        raise SentinelError(f"Keine Renditedaten für Ticker: {', '.join(missing)}.")
     return normalized.reindex(returns.columns).fillna(0.0)

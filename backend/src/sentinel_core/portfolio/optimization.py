@@ -20,6 +20,7 @@ from pydantic import BaseModel, ConfigDict
 from scipy.optimize import minimize
 
 from sentinel_core.constants import OPTIMIZER_MAX_WEIGHT, TRADING_DAYS
+from sentinel_core.errors import SentinelError
 from sentinel_core.risk.metrics import portfolio_returns, portfolio_volatility
 
 # Penalty for degenerate weights with zero portfolio volatility — SLSQP
@@ -46,12 +47,12 @@ def optimize_max_sharpe(returns: pd.DataFrame) -> OptimizationResult:
     """
     tickers = [str(c) for c in returns.columns]
     if len(tickers) < 2:
-        raise ValueError(
+        raise SentinelError(
             "Die Optimierung benötigt mindestens 2 Assets – für ein "
             "einzelnes Asset gibt es nichts zu gewichten."
         )
     if len(returns) < 2:
-        raise ValueError(
+        raise SentinelError(
             "Zu wenige Datenpunkte für die Optimierung: mindestens 2 "
             "Renditebeobachtungen werden benötigt."
         )
@@ -59,7 +60,7 @@ def optimize_max_sharpe(returns: pd.DataFrame) -> OptimizationResult:
     # would surface as a cryptic solver abort — reject them up front.
     if returns.isna().any().any():
         gapped = [str(c) for c in returns.columns[returns.isna().any()]]
-        raise ValueError(
+        raise SentinelError(
             f"Die Renditedaten enthalten Lücken (NaN) in: {', '.join(gapped)}. "
             "Vor der Optimierung auf die gemeinsame Historie zuschneiden "
             "(daily_returns)."
@@ -92,7 +93,7 @@ def optimize_max_sharpe(returns: pd.DataFrame) -> OptimizationResult:
         constraints=constraints,
     )
     if not result.success:
-        raise ValueError(
+        raise SentinelError(
             "Die Portfolio-Optimierung ist nicht konvergiert "
             f"(Solver-Meldung: {result.message}). Prüfe die Eingabedaten, "
             "z.B. ob die Kurshistorie lang genug ist."
@@ -112,7 +113,7 @@ def optimize_max_sharpe(returns: pd.DataFrame) -> OptimizationResult:
     # Sharpe in the quintillions. Tolerance because float rounding keeps
     # the variance of constant series slightly above exact zero.
     if volatility < 1e-12:
-        raise ValueError(
+        raise SentinelError(
             "Die Renditedaten sind degeneriert (Portfolio-Volatilität 0, "
             "z.B. konstante Kurse) – eine Sharpe-Optimierung ist damit "
             "nicht definiert."

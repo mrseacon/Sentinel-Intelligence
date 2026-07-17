@@ -18,6 +18,7 @@ from uuid import uuid4
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
 from sentinel_core.constants import PAPER_START_CASH
+from sentinel_core.errors import SentinelError
 
 Side = Literal["BUY", "SELL"]
 
@@ -100,7 +101,7 @@ def positions_from_transactions(
             quantities[tx.ticker] = new_qty
         else:
             if tx.quantity > held:
-                raise ValueError(
+                raise SentinelError(
                     f"Verkauf von {tx.quantity} Stück {tx.ticker} nicht "
                     f"möglich, nur {held} im Depot."
                 )
@@ -131,7 +132,7 @@ def cash_from_transactions(start_cash: float, transactions: list[Transaction]) -
         else:
             cash += tx.quantity * tx.price - tx.fees
         if cash < -EPSILON:
-            raise ValueError(
+            raise SentinelError(
                 f"Inkonsistente Transaktionshistorie: Cash wird durch "
                 f"{tx.side} {tx.quantity} {tx.ticker} negativ "
                 f"({cash:.2f} €)."

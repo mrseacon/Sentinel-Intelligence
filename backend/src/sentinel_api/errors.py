@@ -19,6 +19,8 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from sentinel_core.errors import SentinelError
+
 # Ordered: more specific fragments FIRST (e.g. "Verkaufserlös deckt"
 # must win over "Verkauf von"). Matching is case-sensitive substring —
 # some contract entries sit mid-sentence, and case sensitivity keeps
@@ -49,6 +51,8 @@ ERROR_CODE_REGISTRY: tuple[tuple[str, str], ...] = (
     ("Leere Ticker", "UPLOAD_INVALID"),
     ("Leere Gewichtswerte", "UPLOAD_INVALID"),
     ("Ungültiger Gewichtswert", "UPLOAD_INVALID"),
+    ("Nur CSV-Dateien", "UPLOAD_INVALID"),
+    ("Ungültiges Tickersymbol", "TICKER_INVALID"),
     ("Konfidenzniveau", "DOMAIN_ERROR"),
 )
 
@@ -78,11 +82,14 @@ def error_code_for(message: str) -> str:
 
 
 def register_error_handlers(app: FastAPI) -> None:
-    """Attach the three global handlers. Called once in main.py; every
+    """Attach the four global handlers. Called once in main.py; every
     future router gets the convention for free."""
 
-    @app.exception_handler(ValueError)
-    async def domain_error(request: Request, exc: ValueError) -> JSONResponse:
+    @app.exception_handler(SentinelError)
+    async def domain_error(request: Request, exc: SentinelError) -> JSONResponse:
+        # ONLY our deliberate domain errors reach users as 422 (audit F7).
+        # Foreign ValueErrors (pandas/numpy internals) fall through to the
+        # generic 500 below instead of leaking library text.
         message = str(exc)
         return JSONResponse(
             status_code=422,
@@ -95,12 +102,39 @@ def register_error_handlers(app: FastAPI) -> None:
     ) -> JSONResponse:
         first = exc.errors()[0]
         field = ".".join(str(part) for part in first["loc"] if part != "body")
-        reason = _PYDANTIC_REASONS.get(first["type"], "ungültiger Wert")
+        error_type = first["type"]
+        if error_type == "value_error":
+            # Custom validators raise German SentinelError texts; pydantic
+            # wraps them as "Value error, <msg>" — unwrap the original.
+            reason = str(first["msg"]).removeprefix("Value error, ").rstrip(".")
+        elif error_type in ("too_long", "too_short"):
+            limit = first.get("ctx", {}).get(
+                "max_length", first.get("ctx", {}).get("min_length", "?")
+            )
+            reason = (
+                f"zu viele Einträge (maximal {limit})"
+                if error_type == "too_long"
+                else f"zu wenige Einträge (mindestens {limit})"
+            )
+        else:
+            reason = _PYDANTIC_REASONS.get(error_type, "ungültiger Wert")
         return JSONResponse(
             status_code=422,
             content={
                 "detail": f"Ungültige Eingabe im Feld '{field}': {reason}.",
                 "code": "VALIDATION_ERROR",
+            },
+        )
+
+    @app.exception_handler(Exception)
+    async def internal_error(request: Request, exc: Exception) -> JSONResponse:
+        # Uniform {detail, code} even for unexpected failures; the real
+        # traceback goes to the server log only — never to the client.
+        return JSONResponse(
+            status_code=500,
+            content={
+                "detail": ("Interner Serverfehler. Bitte später erneut versuchen."),
+                "code": "INTERNAL_ERROR",
             },
         )
 

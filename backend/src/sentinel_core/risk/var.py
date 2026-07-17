@@ -14,14 +14,15 @@ import pandas as pd
 from scipy.stats import norm
 
 from sentinel_core.constants import VAR_CONFIDENCE
+from sentinel_core.errors import SentinelError
 
 
 def _validate(returns: pd.Series, confidence: float) -> None:
     """Shared input checks for all VaR/CVaR variants."""
     if returns.empty:
-        raise ValueError("Keine Renditedaten für die VaR/CVaR-Berechnung.")
+        raise SentinelError("Keine Renditedaten für die VaR/CVaR-Berechnung.")
     if not 0 < confidence < 1:
-        raise ValueError(
+        raise SentinelError(
             f"Konfidenzniveau muss zwischen 0 und 1 liegen ({confidence})."
         )
 

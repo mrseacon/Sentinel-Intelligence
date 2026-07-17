@@ -17,6 +17,8 @@ import os
 
 from pydantic import BaseModel, ConfigDict
 
+from sentinel_core.errors import SentinelError
+
 # Consistency over creativity (§8).
 _TEMPERATURE = 0.2
 _SYSTEM_ROLE = "You are a risk analyst for a German retail investing education app."
@@ -65,7 +67,7 @@ def generate(prompt: str) -> str:
     )
     content = response.choices[0].message.content
     if not content:
-        raise ValueError("Leere LLM-Antwort.")
+        raise SentinelError("Leere LLM-Antwort.")
     return content
 
 
@@ -80,14 +82,14 @@ def parse_market_context(raw: str) -> MarketContext:
         confidence = float(data["confidence"])
         bullets = [str(b) for b in data["bullets"]]
     except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
-        raise ValueError(f"LLM-Antwort nicht parsebar: {exc}") from exc
+        raise SentinelError(f"LLM-Antwort nicht parsebar: {exc}") from exc
 
     if not -2 <= sentiment <= 2:
-        raise ValueError(f"Sentiment außerhalb von [-2, 2]: {sentiment}.")
+        raise SentinelError(f"Sentiment außerhalb von [-2, 2]: {sentiment}.")
     if not 0 <= confidence <= 1:
-        raise ValueError(f"Confidence außerhalb von [0, 1]: {confidence}.")
+        raise SentinelError(f"Confidence außerhalb von [0, 1]: {confidence}.")
     if len(bullets) < 3:
-        raise ValueError(
+        raise SentinelError(
             f"Zu wenige Bullets in der LLM-Antwort ({len(bullets)}), "
             "mindestens 3 erwartet."
         )

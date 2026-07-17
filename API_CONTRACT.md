@@ -24,9 +24,10 @@ class ErrorResponse(BaseModel):
 | Status | Wann | code |
 |---|---|---|
 | 422 | Request-Schema verletzt (pydantic) | `VALIDATION_ERROR` |
-| 422 | Fachlicher `ValueError` aus sentinel_core | spezifischer Code, s.u. |
+| 422 | Fachlicher `SentinelError` aus sentinel_core | spezifischer Code, s.u. |
+| 413 | Request-Body über der globalen Grenze (s. §1.5 Limits) | `PAYLOAD_TOO_LARGE` |
 | 503 | Kursdatenquelle nicht erreichbar (Netzwerk/yfinance) | `UPSTREAM_UNAVAILABLE` |
-| 500 | Unerwarteter Fehler | `INTERNAL_ERROR` (detail generisch, keine Interna) |
+| 500 | Unerwarteter Fehler (inkl. fremder Bibliotheks-Exceptions) | `INTERNAL_ERROR` (detail generisch, keine Interna) |
 
 **Mapping-Konvention für interne `ValueError`s:** sentinel_core wirft
 durchgängig deutsche `ValueError`s – die `detail`-Texte werden
@@ -49,14 +50,17 @@ der API-Schicht:
 | "Zu wenig Kurshistorie" | `SIM_INSUFFICIENT_HISTORY` |
 | "…nicht konvergiert" | `OPTIMIZER_NO_CONVERGENCE` |
 | "…enthalten Lücken" / "degeneriert" / "mindestens 2 Assets" / "Zu wenige Datenpunkte" | `OPTIMIZER_INVALID_INPUT` |
-| "Die CSV" / "Pflichtspalten fehlen" / "Leere Ticker" / "Leere Gewichtswerte" / "Ungültiger Gewichtswert" | `UPLOAD_INVALID` |
+| "Die CSV" / "Pflichtspalten fehlen" / "Leere Ticker" / "Leere Gewichtswerte" / "Ungültiger Gewichtswert" / "Nur CSV-Dateien" | `UPLOAD_INVALID` |
+| "Ungültiges Tickersymbol" | `TICKER_INVALID` |
 | alles andere | `DOMAIN_ERROR` (Fallback) |
 
-Präfix-Matching ist eine bewusste v1-Brücke. **Ziellösung (kleiner
-Refactor, sobald es zwickt):** eine `SentinelError(ValueError)`-Basisklasse
-in core mit `code`-Attribut; die bestehenden Message-Tests bleiben dabei
-gültig. Bis dahin gilt: Wer eine core-Fehlermeldung umformuliert, prüft
-die Registry.
+**Stand nach dem Sicherheits-Audit:** Die `SentinelError(ValueError)`-
+Basisklasse ist umgesetzt (`sentinel_core/errors.py`); der 422-Handler
+fängt NUR noch `SentinelError` – fremde `ValueError`s aus pandas/numpy
+fallen auf den generischen 500 statt Bibliothekstext zu leaken. Die
+Codes kommen weiterhin aus dieser Registry (Message-Fragment → Code);
+wer eine core-Fehlermeldung umformuliert, prüft die Registry. Optionale
+spätere Ausbaustufe: `code`-Attribut direkt an `SentinelError`.
 
 pydantic-`ValidationError`s (englisch) werden NICHT durchgereicht:
 die API-Schicht übersetzt sie zu einem deutschen `detail`
@@ -134,6 +138,17 @@ class TransactionIO(BaseModel):             # 1:1 core ledger.Transaction;
 Ausnahme GET-Endpunkte: `tickers` als komma-separierter Query-Parameter
 (`?tickers=AAPL,MSFT`), serverseitig gesplittet – REST-üblich, einzige
 Abweichung vom `PortfolioIn`-Muster (GET hat keinen Body).
+
+**Schutz-Limits (Sicherheits-Audit F1/F2/F5, `sentinel_api/limits.py`):**
+
+- max. **50 Ticker** pro Portfolio-/Optimizer-Request, max.
+  **10 000 Transaktionen** pro paper-Request, **2 MB** Body global
+  (413), **1 MB** CSV-Upload (streamend abgebrochen, 422).
+- Alle Ticker-Eingaben werden normalisiert (upper/strip; Kollisionen
+  wie "aapl"+"AAPL" werden summiert, §10-Semantik) und gegen die
+  Outbound-Allowlist `^[A-Z0-9.\-^=]{1,15}$` validiert – zusätzlich
+  validiert der Loader jeden Ticker unmittelbar vor dem Yahoo-Request
+  (Defense in Depth, deckt auch abgeleitete Ticker aus Transaktionen).
 
 ---
 

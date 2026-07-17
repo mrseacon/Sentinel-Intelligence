@@ -34,6 +34,7 @@ from sentinel_core.education.explanations import (
     SIM_LESSON,
     simulation_explanation,
 )
+from sentinel_core.errors import SentinelError
 from sentinel_core.risk.metrics import portfolio_returns
 
 # History window for the internally loaded price basis (~5 trading years).
@@ -86,7 +87,9 @@ def simulate(
     """
     if horizon_years not in SIM_HORIZONS_YEARS:
         allowed = ", ".join(str(y) for y in SIM_HORIZONS_YEARS)
-        raise ValueError(f"Zeithorizont muss {allowed} Jahre sein ({horizon_years}).")
+        raise SentinelError(
+            f"Zeithorizont muss {allowed} Jahre sein ({horizon_years})."
+        )
 
     if returns is None:
         prices = load_multiple_assets(list(weights), period=_HISTORY_PERIOD)
@@ -98,7 +101,7 @@ def simulate(
     clean, limiting_ticker = _common_history(returns)
     history_days = len(clean)
     if history_days < SIM_MIN_HISTORY_DAYS:
-        raise ValueError(
+        raise SentinelError(
             f"Zu wenig Kurshistorie für eine aussagekräftige Simulation: "
             f"{history_days} gemeinsame Handelstage, mindestens "
             f"{SIM_MIN_HISTORY_DAYS} erforderlich"
@@ -172,7 +175,7 @@ def _common_history(returns: pd.DataFrame) -> tuple[pd.DataFrame, str | None]:
     for column in returns.columns:
         first_valid = returns[column].first_valid_index()
         if first_valid is None:
-            raise ValueError(f"Keine Renditedaten für Ticker: {column}.")
+            raise SentinelError(f"Keine Renditedaten für Ticker: {column}.")
         first_dates[column] = first_valid
 
     latest_start = max(first_dates.values())

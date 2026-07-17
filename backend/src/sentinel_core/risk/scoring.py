@@ -32,6 +32,7 @@ from sentinel_core.constants import (
     SCORE_WEIGHT_VAR,
     SCORE_WEIGHT_VOLATILITY,
 )
+from sentinel_core.errors import SentinelError
 from sentinel_core.risk.metrics import (
     herfindahl_index,
     max_drawdown,
@@ -87,7 +88,7 @@ def risk_score(
     convention and are folded with abs(); volatility must be >= 0.
     """
     if volatility < 0:
-        raise ValueError(f"Volatilität darf nicht negativ sein ({volatility}).")
+        raise SentinelError(f"Volatilität darf nicht negativ sein ({volatility}).")
 
     components = {
         "volatility": _clamp01(volatility / SCORE_ANCHOR_VOLATILITY),
