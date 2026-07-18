@@ -105,8 +105,13 @@ sentinel/
 ```
 
 Frontend-Leitplanken (wegen Frontend-Einstieg): App Router, Tailwind,
-**keine** zusätzliche State-Library (React-State + localStorage reicht v1),
-Charts mit Recharts, alle API-Zugriffe nur über `lib/api.ts`.
+**kein Client-State-Framework** (Redux/Zustand/Jotai o.ä. — React-State
++ Context + localStorage reicht v1). Dokumentierte Ausnahme: **TanStack
+Query** als Server-Cache-Library (Deduplizierung/Caching der langsamen
+yfinance-Endpunkte über mehrere Views; Begründung und Konventionen in
+FRONTEND_DECISIONS.md §1 — Server-Cache ist kein App-State). Charts mit
+Recharts, alle API-Zugriffe nur über `lib/api.ts`. Alle weiteren
+Frontend-Grundsatzentscheidungen: FRONTEND_DECISIONS.md.
 
 ---
 

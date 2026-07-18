@@ -102,10 +102,12 @@ nur 60 req/h – CI-Status über das Workflow-Badge
    Nebenaufgaben aus dem Vertrag: Fehler-Registry, deutsche Übersetzung
    der pydantic-Validierungstexte, Stress-Cache-Pfad env-konfigurierbar,
    CORS für localhost:3000.
-2. **Frontend-Grundgerüst:** `lib/api.ts` (einziger Ort für
-   Backend-Calls) + `lib/types.ts` (Spiegel der Vertrags-Schemas),
-   localStorage mit `schema_version` (§7), Depot-Ansicht →
-   Ampel-Ansicht → Playwright-Smoke-Test (§9).
+2. **Frontend** exakt nach **FRONTEND_DECISIONS.md** (alle 8
+   Architektur-Fragen entschieden: TanStack Query, Depot-Hook +
+   Context, ErrorNotice/Skeleton-Muster, abgeleitetes Portfolio,
+   manuelle types.ts, Recharts-Fächer-Rezept, Seitenstruktur,
+   UI-Limits) — dort steht auch die empfohlene Bau-Reihenfolge in
+   7 Schritten. Nichts neu entscheiden, nur umsetzen.
 
 **Sicherheits-Audit (erledigt):** Die API ist gegen die kritischen
 DoS-/Injection-Vektoren gehärtet — Schutz-Limits in
@@ -125,7 +127,8 @@ Test-Helfer; `daily_returns`-Test für ungleiche Historien.
 - **CLAUDE.md** – Arbeitsregeln (harte Regeln, Commits, Sprache).
 - **ARCHITECTURE.md** – Grundsatzentscheidungen; §10 offene Kalibrierungen.
 - **API_CONTRACT.md** – der komplette API-Vertrag (nächste Phase).
-- **STRESS_TEST_DECISIONS.md** / **MONTE_CARLO_DECISIONS.md** –
-  Feature-Entscheidungen inkl. Trade-offs.
+- **STRESS_TEST_DECISIONS.md** / **MONTE_CARLO_DECISIONS.md** /
+  **FRONTEND_DECISIONS.md** – Feature-/Schicht-Entscheidungen inkl.
+  Trade-offs.
 - **KNOWLEDGE_EXTRACTION.md** – Altprojekt-Wissen (read-only); alle
   Fachteile (§1–§12) sind portiert.
