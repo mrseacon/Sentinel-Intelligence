@@ -34,7 +34,7 @@ portiert – es gibt keinen offenen Fachteil mehr.**
 | `portfolio/optimization.py` | Max-Sharpe (SLSQP, long-only, 0.6-Cap) |
 | `portfolio/upload.py` | CSV-Validierung (§10: Duplikate summiert, deutsche Excel-Dialekte) |
 | `ai/news.py` | Google News RSS, key-los, wirft nie |
-| `ai/llm_client.py` | LLM-Kaskade: Key/Paket/Parsing-Fehler → Aufrufer fällt zurück |
+| `ai/llm_client.py` | LLM-Kaskade (Anthropic Claude Haiku, Tool-Use, `LLMProvider`-Abstraktion): Flag/Key/Paket/Parsing-Fehler → Aufrufer fällt zurück |
 | `ai/risk_adjustment.py` | Asymmetrische Sentiment-Adjustierung; `assess_market` wirft NIE |
 | `ai/guardrails.py` | Runtime-Filter für LLM-Text (Prinzip 3) |
 
@@ -84,7 +84,12 @@ dort nichts neu entscheiden.
    Präfix-Registry in API_CONTRACT.md §1.1. **Wer eine core-Meldung
    umformuliert, prüft die Registry.** `ai/`-Einstiegspunkte
    (`assess_market`, `fetch_headlines`) werfen NIE – sie degradieren
-   neutral (Prinzip 2).
+   neutral (Prinzip 2). **KI ist zudem standardmäßig AUS**
+   (`SENTINEL_AI_ENABLED`, Default false, geprüft vor dem Key-Check –
+   Kostenschranke fürs öffentliche Repo; bewusst per Env aktivieren,
+   s. `backend/.env.example`). Der Nutzer sieht bei jeder
+   Nicht-Verfügbarkeit denselben freundlichen Text; die technische
+   Ursache steht nur in `AiAssessment.unavailable_reason` (Debugging).
 
 **Umgebungs-Stolperfallen dieser Maschine:** (a) Ein Hintergrund-Tool
 setzt Hidden-Flags auf Dotfile-Bäume; Python 3.13 ignoriert dann die

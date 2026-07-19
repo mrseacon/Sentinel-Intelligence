@@ -1,17 +1,17 @@
-"""AI layer tests: cascade fallback for every failure mode (mocked LLM,
-no real API calls), asymmetric adjustment with known inputs, news
-pipeline rules from §9, and the principle-3 guardrail regression test
-with simulated LLM answers containing action verbs.
+"""AI layer tests: cascade fallback for every failure mode (mocked
+provider, no real API calls), the SENTINEL_AI_ENABLED cost guard,
+asymmetric adjustment with known inputs, news pipeline rules from §9,
+and the principle-3 guardrail regression test with simulated LLM
+answers containing action verbs.
 """
 
-import json
 from types import SimpleNamespace
 
 import pytest
 
-from sentinel_core.ai import news, risk_adjustment
+from sentinel_core.ai import news
 from sentinel_core.ai.guardrails import ACTION_VERB_STEMS, filter_llm_bullets
-from sentinel_core.ai.llm_client import parse_market_context
+from sentinel_core.ai.llm_client import validate_market_context
 from sentinel_core.ai.risk_adjustment import (
     adjusted_score,
     assess_market,
@@ -54,21 +54,23 @@ def test_adjusted_score_is_clamped_to_0_100():
     assert adjusted_score(50.0, 4) == 54.0
 
 
-# --- strict parsing (§8) --------------------------------------------------------
+# --- strict validation (§8) -----------------------------------------------------
 
 
-def valid_answer(**overrides) -> str:
+def valid_payload(**overrides) -> dict:
     data = {
         "sentiment": -1,
         "confidence": 0.8,
         "bullets": ["Marktbreite nimmt ab", "Zinsdruck bleibt", "Vola erhöht"],
     }
     data.update(overrides)
-    return json.dumps(data)
+    return data
 
 
-def test_parse_accepts_valid_answer_and_cuts_bullets_to_five():
-    context = parse_market_context(valid_answer(bullets=[f"b{i}" for i in range(7)]))
+def test_validation_accepts_valid_payload_and_cuts_bullets_to_five():
+    context = validate_market_context(
+        valid_payload(bullets=[f"b{i}" for i in range(7)])
+    )
 
     assert context.sentiment == -1
     assert context.confidence == 0.8
@@ -76,21 +78,44 @@ def test_parse_accepts_valid_answer_and_cuts_bullets_to_five():
 
 
 @pytest.mark.parametrize(
-    "raw",
+    "payload",
     [
-        "keine json antwort",
-        json.dumps({"sentiment": -1}),  # missing keys
-        valid_answer(sentiment=5),
-        valid_answer(confidence=1.5),
-        valid_answer(bullets=["nur", "zwei"]),
+        {"sentiment": -1},  # missing keys
+        valid_payload(sentiment=5),
+        valid_payload(sentiment="unklar"),
+        valid_payload(confidence=1.5),
+        valid_payload(bullets=["nur", "zwei"]),
     ],
 )
-def test_parse_rejects_broken_answers_as_valueerror(raw):
+def test_validation_rejects_broken_payloads_as_valueerror(payload):
+    # Tool use guarantees a dict shape, NOT correct values — the model
+    # stays untrusted and every field is re-checked (§8).
     with pytest.raises(ValueError):
-        parse_market_context(raw)
+        validate_market_context(payload)
 
 
-# --- cascade fallback (§8): every failure yields a neutral result ---------------
+# --- cascade fallback (§8) + SENTINEL_AI_ENABLED cost guard ---------------------
+
+
+class FakeProvider:
+    """Test double for the LLMProvider seam: counts calls, returns a
+    fixed payload or raises — never talks to any network."""
+
+    def __init__(self, payload: dict | None = None, exc: Exception | None = None):
+        self.payload = payload
+        self.exc = exc
+        self.calls = 0
+
+    def generate(self, prompt: str) -> dict:
+        self.calls += 1
+        if self.exc is not None:
+            raise self.exc
+        assert self.payload is not None
+        return self.payload
+
+
+def enable_ai(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("SENTINEL_AI_ENABLED", "true")
 
 
 def assert_neutral(result):
@@ -99,44 +124,69 @@ def assert_neutral(result):
     assert result.sentiment == 0
     assert result.bullets == []
     assert "nicht verfügbar" in result.rationale
+    assert result.unavailable_reason  # technical cause always recorded
 
 
-def test_missing_api_key_degrades_to_neutral(monkeypatch):
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+def test_flag_off_blocks_before_any_provider_call(monkeypatch):
+    # Cost guard: even with a key in the environment AND a working
+    # provider at hand, nothing may be called without explicit opt-in.
+    monkeypatch.delenv("SENTINEL_AI_ENABLED", raising=False)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test-vorhanden")
+    provider = FakeProvider(valid_payload())
 
-    result = assess_market(["Some headline"])
+    result = assess_market(["Some headline"], provider=provider)
 
     assert_neutral(result)
-    assert "OPENAI_API_KEY" in result.rationale
+    assert provider.calls == 0  # no call left the cascade
+    assert "SENTINEL_AI_ENABLED" in result.unavailable_reason
+    assert "ANTHROPIC" not in result.unavailable_reason
+
+
+def test_flag_off_and_key_missing_show_same_user_text(monkeypatch):
+    # Users see ONE friendly text for every unavailability cause; the
+    # technical reasons stay distinguishable for debugging.
+    monkeypatch.delenv("SENTINEL_AI_ENABLED", raising=False)
+    flag_off = assess_market(["h"], provider=FakeProvider(valid_payload()))
+
+    enable_ai(monkeypatch)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    key_missing = assess_market(["h"])  # real provider path, fails at key check
+
+    assert flag_off.rationale == key_missing.rationale
+    assert flag_off.unavailable_reason != key_missing.unavailable_reason
+    assert "ANTHROPIC_API_KEY" in key_missing.unavailable_reason
 
 
 def test_timeout_degrades_to_neutral(monkeypatch):
-    def timing_out(prompt):
-        raise TimeoutError("Zeitüberschreitung nach 30s")
+    enable_ai(monkeypatch)
+    provider = FakeProvider(exc=TimeoutError("Zeitüberschreitung nach 30s"))
 
-    monkeypatch.setattr(risk_adjustment, "generate", timing_out)
+    result = assess_market(["Some headline"], provider=provider)
 
-    assert_neutral(assess_market(["Some headline"]))
+    assert_neutral(result)
+    assert "Zeitüberschreitung" in result.unavailable_reason
 
 
-def test_unparseable_answer_degrades_to_neutral(monkeypatch):
-    monkeypatch.setattr(risk_adjustment, "generate", lambda prompt: "kaputt {")
+def test_broken_payload_degrades_to_neutral(monkeypatch):
+    enable_ai(monkeypatch)
+    provider = FakeProvider(payload={"kaputt": 1})
 
-    assert_neutral(assess_market(["Some headline"]))
+    assert_neutral(assess_market(["Some headline"], provider=provider))
 
 
 def test_happy_path_produces_available_assessment(monkeypatch):
-    monkeypatch.setattr(
-        risk_adjustment, "generate", lambda prompt: valid_answer(sentiment=-2)
-    )
+    enable_ai(monkeypatch)
+    provider = FakeProvider(valid_payload(sentiment=-2))
 
-    result = assess_market(["Markets slide"])
+    result = assess_market(["Markets slide"], provider=provider)
 
     assert result.available is True
     assert result.sentiment == -2
     assert result.score_delta == round(8 * 0.8)
     assert len(result.bullets) == 3
     assert "Score-Anpassung" in result.rationale
+    assert result.unavailable_reason is None
+    assert provider.calls == 1
 
 
 # --- principle-3 guardrail: LLM output is not trustworthy ------------------------
@@ -145,20 +195,22 @@ def test_happy_path_produces_available_assessment(monkeypatch):
 def test_llm_bullets_with_action_verbs_are_filtered(monkeypatch):
     # Simulated LLM answer that crosses the line in German and English —
     # the filter layer must catch it before it reaches the user.
-    # exactly 5 bullets: parsing cuts at 5 BEFORE the filter runs, so all
-    # of these actually reach the guardrail
-    tainted = valid_answer(
-        bullets=[
-            "Sell NVDA now before earnings",
-            "Verkaufe deine AAPL-Position und kaufe Gold",
-            "Buy the dip in tech stocks",
-            "Marktbreite nimmt weiter ab",
-            "Zinssensitive Sektoren bleiben unter Druck",
-        ]
+    # exactly 5 bullets: validation cuts at 5 BEFORE the filter runs, so
+    # all of these actually reach the guardrail
+    enable_ai(monkeypatch)
+    provider = FakeProvider(
+        valid_payload(
+            bullets=[
+                "Sell NVDA now before earnings",
+                "Verkaufe deine AAPL-Position und kaufe Gold",
+                "Buy the dip in tech stocks",
+                "Marktbreite nimmt weiter ab",
+                "Zinssensitive Sektoren bleiben unter Druck",
+            ]
+        )
     )
-    monkeypatch.setattr(risk_adjustment, "generate", lambda prompt: tainted)
 
-    result = assess_market(["Some headline"])
+    result = assess_market(["Some headline"], provider=provider)
 
     assert result.available is True
     assert len(result.bullets) == 2  # only the descriptive ones survive

@@ -294,7 +294,6 @@ WebSockets, mehrere Depots pro Nutzer, Benchmarks/Vergleichsindizes.
 ## 10. Offene Entscheidungen (bewusst vertagt)
 
 - Exakte Ampel-Schwellen validieren (mit echten Beispiel-Depots kalibrieren)
-- LLM-Provider für Phase 2 (Kaskaden-Muster aus Altprojekt §8 übernehmen)
 - Codegen Pydantic→TypeScript ab wann
 - Namensschutz/Marke "Sentinel" prüfen, bevor es öffentlich Business wird
 - Stress-Replay: Mindestabdeckung (v1: 50 % Depotgewicht) mit echten Depots
@@ -312,6 +311,17 @@ Peak-to-Trough-Presets (Finanzkrise 2007-10-09–2009-03-09, Corona
 S&P-500-Schlusskurse), Ausschluss + Renormalisierung bei fehlender
 Historie mit 50-%-Mindestabdeckung, CSV-Datei-Cache pro Preset+Ticker,
 konstante heutige Gewichte, eigenes Modul `sentinel_core/stress/`.
+
+**Entschieden am 2026-07-19:** LLM-Provider ist **Anthropic (Claude
+Haiku)** hinter einer dünnen `LLMProvider`-Abstraktion in
+`sentinel_core/ai/llm_client.py`; strikte JSON-Struktur via erzwungenem
+Tool-Use statt Prompt-JSON, das Kaskaden-Muster aus Altprojekt §8
+(Key-Check → Validierung → neutraler Fallback) bleibt unverändert.
+**KI-Funktionen sind standardmäßig deaktiviert** (Feature-Flag
+`SENTINEL_AI_ENABLED`, Default false, geprüft VOR dem Key-Check):
+Kostenschranke für das öffentliche Repo — ein versehentlich gesetzter
+Key (lokaler Export, CI) löst ohne bewusstes Opt-in nie einen bezahlten
+API-Call aus. Referenz: `backend/.env.example`.
 
 **Entschieden am 2026-07-09** (Details + Trade-offs in
 MONTE_CARLO_DECISIONS.md): Zukunftssimulation als historischer Bootstrap

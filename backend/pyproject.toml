@@ -20,9 +20,10 @@ dependencies = [
     "scipy>=1.11",
     # News RSS fetching (KNOWLEDGE_EXTRACTION §9). Already a transitive
     # dependency via yfinance — declared explicitly because sentinel_core
-    # imports it directly. NOTE: 'openai' is deliberately NOT listed —
+    # imports it directly. NOTE: 'anthropic' is deliberately NOT listed —
     # it is an optional dependency, lazy-imported in ai/llm_client.py
-    # (graceful degradation, §8).
+    # (graceful degradation, §8; AI is also gated behind the
+    # SENTINEL_AI_ENABLED feature flag, default off).
     "requests>=2.31",
     # Required by FastAPI/Starlette to parse multipart/form-data bodies
     # (POST /portfolio/upload, API_CONTRACT §2.12a).
