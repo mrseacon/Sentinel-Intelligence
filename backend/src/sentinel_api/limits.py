@@ -4,6 +4,11 @@ These are transport/abuse caps, NOT domain constants — they carry no
 business meaning (that is what sentinel_core/constants.py is for), they
 just bound what a single unauthenticated request may cost us. Raising
 them is safe if the resource math still holds; see the audit notes.
+
+Mirrored in frontend/lib/limits.ts (FRONTEND_DECISIONS.md §8) for
+client-side UX checks — this file here remains the real defense, the
+frontend copy only prevents doomed requests before they are sent.
+Whoever changes one side changes the other.
 """
 
 # Max tickers per portfolio/optimizer request. Caps both the covariance
