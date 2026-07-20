@@ -1,15 +1,12 @@
 import type { Metadata } from "next";
 
+import { DepotView } from "./DepotView";
+
 export const metadata: Metadata = { title: "Depot" };
 
+// Server-Komponente wegen `metadata` (App Router erlaubt export const
+// metadata nicht in "use client"-Dateien) — die eigentliche Logik lebt
+// in DepotView (Client, braucht useDepot()/Hooks).
 export default function DepotPage() {
-  return (
-    <section className="space-y-4">
-      <h1 className="text-2xl font-semibold">Dein Paper-Depot</h1>
-      <p className="text-slate-600 dark:text-slate-300">
-        Hier entstehen Positionen, Cash-Stand und der Trade-Dialog in der
-        nächsten Bau-Phase.
-      </p>
-    </section>
-  );
+  return <DepotView />;
 }
