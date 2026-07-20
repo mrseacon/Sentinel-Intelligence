@@ -1,15 +1,12 @@
 import type { Metadata } from "next";
 
+import { AmpelView } from "./AmpelView";
+
 export const metadata: Metadata = { title: "Ampel" };
 
+// Server-Komponente wegen `metadata` (App Router erlaubt export const
+// metadata nicht in "use client"-Dateien) — die eigentliche Logik lebt
+// in AmpelView (Client, braucht useDepot()/Hooks).
 export default function AmpelPage() {
-  return (
-    <section className="space-y-4">
-      <h1 className="text-2xl font-semibold">Risiko-Ampel</h1>
-      <p className="text-slate-600 dark:text-slate-300">
-        Hier entstehen die drei Ampeln (Klumpenrisiko, Diversifikation,
-        Volatilität) samt Score in der nächsten Bau-Phase.
-      </p>
-    </section>
-  );
+  return <AmpelView />;
 }
