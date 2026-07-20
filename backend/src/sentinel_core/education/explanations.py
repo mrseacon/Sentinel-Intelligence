@@ -22,10 +22,10 @@ AmpelStatus = Literal["green", "yellow", "red"]
 LESSON_CONCENTRATION = (
     "Klumpenrisiko entsteht, wenn einzelne Werte einen großen Teil des "
     "Depots ausmachen. Der Herfindahl-Index (HHI) misst das: Er steigt, je "
-    "ungleicher das Kapital verteilt ist – bei völliger Gleichverteilung "
+    "ungleicher das Kapital verteilt ist. Bei völliger Gleichverteilung "
     "liegt er bei 1 geteilt durch die Anzahl der Positionen. Streuung über "
     "mehrere Titel, Branchen und Regionen senkt die Abhängigkeit vom "
-    "Kursverlauf einzelner Werte – Diversifikation gilt als eines der "
+    "Kursverlauf einzelner Werte: Diversifikation gilt als eines der "
     "wenigen ‚kostenlosen' Mittel zur Risikosenkung."
 )
 
@@ -35,14 +35,14 @@ LESSON_DIVERSIFICATION = (
     "durchschnittliche Schwankung der Einzelwerte mit der Schwankung des "
     "Gesamtdepots: Werte deutlich über 1 zeigen, dass sich Schwankungen "
     "teilweise gegenseitig ausgleichen. Der Effekt wächst mit der Zahl der "
-    "Positionen und sinkt, wenn sich die Werte sehr ähnlich verhalten – "
+    "Positionen und sinkt, wenn sich die Werte sehr ähnlich verhalten, "
     "etwa bei Titeln aus derselben Branche."
 )
 
 LESSON_VOLATILITY = (
     "Volatilität misst, wie stark der Wert eines Depots um seinen "
-    "Durchschnitt schwankt – hier annualisiert, also auf ein Jahr "
-    "hochgerechnet. Sie ist das gängigste Risikomaß: Höhere Volatilität "
+    "Durchschnitt schwankt (hier annualisiert, also auf ein Jahr "
+    "hochgerechnet). Sie ist das gängigste Risikomaß: Höhere Volatilität "
     "bedeutet größere mögliche Ausschläge nach oben wie nach unten. "
     "Volatilität ist keine Verlustprognose, aber ein Maß für die "
     "Unsicherheit, mit der bei einem Depot zu rechnen ist."
@@ -58,7 +58,7 @@ STRESS_LESSONS = {
         "Die Finanzkrise 2008/09 war eine systemische Krise: Fast alle "
         "Aktien fielen gemeinsam, Korrelationen stiegen sprunghaft an. "
         "Diversifikation innerhalb einer einzigen Anlageklasse bot nur "
-        "begrenzten Schutz – deshalb betrachtet man Streuung über "
+        "begrenzten Schutz. Deshalb betrachtet man Streuung über "
         "Anlageklassen, Regionen und Branchen zusammen. Der breite Markt "
         "brauchte Jahre, um das Vorkrisenniveau wieder zu erreichen."
     ),
@@ -66,16 +66,16 @@ STRESS_LESSONS = {
         "Der Corona-Crash 2020 war der schnellste Einbruch der "
         "Börsengeschichte: rund ein Drittel Verlust in fünf Wochen. Ebenso "
         "ungewöhnlich war die anschließende Erholung. Wer im Tief ausstieg, "
-        "verpasste die stärksten Erholungstage – den richtigen Zeitpunkt zu "
-        "erraten gelingt selten. Volatilität bedeutet Ausschläge in beide "
-        "Richtungen."
+        "verpasste die stärksten Erholungstage, denn den richtigen "
+        "Zeitpunkt zu erraten gelingt selten. Volatilität bedeutet "
+        "Ausschläge in beide Richtungen."
     ),
     "rates_2022": (
         "Die Zinswende 2022 zeigte einen langsamen, monatelangen Bärenmarkt "
         "statt eines schnellen Crashs. Besonders stark fielen Wachstums- "
         "und Technologiewerte, deren Bewertungen empfindlich auf steigende "
         "Zinsen reagieren. Depots mit ausgeprägtem Branchen-Klumpen traf es "
-        "überdurchschnittlich – Konzentration zeigt ihre Wirkung oft erst "
+        "überdurchschnittlich. Konzentration zeigt ihre Wirkung oft erst "
         "im Abschwung."
     ),
 }
@@ -105,7 +105,7 @@ def stress_explanation(
     )
     if excluded:
         text += (
-            f" Simuliert wurden {_pct(coverage)} deines Depots – nicht "
+            f" Simuliert wurden {_pct(coverage)} deines Depots. Nicht "
             f"enthalten: {', '.join(excluded)} (im Zeitraum noch nicht "
             f"handelbar)."
         )
@@ -121,15 +121,15 @@ SIM_LESSON = (
     "wie unterschiedlich es kommen könnte: Sie mischt die tatsächlichen "
     "vergangenen Tagesbewegungen eines Depots zufällig neu und spielt "
     "daraus viele tausend mögliche Verläufe durch (Bootstrap-Verfahren). "
-    "Die Bandbreite wächst mit dem Zeithorizont – je weiter die Zukunft, "
+    "Die Bandbreite wächst mit dem Zeithorizont: Je weiter die Zukunft, "
     "desto weniger lässt sie sich eingrenzen. Der mittlere Verlauf ist "
     "kein Versprechen, sondern nur der Median der Simulationen. Und: Die "
-    "Simulation kennt nur die Vergangenheit – Ereignisse, die es dort "
+    "Simulation kennt nur die Vergangenheit. Ereignisse, die es dort "
     "nicht gab, kann sie nicht zeigen."
 )
 
 SIM_DISCLAIMER = (
-    "Simulation auf Basis vergangener Tagesrenditen – keine Vorhersage. "
+    "Simulation auf Basis vergangener Tagesrenditen, keine Vorhersage. "
     "Die tatsächliche Entwicklung kann außerhalb jeder gezeigten "
     "Bandbreite liegen. Annahme: Deine heutigen Gewichte bleiben im "
     "gesamten Zeitraum konstant."
@@ -161,7 +161,7 @@ def simulation_explanation(
         text += (
             f" Achtung, dünne Datenbasis: Für diesen Horizont wird die "
             f"verfügbare Historie rechnerisch rund "
-            f"{_num1(recycling_factor)}-mal wiederverwendet – seltene "
+            f"{_num1(recycling_factor)}-mal wiederverwendet. Seltene "
             f"Ereignisse wie Crashs fehlen darin womöglich vollständig."
         )
     return text
@@ -233,14 +233,14 @@ def diversification_explanation(
         )
     if n_positions == 1:
         return (
-            "Dein Depot besteht aus einer einzigen Position – es gibt "
+            "Dein Depot besteht aus einer einzigen Position: Es gibt "
             "keine Streuung. Die Schwankungen dieses Werts sind eins zu "
             "eins die Schwankungen deines Depots."
         )
     return (
         f"Dein Depot streut kaum: Die {n_positions} Positionen bewegen "
         f"sich weitgehend im Gleichschritt (Diversification Ratio "
-        f"{_num(ratio)}) – schwache Phasen treffen dann meist alle Werte "
+        f"{_num(ratio)}). Schwache Phasen treffen dann meist alle Werte "
         f"gleichzeitig."
     )
 

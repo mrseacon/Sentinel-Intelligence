@@ -13,7 +13,7 @@ export default function Home() {
         <p className="text-lg text-slate-600 dark:text-slate-300">
           Baue ein Paper-Depot mit 10.000&nbsp;€ Spielgeld auf. Die
           Risiko-Ampel zeigt dir Klumpenrisiko, Diversifikation und
-          Volatilität — verständlich erklärt, nie als Kaufempfehlung.
+          Volatilität, verständlich erklärt und nie als Kaufempfehlung.
         </p>
         <p className="text-sm text-slate-500 dark:text-slate-400">
           Kurse sind bis zu 15 Minuten verzögert. Sentinel ersetzt keine

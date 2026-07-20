@@ -19,7 +19,7 @@ __all__ = ["OPTIMIZE_DISCLAIMER", "OptimizeIn", "OptimizeOut"]
 
 OPTIMIZE_DISCLAIMER = (
     "Rechnerische Max-Sharpe-Gewichtung der eingegebenen Titel auf Basis "
-    "vergangener Kurse – keine Empfehlung, Vergangenheit ist keine "
+    "vergangener Kurse. Keine Empfehlung, Vergangenheit ist keine "
     "Garantie für die Zukunft."
 )
 

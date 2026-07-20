@@ -33,7 +33,7 @@ export function AmpelView() {
       <div>
         <h1 className="text-2xl font-semibold">Risiko-Ampel</h1>
         <p className="text-slate-600 dark:text-slate-300">
-          Drei Ampeln auf Basis deiner aktuellen Depot-Positionen —
+          Drei Ampeln auf Basis deiner aktuellen Depot-Positionen:
           Klumpenrisiko, Diversifikation und Volatilität.
         </p>
       </div>
