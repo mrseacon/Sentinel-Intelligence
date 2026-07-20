@@ -1,15 +1,13 @@
 import type { Metadata } from "next";
 
+import { StressView } from "./StressView";
+
 export const metadata: Metadata = { title: "Stress-Test" };
 
+// Server-Komponente wegen `metadata` (App Router erlaubt export const
+// metadata nicht in "use client"-Dateien) — die eigentliche Logik lebt
+// in StressView (Client, braucht useDepot()/Hooks), gleiches Muster wie
+// ampel/page.tsx.
 export default function StressPage() {
-  return (
-    <section className="space-y-4">
-      <h1 className="text-2xl font-semibold">Historischer Stress-Test</h1>
-      <p className="text-slate-600 dark:text-slate-300">
-        Hier entsteht die Preset-Auswahl (z.&nbsp;B. Finanzkrise 2008,
-        Corona-Crash 2020) samt Verlaufskurve in der nächsten Bau-Phase.
-      </p>
-    </section>
-  );
+  return <StressView />;
 }
