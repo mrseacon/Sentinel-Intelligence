@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/Skeleton";
 import { ApiError, postPaperExecute, postPaperQuote } from "@/lib/api";
 import { useDepot } from "@/lib/DepotProvider";
 import { isValidTicker } from "@/lib/limits";
+import { POPULAR_TICKERS } from "@/lib/popular-tickers";
 import type { Side } from "@/lib/types";
 
 interface TradeFormProps {
@@ -91,6 +92,28 @@ export function TradeForm({
 
   return (
     <div className="space-y-4">
+      <div>
+        <span className="block text-xs font-medium text-slate-600 dark:text-slate-300">
+          Beliebte Werte
+        </span>
+        <div className="mt-1.5 flex flex-wrap gap-1.5">
+          {POPULAR_TICKERS.map((popular) => (
+            <button
+              key={popular.ticker}
+              type="button"
+              aria-label={`${popular.name} auswählen`}
+              onClick={() => updateField({ ticker: popular.ticker })}
+              className="rounded-full border border-slate-300 px-3 py-1 text-xs font-medium text-slate-600 hover:border-slate-400 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-800"
+            >
+              {popular.name}{" "}
+              <span className="text-slate-400 dark:text-slate-500">
+                {popular.ticker}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       <form
         onSubmit={handlePreview}
         className="flex flex-wrap items-end gap-3"
