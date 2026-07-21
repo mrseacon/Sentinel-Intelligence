@@ -40,6 +40,10 @@ export function usePaperDepot(): UsePaperDepotResult {
   const [depot, setDepot] = useState<DepotState | null>(null);
 
   useEffect(() => {
+    // Bewusste Ausnahme von der Regel: kein Props/State-Mirroring,
+    // sondern der einmalige, SSR-sichere Ladevorgang aus localStorage
+    // (s. Kommentar oben) — genau der Fall, für den der Effect da ist.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDepot(readDepot());
   }, []);
 
