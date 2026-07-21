@@ -7,8 +7,11 @@ logic, errors.py holds the {detail, code} convention (API_CONTRACT.md).
 Adding a domain = one schemas file + one router file + include_router.
 """
 
+import os
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 
 from sentinel_api.errors import register_error_handlers
@@ -21,12 +24,37 @@ from sentinel_api.routers.stress import router as stress_router
 
 app = FastAPI(title="Sentinel API", version="0.1.0")
 
-# Phase 1: local Next.js dev server only (ARCHITECTURE §8).
+# Deploy-Checkliste (ARCHITECTURE §8): CORS-Origins und vertrauenswürdige
+# Hosts sind über die Prozess-Umgebung konfigurierbar, damit dieselbe
+# main.py lokal (localhost:3000) und in Produktion (echte Vercel-Domain)
+# läuft, ohne Code zu ändern. Kommagetrennt, da beide Deploy-Ziele
+# (Railway/Render) Env-Vars als einfache Strings setzen.
+_DEFAULT_ALLOWED_ORIGINS = ["http://localhost:3000"]
+_DEFAULT_TRUSTED_HOSTS = ["*"]  # Phase 1 default: erst TRUSTED_HOSTS schränkt ein
+
+
+def _split_env_list(name: str, default: list[str]) -> list[str]:
+    raw = os.environ.get(name)
+    if not raw:
+        return default
+    values = [item.strip() for item in raw.split(",") if item.strip()]
+    return values or default
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=_split_env_list("ALLOWED_ORIGINS", _DEFAULT_ALLOWED_ORIGINS),
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+# F8: ohne TRUSTED_HOSTS in Produktion bleibt das Default "*" (keine
+# Einschränkung) — sobald die echte Domain als Env-Var gesetzt ist,
+# greift die Beschränkung, ohne dass ein Redeploy den lokalen Betrieb
+# (Host-Header "localhost") bricht.
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=_split_env_list("TRUSTED_HOSTS", _DEFAULT_TRUSTED_HOSTS),
 )
 
 

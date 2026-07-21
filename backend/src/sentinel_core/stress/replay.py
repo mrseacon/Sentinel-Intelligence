@@ -44,7 +44,13 @@ from sentinel_core.risk.metrics import (
     portfolio_volatility,
 )
 
-DEFAULT_CACHE_DIR = Path(".cache/stress/v1")
+# Absolute, anchored to this file's location — NOT to the process' CWD
+# (security audit F5: "CWD-relativ bricht bei anderem Startverzeichnis",
+# e.g. a deploy platform launching uvicorn from a different working
+# directory than local dev). Resolves to backend/.cache/stress/v1.
+# The API layer may override this per-request via STRESS_CACHE_DIR
+# (sentinel_api/routers/stress.py) — core itself stays env-free.
+DEFAULT_CACHE_DIR = Path(__file__).resolve().parents[3] / ".cache" / "stress" / "v1"
 
 
 class ScenarioPreset(BaseModel):

@@ -1,0 +1,19 @@
+# Render Blueprint für sentinel-api (Alternative zu Railway, s.
+# ARCHITECTURE.md §8: Phase 1 "Railway/Render (API)"). Wird nur
+# gebraucht, wenn Render statt Railway gewählt wird — Root-Repo-Datei,
+# da Render Blueprints nur dort erkennt; das Service selbst lebt via
+# rootDir in backend/.
+services:
+  - type: web
+    name: sentinel-api
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install .
+    startCommand: PYTHONPATH=src uvicorn sentinel_api.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: SENTINEL_AI_ENABLED
+        value: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: TRUSTED_HOSTS
+        sync: false
