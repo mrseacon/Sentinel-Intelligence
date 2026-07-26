@@ -12,6 +12,17 @@ verständlicher Sprache erklärt bekommen, wo die eigenen Risiken liegen.
 
 ---
 
+## Live Demo
+
+🔗 **[sentinel-intelligence-delta.vercel.app](https://sentinel-intelligence-delta.vercel.app)**
+
+Das Backend läuft auf einem kostenlosen Render-Tier und schläft nach
+Inaktivität ein. Beim ersten Aufruf nach einer Weile kann deshalb ein
+Kaltstart von 30–60 Sekunden auftreten, bevor die App reagiert – kein
+Bug, einfach der Free-Tier. Danach läuft alles normal schnell.
+
+---
+
 ## Was Sentinel kann
 
 - 📈 **Paper-Trading** – Depot mit virtuellem Startkapital, Trades zu echten
@@ -82,6 +93,12 @@ npm run dev
 Frontend läuft dann auf `http://localhost:3000`, Backend auf
 `http://localhost:8000`.
 
+Für den lokalen Betrieb sind keine Umgebungsvariablen nötig: `ALLOWED_ORIGINS`,
+`TRUSTED_HOSTS` (Backend) und `NEXT_PUBLIC_API_URL` (Frontend) haben sinnvolle
+Defaults für genau dieses Setup (`localhost:3000` / `*` / `http://localhost:8000`)
+und werden nur für den Live-Deploy explizit gesetzt – siehe
+`backend/.env.example` und `frontend/.env.local.example`.
+
 ## Tests
 
 ```bash
@@ -109,11 +126,16 @@ kein Feature funktioniert eingeschränkt oder bricht.
 
 ## Projektstatus
 
-Solo-Side-Project neben dem Wirtschaftsinformatik-Studium. Backend und
-Frontend sind funktional vollständig (Kern-Loop Depot → Ampel → Stress-Test →
-Simulation sowie unabhängige Analyse/Optimierung). Aktueller Fokus: Deployment
-und Politur.
+Solo-Side-Project neben dem Wirtschaftsinformatik-Studium. Das Projekt ist
+[live deployed und nutzbar](#live-demo) – Backend und Frontend sind
+funktional vollständig (Kern-Loop Depot → Ampel → Stress-Test → Simulation
+sowie unabhängige Analyse/Optimierung).
+
+Offene Punkte:
+- Rate-Limiting ist bewusst noch nicht scharf gestellt (Phase 1, geringer
+  Traffic – die vorhandenen Schutz-Limits reichen vorerst)
+- Lizenz noch nicht final gewählt (s. unten)
 
 ## Lizenz
 
-_Noch festzulegen._
+MIT - siehe [LICENSE](./LICENSE).
