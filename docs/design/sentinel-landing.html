@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing:border-box; }
+  html, body { margin:0; padding:0; background:#020617; }
+  body { font-family:'Geist', Arial, Helvetica, sans-serif; color:#f1f5f9; -webkit-font-smoothing:antialiased; }
+  a { color:#f1f5f9; text-decoration:none; }
+  a:hover { color:#ffffff; }
+  details > summary { list-style:none; cursor:pointer; }
+  details > summary::-webkit-details-marker { display:none; }
+  input[type="range"] { -webkit-appearance:none; appearance:none; background:transparent; height:20px; cursor:pointer; }
+  input[type="range"]::-webkit-slider-runnable-track { height:4px; border-radius:999px; background:#1e293b; }
+  input[type="range"]::-moz-range-track { height:4px; border-radius:999px; background:#1e293b; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:16px; height:16px; margin-top:-6px; border-radius:999px; background:#e2e8f0; border:1px solid #94a3b8; }
+  input[type="range"]::-moz-range-thumb { width:16px; height:16px; border:1px solid #94a3b8; border-radius:999px; background:#e2e8f0; }
+  input[type="range"]:focus-visible { outline:2px solid #475569; outline-offset:4px; border-radius:999px; }
+</style>
+</helmet>
+
+<div style="background:#020617; min-height:100vh; font-family:'Geist', Arial, Helvetica, sans-serif; color:#f1f5f9;">
+
+  <header style="position:sticky; top:0; z-index:20; border-bottom:1px solid #1e293b; background:rgba(2,6,23,0.88); backdrop-filter:blur(8px);">
+    <div style="max-width:1080px; margin:0 auto; padding:14px 24px; display:flex; align-items:center; justify-content:space-between; gap:24px;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div style="width:18px; height:18px; border:1.5px solid #94a3b8; border-radius:4px; display:grid; place-items:center;">
+          <div style="width:6px; height:6px; background:#94a3b8; border-radius:1px;"></div>
+        </div>
+        <span style="font-size:14px; font-weight:600; letter-spacing:-0.01em;">Sentinel</span>
+      </div>
+      <nav style="display:flex; align-items:center; gap:4px;">
+        <a href="#wie" style="border-radius:6px; padding:8px 12px; font-size:14px; font-weight:500; color:#cbd5e1;" style-hover="background:#1e293b; color:#ffffff;">Wie es funktioniert</a>
+        <a href="#ampel" style="border-radius:6px; padding:8px 12px; font-size:14px; font-weight:500; color:#cbd5e1;" style-hover="background:#1e293b; color:#ffffff;">Risiko-Ampel</a>
+        <a href="#krisen" style="border-radius:6px; padding:8px 12px; font-size:14px; font-weight:500; color:#cbd5e1;" style-hover="background:#1e293b; color:#ffffff;">Krisen-Vergleich</a>
+        <a href="#methodik" style="border-radius:6px; padding:8px 12px; font-size:14px; font-weight:500; color:#cbd5e1;" style-hover="background:#1e293b; color:#ffffff;">Methodik</a>
+        <a href="#start" style="margin-left:8px; border-radius:999px; background:#f1f5f9; color:#0f172a; padding:8px 16px; font-size:14px; font-weight:500;" style-hover="background:#ffffff; color:#0f172a;">Kostenlos starten</a>
+      </nav>
+    </div>
+  </header>
+
+  <section id="hero" data-screen-label="Hero: Verstehen statt raten" style="border-bottom:1px solid #1e293b;">
+    <div style="max-width:1080px; margin:0 auto; padding:132px 24px 128px; display:flex; flex-direction:column; align-items:center; gap:32px;">
+      <span style="font-family:'Geist Mono', ui-monospace, monospace; font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:#94a3b8; text-align:center;">Jede Kennzahl kommt mit einer Erklärung</span>
+      <h1 style="margin:0; max-width:22ch; text-align:center; font-size:60px; line-height:1.04; letter-spacing:-0.03em; font-weight:600; text-wrap:pretty;">Verstehen statt raten.</h1>
+      <p style="margin:0; max-width:58ch; text-align:center; font-size:20px; line-height:1.6; color:#cbd5e1; text-wrap:pretty;">Sentinel zeigt dir nicht nur eine Risikozahl, sondern erklärt in einem Satz, woher sie kommt: welche Position zu schwer wiegt, wo Diversifikation fehlt, wie stark deine Kurse historisch geschwankt sind.</p>
+      <div style="display:flex; flex-direction:column; gap:12px; align-items:center;">
+        <a href="#start" style="display:inline-flex; align-items:center; border-radius:999px; background:#f1f5f9; color:#0f172a; padding:15px 28px; font-size:16px; font-weight:500;" style-hover="background:#ffffff;">Kostenlos starten</a>
+        <span style="font-size:13px; color:#64748b;">Mit virtuellem Kapital. Keine Anmeldung nötig.</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="wie" data-screen-label="Wie es funktioniert" style="border-bottom:1px solid #1e293b; background:#0b1120;">
+    <div style="max-width:1080px; margin:0 auto; padding:96px 24px; display:flex; flex-direction:column; align-items:center; gap:32px;">
+      <span style="font-family:'Geist Mono', ui-monospace, monospace; font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:#94a3b8;">Wie es funktioniert</span>
+      <h2 style="margin:0; max-width:26ch; text-align:center; font-size:38px; line-height:1.12; letter-spacing:-0.025em; font-weight:600; text-wrap:pretty;">In vier Schritten vom ersten Trade zum verstandenen Depot</h2>
+      <p style="margin:0; max-width:56ch; text-align:center; font-size:17px; line-height:1.65; color:#cbd5e1; text-wrap:pretty;">Kein Kurs und kein Video. Du lernst am eigenen Depot, und jede Auswertung erklärt sich selbst.</p>
+      <div style="width:100%; max-width:760px; display:flex; flex-direction:column;">
+        <div style="display:grid; grid-template-columns:52px 1fr; gap:20px; padding:22px 0; border-top:1px solid #1e293b;">
+          <span style="font-family:'Geist Mono', ui-monospace, monospace; font-size:13px; color:#64748b;">01</span>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <h3 style="margin:0; font-size:17px; font-weight:600;">Depot eröffnen, mit Spielgeld</h3>
+            <p style="margin:0; font-size:15px; line-height:1.6; color:#cbd5e1;">Du startest mit 10.000&nbsp;€ virtuellem Kapital. Kein Account, keine Einzahlung, kein Risiko.</p>
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns:52px 1fr; gap:20px; padding:22px 0; border-top:1px solid #1e293b;">
+          <span style="font-family:'Geist Mono', ui-monospace, monospace; font-size:13px; color:#64748b;">02</span>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <h3 style="margin:0; font-size:17px; font-weight:600;">Zu echten Kursen kaufen und verkaufen</h3>
+            <p style="margin:0; font-size:15px; line-height:1.6; color:#cbd5e1;">Die Marktdaten sind real, aber bis zu 15 Minuten verzögert. Positionen und Historie bleiben jederzeit nachvollziehbar.</p>
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns:52px 1fr; gap:20px; padding:22px 0; border-top:1px solid #1e293b;">
+          <span style="font-family:'Geist Mono', ui-monospace, monospace; font-size:13px; color:#64748b;">03</span>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <h3 style="margin:0; font-size:17px; font-weight:600;">Risiko-Ampel lesen</h3>
+            <p style="margin:0; font-size:15px; line-height:1.6; color:#cbd5e1;">Drei Ampeln beschreiben dein Depot in Worten: Klumpenrisiko, Diversifikation und Volatilität. Nie als Kaufempfehlung.</p>
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns:52px 1fr; gap:20px; padding:22px 0; border-top:1px solid #1e293b; border-bottom:1px solid #1e293b;">
+          <span style="font-family:'Geist Mono', ui-monospace, monospace; font-size:13px; color:#64748b;">04</span>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <h3 style="margin:0; font-size:17px; font-weight:600;">Gegen Krisen und Zukünfte prüfen</h3>
+            <p style="margin:0; font-size:15px; line-height:1.6; color:#cbd5e1;">Der Stress-Test rechnet mit echten Krisenzeiträumen. Die Monte-Carlo-Simulation zeigt die Bandbreite möglicher Verläufe.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="ampel" data-screen-label="Risiko-Ampel" style="border-bottom:1px solid #1e293b;">
+    <div style="max-width:1080px; margin:0 auto; padding:96px 24px; display:flex; flex-direction:column; align-items:center; gap:32px;">
+      <span style="font-family:'Geist Mono', ui-monospace, monospace; font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:#94a3b8;">Risiko-Ampel</span>
+      <h2 style="margin:0; max-width:24ch; text-align:center; font-size:38px; line-height:1.12; letter-spacing:-0.025em; font-weight:600; text-wrap:pretty;">Drei Fragen, die dein Depot beantworten muss</h2>
+      <p style="margin:0; max-width:58ch; text-align:center; font-size:17px; line-height:1.65; color:#cbd5e1; text-wrap:pretty;">Der Status steht nie nur in einer Farbe. Es gibt immer ein Zeichen, ein Wort und eine Erklärung, was daraus folgt.</p>
+      <div style="width:100%; display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; text-align:left;">
+        <div style="border:1px solid #1e293b; border-left:4px solid #10b981; border-radius:12px; background:#0f172a; padding:22px; display:flex; flex-direction:column; gap:12px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+            <h3 style="margin:0; font-size:16px; font-weight:600;">Diversifikation</h3>
+            <span style="display:inline-flex; align-items:center; gap:6px; border-radius:999px; padding:3px 10px; font-size:12px; font-weight:500; background:#052e1a; color:#a7f3d0;"><span aria-hidden="true">✓</span>Grün</span>
+          </div>
+          <p style="margin:0; font-size:14px; line-height:1.6; color:#e2e8f0;">Dein Kapital ist auf mehrere Branchen verteilt. Ein schwacher Sektor trifft dich damit nicht mit voller Wucht.</p>
+          <p style="margin:0; font-size:13px; line-height:1.6; color:#94a3b8;">Was heißt das? Diversifikation ist keine Garantie gegen Verluste. Sie sorgt dafür, dass nicht alles gleichzeitig fällt.</p>
+        </div>
+        <div style="border:1px solid #1e293b; border-left:4px solid #f59e0c; border-radius:12px; background:#0f172a; padding:22px; display:flex; flex-direction:column; gap:12px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+            <h3 style="margin:0; font-size:16px; font-weight:600;">Klumpenrisiko</h3>
+            <span style="display:inline-flex; align-items:center; gap:6px; border-radius:999px; padding:3px 10px; font-size:12px; font-weight:500; background:#451a03; color:#fde68a;"><span aria-hidden="true">!</span>Gelb</span>
+          </div>
+          <p style="margin:0; font-size:14px; line-height:1.6; color:#e2e8f0;">Deine größte Position wiegt 38&nbsp;Prozent. Das Depot folgt damit vor allem einem einzigen Unternehmen.</p>
+          <p style="margin:0; font-size:13px; line-height:1.6; color:#94a3b8;">Was heißt das? Konzentration verstärkt beide Richtungen, Gewinn und Verlust. Entscheidend ist, dass du sie bewusst wählst.</p>
+        </div>
+        <div style="border:1px solid #1e293b; border-left:4px solid #ef4444; border-radius:12px; background:#0f172a; padding:22px; display:flex; flex-direction:column; gap:12px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+            <h3 style="margin:0; font-size:16px; font-weight:600;">Volatilität</h3>
+            <span style="display:inline-flex; align-items:center; gap:6px; border-radius:999px; padding:3px 10px; font-size:12px; font-weight:500; background:#450a0a; color:#fecaca;"><span aria-hidden="true">✕</span>Rot</span>
+          </div>
+          <p style="margin:0; font-size:14px; line-height:1.6; color:#e2e8f0;">Die Kurse deiner Positionen schwankten historisch stark. Wertänderungen von mehreren Prozent am Tag sind hier normal.</p>
+          <p style="margin:0; font-size:13px; line-height:1.6; color:#94a3b8;">Was heißt das? Volatilität misst Schwankung, nicht Qualität. Die Frage ist, ob du sie aushältst, ohne panisch zu verkaufen.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="krisen" data-screen-label="Krisen-Vergleich" style="border-bottom:1px solid #1e293b; background:#0b1120;">
+    <div style="max-width:1080px; margin:0 auto; padding:96px 24px; display:flex; flex-direction:column; align-items:center; gap:32px;">
+      <span style="font-family:'Geist Mono', ui-monospace, monospace; font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:#94a3b8;">Historischer Vergleich</span>
+      <h2 style="margin:0; max-width:24ch; text-align:center; font-size:38px; line-height:1.12; letter-spacing:-0.025em; font-weight:600; text-wrap:pretty;">Wie hätte sich dein Depot 2008 geschlagen?</h2>
+      <p style="margin:0; max-width:58ch; text-align:center; font-size:17px; line-height:1.65; color:#cbd5e1; text-wrap:pretty;">Sentinel legt dein aktuelles Portfolio über drei tatsächliche Krisenzeiträume und rechnet mit den echten Tagesrenditen dieser Monate. Kein Szenario ist eine Prognose. Es ist eine Erinnerung daran, wie tief Märkte fallen können.</p>
+      <div style="width:100%; max-width:900px; display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; text-align:left;">
+        <div style="border:1px solid #1e293b; border-radius:12px; background:#0f172a; padding:22px; display:flex; flex-direction:column; gap:14px;">
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <span style="font-size:15px; font-weight:600;">Finanzkrise</span>
+            <span style="font-family:'Geist Mono', ui-monospace, monospace; font-size:12px; color:#64748b;">Okt 2007 bis Mär 2009</span>
+          </div>
+          <div style="height:8px; border-radius:999px; background:#1e293b; overflow:hidden;"><div style="width:82%; height:100%; background:#475569;"></div></div>
+          <p style="margin:0; font-size:13px; line-height:1.6; color:#94a3b8;">Ein langer, zäher Rückgang über 17 Monate. Die Krise, die Geduld am stärksten testet.</p>
+        </div>
+        <div style="border:1px solid #1e293b; border-radius:12px; background:#0f172a; padding:22px; display:flex; flex-direction:column; gap:14px;">
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <span style="font-size:15px; font-weight:600;">Corona-Crash</span>
+            <span style="font-family:'Geist Mono', ui-monospace, monospace; font-size:12px; color:#64748b;">Feb bis Mär 2020</span>
+          </div>
+          <div style="height:8px; border-radius:999px; background:#1e293b; overflow:hidden;"><div style="width:58%; height:100%; background:#475569;"></div></div>
+          <p style="margin:0; font-size:13px; line-height:1.6; color:#94a3b8;">Ein sehr schneller Einbruch in wenigen Wochen, gefolgt von einer ebenso schnellen Erholung.</p>
+        </div>
+        <div style="border:1px solid #1e293b; border-radius:12px; background:#0f172a; padding:22px; display:flex; flex-direction:column; gap:14px;">
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <span style="font-size:15px; font-weight:600;">Zinswende</span>
+            <span style="font-family:'Geist Mono', ui-monospace, monospace; font-size:12px; color:#64748b;">Jan bis Okt 2022</span>
+          </div>
+          <div style="height:8px; border-radius:999px; background:#1e293b; overflow:hidden;"><div style="width:44%; height:100%; background:#475569;"></div></div>
+          <p style="margin:0; font-size:13px; line-height:1.6; color:#94a3b8;">Ein breiter Rückgang, bei dem auch klassische Absicherungen wenig geholfen haben.</p>
+        </div>
+      </div>
+      <p style="margin:0; max-width:60ch; text-align:center; font-size:14px; line-height:1.65; color:#64748b;">Die Balken zeigen die relative Tiefe und Dauer der jeweiligen Phase. Vergangene Wertentwicklung sagt nichts über die Zukunft. Der Vergleich dient dazu, deine eigene Verlusttoleranz einzuschätzen, bevor echtes Geld im Spiel ist.</p>
+    </div>
+  </section>
+
+  <section id="simulation" data-screen-label="Monte-Carlo" style="border-bottom:1px solid #1e293b;">
+    <div style="max-width:1080px; margin:0 auto; padding:96px 24px; display:flex; flex-direction:column; align-items:center; gap:32px;">
+      <span style="font-family:'Geist Mono', ui-monospace, monospace; font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:#94a3b8;">Zukunftssimulation</span>
+      <h2 style="margin:0; max-width:24ch; text-align:center; font-size:38px; line-height:1.12; letter-spacing:-0.025em; font-weight:600; text-wrap:pretty;">Eine Bandbreite, keine Prognose</h2>
+      <p style="margin:0; max-width:58ch; text-align:center; font-size:17px; line-height:1.65; color:#cbd5e1; text-wrap:pretty;">Die Monte-Carlo-Simulation zieht tausende Pfade aus echten historischen Tagesrenditen deiner Positionen. Das Ergebnis ist ein Korridor: wie gut es laufen könnte, wie schlecht, und wie breit die Unsicherheit dazwischen ist.</p>
+      <div style="width:100%; max-width:900px; border:1px solid #1e293b; border-radius:14px; background:#0f172a; padding:24px; display:grid; grid-template-columns:1.35fr 1fr; gap:32px; align-items:center; text-align:left;">
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <div style="position:relative; height:200px; border-left:1px solid #1e293b; border-bottom:1px solid #1e293b; overflow:hidden;">
+            <div style="position:absolute; left:0; right:0; top:12%; bottom:12%; background:linear-gradient(to right, rgba(30,41,59,0.15), rgba(30,41,59,0.9)); clip-path:polygon(0 46%, 100% 0, 100% 100%, 0 54%);"></div>
+            <div style="position:absolute; left:0; right:0; top:26%; bottom:26%; background:linear-gradient(to right, rgba(71,85,105,0.2), rgba(71,85,105,0.85)); clip-path:polygon(0 46%, 100% 12%, 100% 88%, 0 54%);"></div>
+            <div style="position:absolute; left:0; right:0; top:50%; height:1px; background:#94a3b8; transform:rotate(-10deg); transform-origin:left center;"></div>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-family:'Geist Mono', ui-monospace, monospace; font-size:11px; color:#64748b;">
+            <span>heute</span><span>1 Jahr</span><span>5 Jahre</span><span>10 Jahre</span>
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <span style="font-family:'Geist Mono', ui-monospace, monospace; font-size:12px; color:#64748b;">Oberes Fünftel</span>
+            <span style="font-size:15px; line-height:1.55; color:#e2e8f0;">Deutlich über dem Einsatz. Der Fall, den man sich gern merkt.</span>
+          </div>
+          <div style="height:1px; background:#1e293b;"></div>
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <span style="font-family:'Geist Mono', ui-monospace, monospace; font-size:12px; color:#64748b;">Mittlerer Pfad</span>
+            <span style="font-size:15px; line-height:1.55; color:#e2e8f0;">Der Verlauf, an dem du deine Erwartung ausrichten solltest.</span>
+          </div>
+          <div style="height:1px; background:#1e293b;"></div>
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <span style="font-family:'Geist Mono', ui-monospace, monospace; font-size:12px; color:#64748b;">Unteres Fünftel</span>
+            <span style="font-size:15px; line-height:1.55; color:#e2e8f0;">Der Fall, den du aushalten musst, ohne die Strategie zu verwerfen.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="methodik" data-screen-label="Methodik und Grenzen" style="border-bottom:1px solid #1e293b; background:#0b1120;">
+    <div style="max-width:1080px; margin:0 auto; padding:96px 24px; display:flex; flex-direction:column; align-items:center; gap:32px;">
+      <span style="font-family:'Geist Mono', ui-monospace, monospace; font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:#94a3b8;">Methodik und Grenzen</span>
+      <h2 style="margin:0; max-width:26ch; text-align:center; font-size:38px; line-height:1.12; letter-spacing:-0.025em; font-weight:600; text-wrap:pretty;">Was Sentinel rechnet und was es nicht kann</h2>
+      <p style="margin:0; max-width:60ch; text-align:center; font-size:17px; line-height:1.65; color:#cbd5e1; text-wrap:pretty;">Sentinel gibt keine Kauf- oder Verkaufsempfehlungen für konkrete Wertpapiere. Alle Erklärungen beschreiben ausschließlich Eigenschaften deines Portfolios, etwa Gewichtung, Streuung und Schwankung.</p>
+      <div style="width:100%; max-width:900px; display:grid; grid-template-columns:repeat(2, 1fr); gap:16px; text-align:left;">
+        <div style="border:1px solid #1e293b; border-radius:12px; background:#0f172a; padding:22px; display:flex; flex-direction:column; gap:8px;">
+          <h3 style="margin:0; font-size:15px; font-weight:600;">Echte Marktdaten, verzögert</h3>
+          <p style="margin:0; font-size:14px; line-height:1.6; color:#94a3b8;">Kurse und Renditen stammen aus echten historischen Marktdaten. Sie sind bis zu 15 Minuten verzögert.</p>
+        </div>
+        <div style="border:1px solid #1e293b; border-radius:12px; background:#0f172a; padding:22px; display:flex; flex-direction:column; gap:8px;">
+          <h3 style="margin:0; font-size:15px; font-weight:600;">Nachvollziehbare Formeln</h3>
+          <p style="margin:0; font-size:14px; line-height:1.6; color:#94a3b8;">Die Kennzahlen basieren auf Gewichtung, Korrelation und Standardabweichung. Jede Regel ist offen dokumentiert.</p>
+        </div>
+        <div style="border:1px solid #1e293b; border-radius:12px; background:#0f172a; padding:22px; display:flex; flex-direction:column; gap:8px;">
+          <h3 style="margin:0; font-size:15px; font-weight:600;">Keine Empfehlungen</h3>
+          <p style="margin:0; font-size:14px; line-height:1.6; color:#94a3b8;">Sentinel beschreibt Portfolioeigenschaften. Es sagt dir nie, welches Wertpapier du kaufen oder verkaufen sollst.</p>
+        </div>
+        <div style="border:1px solid #1e293b; border-radius:12px; background:#0f172a; padding:22px; display:flex; flex-direction:column; gap:8px;">
+          <h3 style="margin:0; font-size:15px; font-weight:600;">Kein echtes Geld</h3>
+          <p style="margin:0; font-size:14px; line-height:1.6; color:#94a3b8;">Alle Trades sind virtuell. Es gibt kein Konto, keine Order an eine Börse und keine Gebühren.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="start" data-screen-label="Abschluss-CTA" style="border-bottom:1px solid #1e293b;">
+    <div style="max-width:1080px; margin:0 auto; padding:96px 24px; display:flex; flex-direction:column; align-items:center; gap:28px;">
+      <span style="font-family:'Geist Mono', ui-monospace, monospace; font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:#94a3b8;">Jetzt üben</span>
+      <h2 style="margin:0; max-width:24ch; text-align:center; font-size:44px; line-height:1.08; letter-spacing:-0.03em; font-weight:600; text-wrap:pretty;">Der erste Fehler sollte dich nichts kosten.</h2>
+      <p style="margin:0; max-width:54ch; text-align:center; font-size:17px; line-height:1.6; color:#cbd5e1; text-wrap:pretty;">Starte mit virtuellem Kapital, beobachte dein Risiko und entscheide später mit echtem Geld. Dann aber informiert.</p>
+      <a href="#hero" style="display:inline-flex; align-items:center; border-radius:999px; background:#f1f5f9; color:#0f172a; padding:15px 30px; font-size:16px; font-weight:500;" style-hover="background:#ffffff;">Kostenlos starten</a>
+      <span style="font-size:13px; color:#64748b;">Keine Anmeldung, keine Zahlungsdaten, kein echtes Geld.</span>
+    </div>
+  </section>
+
+  <footer>
+    <div style="max-width:1080px; margin:0 auto; padding:32px 24px 48px; display:flex; flex-direction:column; gap:18px; align-items:center;">
+      <p style="margin:0; max-width:72ch; text-align:center; font-size:12px; line-height:1.7; color:#64748b;">Sentinel beschreibt Portfolioeigenschaften, zum Beispiel Klumpenrisiko und Volatilität, auf Basis vergangener Kurse. Das ist <strong style="color:#94a3b8;">keine Anlageberatung</strong> und keine Empfehlung für einzelne Wertpapiere. Kurse sind bis zu 15 Minuten verzögert. Sentinel ist ein Lern- und Übungstool.</p>
+      <div style="display:flex; gap:20px; font-size:13px;">
+        <a href="#methodik" style="color:#64748b;" style-hover="color:#cbd5e1;">Methodik</a>
+        <a href="#wie" style="color:#64748b;" style-hover="color:#cbd5e1;">Wie es funktioniert</a>
+        <a href="#start" style="color:#64748b;" style-hover="color:#cbd5e1;">Kostenlos starten</a>
+      </div>
+    </div>
+  </footer>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280}}">
+const DEFAULT_MIX = [55, 20, 25];
+
+class Component extends DCLogic {
+  state = { mix: DEFAULT_MIX };
+
+  setSlot(i, raw) {
+    const v = Math.max(0, Math.min(100, Math.round(raw)));
+    this.setState((s) => {
+      const mix = s.mix.slice();
+      const others = [0, 1, 2].filter((k) => k !== i);
+      const rest = 100 - v;
+      const sumOthers = mix[others[0]] + mix[others[1]];
+      let a;
+      if (sumOthers <= 0) a = Math.round(rest / 2);
+      else a = Math.round(rest * (mix[others[0]] / sumOthers));
+      a = Math.max(0, Math.min(rest, a));
+      mix[i] = v;
+      mix[others[0]] = a;
+      mix[others[1]] = rest - a;
+      return { mix };
+    });
+  }
+
+  renderVals() {
+    const names = ["Technologie", "Energie", "Anleihen"];
+    const shades = ["#64748b", "#475569", "#334155"];
+    const mix = this.state.mix;
+    const top = Math.max.apply(null, mix);
+    const topName = names[mix.indexOf(top)];
+
+    let level, text, lesson;
+    if (top >= 60) {
+      level = "red";
+      text = topName + " macht " + top + " Prozent aus. Ein einzelner Bereich bestimmt damit fast dein ganzes Ergebnis.";
+      lesson = "Bei dieser Konzentration entscheidet die Entwicklung eines Sektors über dein Depot. Gewinne und Verluste fallen entsprechend groß aus.";
+    } else if (top >= 40) {
+      level = "yellow";
+      text = topName + " wiegt mit " + top + " Prozent deutlich schwerer als der Rest. Dein Depot folgt vor allem diesem Bereich.";
+      lesson = "Eine Übergewichtung kann bewusst gewollt sein. Wichtig ist, dass du weißt, welchen Teil deines Ergebnisses sie bestimmt.";
+    } else {
+      level = "green";
+      text = "Kein Bereich kommt über " + top + " Prozent. Die Last ist auf alle drei Bereiche verteilt.";
+      lesson = "Bei ausgewogener Verteilung zieht ein schwacher Bereich das Depot nur anteilig nach unten. Das schützt nicht vor Verlusten, dämpft sie aber.";
+    }
+
+    const palette = {
+      green: { bg: "#052e1a", fg: "#a7f3d0", icon: "✓", label: "Grün" },
+      yellow: { bg: "#451a03", fg: "#fde68a", icon: "!", label: "Gelb" },
+      red: { bg: "#450a0a", fg: "#fecaca", icon: "✕", label: "Rot" },
+    }[level];
+
+    return {
+      sliders: mix.map((v, i) => ({
+        label: names[i],
+        value: v,
+        pct: v + " %",
+        barStyle: "width:" + v + "%; background:" + shades[i] + "; transition:width 260ms cubic-bezier(0.4,0,0.2,1);",
+        onChange: (e) => this.setSlot(i, Number(e.target.value)),
+      })),
+      badgeStyle:
+        "align-self:flex-start; display:inline-flex; align-items:center; gap:7px; border-radius:999px; padding:5px 13px; font-size:12.5px; font-weight:500; transition:background-color 500ms ease, color 500ms ease; background:" +
+        palette.bg + "; color:" + palette.fg + ";",
+      badgeIcon: palette.icon,
+      badgeLabel: palette.label,
+      riskText: text,
+      riskLesson: lesson,
+      reset: () => this.setState({ mix: DEFAULT_MIX }),
+    };
+  }
+}
+</script>
+</body>
+</html>
