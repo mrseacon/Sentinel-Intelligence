@@ -41,21 +41,20 @@ def _split_env_list(name: str, default: list[str]) -> list[str]:
     return values or default
 
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=_split_env_list("ALLOWED_ORIGINS", _DEFAULT_ALLOWED_ORIGINS),
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# F8: ohne TRUSTED_HOSTS in Produktion bleibt das Default "*" (keine
-# Einschränkung) — sobald die echte Domain als Env-Var gesetzt ist,
-# greift die Beschränkung, ohne dass ein Redeploy den lokalen Betrieb
-# (Host-Header "localhost") bricht.
-app.add_middleware(
-    TrustedHostMiddleware,
-    allowed_hosts=_split_env_list("TRUSTED_HOSTS", _DEFAULT_TRUSTED_HOSTS),
-)
+# Reihenfolge ist bewusst und NICHT die Reihenfolge, in der die Middleware
+# den Request tatsächlich sieht: Starlette registriert jede add_middleware()-
+# bzw. @app.middleware()-Schicht an Position 0 der internen Liste, d.h. die
+# ZULETZT registrierte Schicht wird zur ÄUSSERSTEN und läuft zuerst.
+# CORSMiddleware beantwortet OPTIONS-Preflight-Requests intern selbst und
+# reicht sie NICHT an app weiter (starlette/middleware/cors.py) — das
+# funktioniert aber nur, wenn CORS die äußerste Schicht ist. Bug, der das
+# hier auslöste: CORS wurde zuerst registriert (damit innerste Schicht),
+# TrustedHostMiddleware lief also VOR CORS. Ein Host-Mismatch in Produktion
+# (TRUSTED_HOSTS gesetzt) lieferte dann einen nackten 400 "Invalid host
+# header" OHNE CORS-Header aus — der Browser wertet das als fehlgeschlagenen
+# Preflight und bricht jeden nachfolgenden POST an /paper/* etc. ab, bevor
+# überhaupt eine echte Anfrage rausgeht. Fix: CORSMiddleware zuletzt
+# registrieren, damit sie zuverlässig als erste Schicht jeden Request sieht.
 
 
 @app.middleware("http")
@@ -63,6 +62,14 @@ async def limit_body_size(request: Request, call_next):
     """Global body cap (security audit F1). Header-based: bodies without
     Content-Length (chunked) pass here and are bounded by the reverse
     proxy at deployment (see ARCHITECTURE §8 deploy checklist)."""
+    # OPTIONS-Preflight-Requests haben typischerweise keinen Body und oft
+    # gar keinen Content-Length-Header — ungeprüft durchlassen. Läuft CORS
+    # korrekt als äußerste Schicht, sieht diese Middleware echte Browser-
+    # Preflights ohnehin nie (CORSMiddleware beantwortet sie vorher direkt);
+    # dieser Bypass ist die zusätzliche, explizit angeforderte Absicherung.
+    if request.method == "OPTIONS":
+        return await call_next(request)
+
     content_length = request.headers.get("content-length")
     if content_length is not None:
         try:
@@ -81,6 +88,26 @@ async def limit_body_size(request: Request, call_next):
                 },
             )
     return await call_next(request)
+
+
+# F8: ohne TRUSTED_HOSTS in Produktion bleibt das Default "*" (keine
+# Einschränkung) — sobald die echte Domain als Env-Var gesetzt ist,
+# greift die Beschränkung, ohne dass ein Redeploy den lokalen Betrieb
+# (Host-Header "localhost") bricht.
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=_split_env_list("TRUSTED_HOSTS", _DEFAULT_TRUSTED_HOSTS),
+)
+
+# Zuletzt registriert = äußerste Schicht (s. Kommentar oben) — muss JEDE
+# Anfrage als Erstes sehen, damit Preflights immer korrekt beantwortet
+# werden, egal was TrustedHost/Body-Limit dahinter tun würden.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_split_env_list("ALLOWED_ORIGINS", _DEFAULT_ALLOWED_ORIGINS),
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 register_error_handlers(app)
