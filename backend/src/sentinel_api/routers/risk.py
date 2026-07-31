@@ -12,6 +12,7 @@ see the comment on _concentration_or_none).
 
 from __future__ import annotations
 
+import pandas as pd
 from fastapi import APIRouter
 
 from sentinel_api.schemas.risk import (
@@ -51,6 +52,24 @@ def post_risk_analyze(body: RiskAnalyzeIn) -> RiskAnalyzeOut:
     weights = body.portfolio.weights
     prices = load_multiple_assets(list(weights), period=body.period)
     returns = daily_returns(prices)
+    return build_risk_analyze_out(weights, returns)
+
+
+@router.post("/ampel", response_model=RiskAmpelOut)
+def post_risk_ampel(body: RiskAmpelIn) -> RiskAmpelOut:
+    weights = body.portfolio.weights
+    prices = load_multiple_assets(list(weights), period=body.period)
+    returns = daily_returns(prices)
+    return build_risk_ampel_out(weights, returns)
+
+
+def build_risk_analyze_out(
+    weights: dict[str, float], returns: pd.DataFrame
+) -> RiskAnalyzeOut:
+    """Shared with POST /reports/risk-summary (sentinel_api/routers/
+    reports.py): both endpoints need this exact composition over an
+    already-loaded price frame, so the report avoids a second, redundant
+    yfinance round trip for the same period/weights."""
     port_returns = portfolio_returns(weights, returns)
 
     metrics = RiskMetricsOut(
@@ -80,12 +99,11 @@ def post_risk_analyze(body: RiskAnalyzeIn) -> RiskAnalyzeOut:
     )
 
 
-@router.post("/ampel", response_model=RiskAmpelOut)
-def post_risk_ampel(body: RiskAmpelIn) -> RiskAmpelOut:
-    weights = body.portfolio.weights
-    prices = load_multiple_assets(list(weights), period=body.period)
-    returns = daily_returns(prices)
-
+def build_risk_ampel_out(
+    weights: dict[str, float], returns: pd.DataFrame
+) -> RiskAmpelOut:
+    """Shared with POST /reports/risk-summary, same reasoning as
+    build_risk_analyze_out above."""
     # fixed order per contract §2.5: Klumpenrisiko, Diversifikation, Volatilität
     ampeln = [
         concentration_ampel(weights),

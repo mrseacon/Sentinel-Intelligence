@@ -18,6 +18,7 @@ from sentinel_api.errors import register_error_handlers
 from sentinel_api.limits import MAX_BODY_BYTES
 from sentinel_api.routers.paper import router as paper_router
 from sentinel_api.routers.portfolio import router as portfolio_router
+from sentinel_api.routers.reports import router as reports_router
 from sentinel_api.routers.risk import router as risk_router
 from sentinel_api.routers.simulation import router as simulation_router
 from sentinel_api.routers.stress import router as stress_router
@@ -116,6 +117,7 @@ app.include_router(risk_router)
 app.include_router(stress_router)
 app.include_router(simulation_router)
 app.include_router(portfolio_router)
+app.include_router(reports_router)
 
 
 @app.get("/health")

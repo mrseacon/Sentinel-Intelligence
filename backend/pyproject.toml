@@ -28,6 +28,13 @@ dependencies = [
     # Required by FastAPI/Starlette to parse multipart/form-data bodies
     # (POST /portfolio/upload, API_CONTRACT §2.12a).
     "python-multipart>=0.0.9",
+    # PDF generation for POST /reports/risk-summary. Chosen over WeasyPrint
+    # (HTML/CSS -> PDF, would let us reuse frontend styling) because
+    # WeasyPrint needs system libraries (Pango/Cairo/GDK) that Render's
+    # Python runtime doesn't provide without a Dockerfile — reportlab is
+    # pure Python, zero system dependencies, and fits the existing
+    # buildpack deploy (render.yaml/railway.json, ARCHITECTURE §8).
+    "reportlab>=4.0",
 ]
 
 [project.optional-dependencies]

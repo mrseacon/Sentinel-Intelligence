@@ -6,6 +6,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { ErrorNotice } from "@/components/ErrorNotice";
+import { ReportDownloadButton } from "@/components/ReportDownloadButton";
 import { Skeleton } from "@/components/Skeleton";
 import { ApiError, postRiskAnalyze } from "@/lib/api";
 import { canonicalWeights } from "@/lib/portfolio";
@@ -142,6 +143,8 @@ export function AnalyzeResult({ portfolio }: { portfolio: PortfolioIn }) {
             ))}
         </ul>
       </div>
+
+      <ReportDownloadButton portfolio={portfolio} />
     </div>
   );
 }

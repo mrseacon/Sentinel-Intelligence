@@ -149,3 +149,36 @@ export function postSimulationMonteCarlo(
 ): Promise<MonteCarloOut> {
   return postJson("/simulation/monte-carlo", body);
 }
+
+// --- reports/* --------------------------------------------------------------------
+
+/** Liefert das PDF als Blob statt JSON — kann nicht über request<T>()
+ * laufen (das ruft immer .json()). Fehlerbehandlung bleibt identisch:
+ * ein Nicht-2xx liefert weiterhin {detail, code}. */
+export async function postReportRiskSummary(
+  portfolio: PortfolioIn,
+): Promise<Blob> {
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}/reports/risk-summary`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ portfolio }),
+    });
+  } catch {
+    throw new ApiError(503, {
+      detail: "Server nicht erreichbar. Läuft das Backend?",
+      code: "UPSTREAM_UNAVAILABLE",
+    });
+  }
+
+  if (!response.ok) {
+    const body: ApiErrorBody = await response.json().catch(() => ({
+      detail: "Unbekannter Fehler.",
+      code: "DOMAIN_ERROR",
+    }));
+    throw new ApiError(response.status, body);
+  }
+
+  return response.blob();
+}

@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 
 import { ErrorNotice } from "@/components/ErrorNotice";
+import { ReportDownloadButton } from "@/components/ReportDownloadButton";
 import { Skeleton } from "@/components/Skeleton";
 import { ApiError, postRiskAmpel } from "@/lib/api";
 import { useDepot } from "@/lib/DepotProvider";
@@ -124,6 +125,8 @@ function AmpelResult({ positions }: { positions: PositionValueOut[] }) {
           <AmpelCard key={ampel.id} ampel={ampel} />
         ))}
       </div>
+
+      <ReportDownloadButton portfolio={{ weights }} />
 
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm dark:border-slate-800 dark:bg-slate-900">
         <span className="text-slate-600 dark:text-slate-300">
