@@ -10,6 +10,7 @@ import { useState } from "react";
 import type { PortfolioIn } from "@/lib/types";
 
 import { AnalyzeResult } from "./AnalyzeResult";
+import { BenchmarkCompare } from "./BenchmarkCompare";
 import { OptimizeSection } from "./OptimizeSection";
 import { PortfolioBuilder } from "./PortfolioBuilder";
 
@@ -29,6 +30,11 @@ export function AnalyzeView() {
           <section className="space-y-3">
             <h2 className="text-lg font-semibold">Analyse</h2>
             <AnalyzeResult portfolio={portfolio} />
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-lg font-semibold">Vergleich mit Index</h2>
+            <BenchmarkCompare portfolio={portfolio} />
           </section>
 
           <section className="space-y-3">

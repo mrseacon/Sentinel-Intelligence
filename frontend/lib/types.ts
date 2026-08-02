@@ -114,6 +114,40 @@ export interface RiskAmpelOut {
   ampeln: AmpelOut[]; // immer genau 3, feste Reihenfolge
 }
 
+// --- GET /risk/benchmarks, POST /risk/benchmark-compare ---------------------
+// Noch nicht Teil von API_CONTRACT.md (neu), Schemas siehe
+// backend/src/sentinel_api/schemas/risk.py.
+
+export interface RiskProfileOut {
+  metrics: RiskMetricsOut;
+  score: RiskScoreOut;
+  // kein risk_contribution: für einen Einzelticker-Benchmark trivial und
+  // für den Vergleich selbst nicht relevant.
+}
+
+export interface BenchmarkOptionOut {
+  id: string; // "msci_world" | "sp500", feste Liste
+  title: string; // deutsch, z.B. "MSCI World (URTH)"
+}
+
+export interface BenchmarksOut {
+  benchmarks: BenchmarkOptionOut[];
+}
+
+export interface BenchmarkCompareIn {
+  portfolio: PortfolioIn;
+  benchmark_id: string;
+  period?: Period;
+}
+
+export interface BenchmarkCompareOut {
+  portfolio: RiskProfileOut;
+  benchmark_id: string;
+  benchmark_title: string;
+  benchmark: RiskProfileOut;
+  comparison: string; // titel-frei, beschreibend, keine Kaufempfehlung (Prinzip 3)
+}
+
 // --- §2.6 POST /portfolio/optimize -----------------------------------------
 
 export interface OptimizeIn {

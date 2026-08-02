@@ -17,11 +17,16 @@ from fastapi import APIRouter
 
 from sentinel_api.schemas.risk import (
     AmpelOut,
+    BenchmarkCompareIn,
+    BenchmarkCompareOut,
+    BenchmarkOptionOut,
+    BenchmarksOut,
     RiskAmpelIn,
     RiskAmpelOut,
     RiskAnalyzeIn,
     RiskAnalyzeOut,
     RiskMetricsOut,
+    RiskProfileOut,
     RiskScoreOut,
     ScoreDriverOut,
 )
@@ -31,6 +36,8 @@ from sentinel_core.education.ampel import (
     diversification_ampel,
     volatility_ampel,
 )
+from sentinel_core.education.explanations import benchmark_comparison_explanation
+from sentinel_core.risk.benchmark import get_benchmark, list_benchmarks
 from sentinel_core.risk.contribution import risk_contribution
 from sentinel_core.risk.metrics import (
     daily_returns,
@@ -63,13 +70,58 @@ def post_risk_ampel(body: RiskAmpelIn) -> RiskAmpelOut:
     return build_risk_ampel_out(weights, returns)
 
 
-def build_risk_analyze_out(
+@router.get("/benchmarks", response_model=BenchmarksOut)
+def get_risk_benchmarks() -> BenchmarksOut:
+    return BenchmarksOut(
+        benchmarks=[
+            BenchmarkOptionOut(id=b.id, title=b.title) for b in list_benchmarks()
+        ]
+    )
+
+
+@router.post("/benchmark-compare", response_model=BenchmarkCompareOut)
+def post_risk_benchmark_compare(body: BenchmarkCompareIn) -> BenchmarkCompareOut:
+    benchmark = get_benchmark(body.benchmark_id)
+    weights = body.portfolio.weights
+
+    # Two independent trips through the SAME pipeline (no new math): the
+    # portfolio's own tickers, and the benchmark as a trivial single-
+    # ticker "portfolio" {ticker: 1.0}. Loaded separately (not aligned to
+    # a common date range) — each side's own metrics are self-contained,
+    # a joint covariance is not needed for this comparison.
+    portfolio_prices = load_multiple_assets(list(weights), period=body.period)
+    portfolio_returns_df = daily_returns(portfolio_prices)
+    portfolio_profile = build_risk_profile_out(weights, portfolio_returns_df)
+
+    benchmark_weights = {benchmark.ticker: 1.0}
+    benchmark_prices = load_multiple_assets(list(benchmark_weights), period=body.period)
+    benchmark_returns_df = daily_returns(benchmark_prices)
+    benchmark_profile = build_risk_profile_out(benchmark_weights, benchmark_returns_df)
+
+    comparison = benchmark_comparison_explanation(
+        benchmark_title=benchmark.title,
+        portfolio_volatility=portfolio_profile.metrics.volatility,
+        benchmark_volatility=benchmark_profile.metrics.volatility,
+        portfolio_score=portfolio_profile.score.score,
+        benchmark_score=benchmark_profile.score.score,
+    )
+
+    return BenchmarkCompareOut(
+        portfolio=portfolio_profile,
+        benchmark_id=benchmark.id,
+        benchmark_title=benchmark.title,
+        benchmark=benchmark_profile,
+        comparison=comparison,
+    )
+
+
+def build_risk_profile_out(
     weights: dict[str, float], returns: pd.DataFrame
-) -> RiskAnalyzeOut:
-    """Shared with POST /reports/risk-summary (sentinel_api/routers/
-    reports.py): both endpoints need this exact composition over an
-    already-loaded price frame, so the report avoids a second, redundant
-    yfinance round trip for the same period/weights."""
+) -> RiskProfileOut:
+    """metrics + score only, no risk_contribution — shared by
+    build_risk_analyze_out below (which adds contribution on top) and
+    POST /risk/benchmark-compare (where contribution is meaningless: a
+    single-ticker benchmark's contribution is trivially 100 % anyway)."""
     port_returns = portfolio_returns(weights, returns)
 
     metrics = RiskMetricsOut(
@@ -82,9 +134,8 @@ def build_risk_analyze_out(
     )
 
     score = score_portfolio(weights, returns)
-    contribution = risk_contribution(weights, returns)
 
-    return RiskAnalyzeOut(
+    return RiskProfileOut(
         metrics=metrics,
         score=RiskScoreOut(
             score=score.score,
@@ -95,6 +146,22 @@ def build_risk_analyze_out(
                 for driver in score.drivers
             ],
         ),
+    )
+
+
+def build_risk_analyze_out(
+    weights: dict[str, float], returns: pd.DataFrame
+) -> RiskAnalyzeOut:
+    """Shared with POST /reports/risk-summary (sentinel_api/routers/
+    reports.py): both endpoints need this exact composition over an
+    already-loaded price frame, so the report avoids a second, redundant
+    yfinance round trip for the same period/weights."""
+    profile = build_risk_profile_out(weights, returns)
+    contribution = risk_contribution(weights, returns)
+
+    return RiskAnalyzeOut(
+        metrics=profile.metrics,
+        score=profile.score,
         risk_contribution={ticker: float(v) for ticker, v in contribution.items()},
     )
 

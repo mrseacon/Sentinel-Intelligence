@@ -10,6 +10,9 @@
 
 import type {
   AccountValuationOut,
+  BenchmarkCompareIn,
+  BenchmarkCompareOut,
+  BenchmarksOut,
   OptimizeIn,
   OptimizeOut,
   PaperExecuteIn,
@@ -98,6 +101,16 @@ export function postRiskAnalyze(body: RiskAnalyzeIn): Promise<RiskAnalyzeOut> {
 
 export function postRiskAmpel(body: RiskAmpelIn): Promise<RiskAmpelOut> {
   return postJson("/risk/ampel", body);
+}
+
+export function getRiskBenchmarks(): Promise<BenchmarksOut> {
+  return request("/risk/benchmarks");
+}
+
+export function postRiskBenchmarkCompare(
+  body: BenchmarkCompareIn,
+): Promise<BenchmarkCompareOut> {
+  return postJson("/risk/benchmark-compare", body);
 }
 
 // --- portfolio/* --------------------------------------------------------------

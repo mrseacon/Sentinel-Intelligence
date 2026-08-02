@@ -152,3 +152,20 @@ AMPEL_MIN_POSITIONS_GREEN = 5
 # Annualized portfolio volatility: <= 15 % green, <= 25 % yellow, else red.
 AMPEL_VOL_GREEN_MAX = 0.15
 AMPEL_VOL_YELLOW_MAX = 0.25
+
+# --- Benchmark comparison (risk/benchmark-compare) --------------------------
+# Fixed ETF proxies for well-known indices: the indices themselves (MSCI
+# World, S&P 500) have no directly tradable yfinance ticker, but a liquid
+# ETF tracking each one does. Live-verified loadable via the existing
+# loader (no gaps, both >2026-01-01) before adding this feature.
+BENCHMARK_TICKERS = {
+    "msci_world": {"title": "MSCI World (URTH)", "ticker": "URTH"},
+    "sp500": {"title": "S&P 500 (SPY)", "ticker": "SPY"},
+}
+
+# "Similar" bands for the comparison text: differences smaller than these
+# are described as "ähnlich" rather than higher/lower, so tiny, noisy
+# differences don't read as a meaningful signal. Set but uncalibrated
+# (ARCHITECTURE §10).
+BENCHMARK_VOL_SIMILAR_BAND = 0.02  # +/- 2 percentage points annualized vol
+BENCHMARK_SCORE_SIMILAR_BAND = 5.0  # +/- 5 score points (0..100 scale)

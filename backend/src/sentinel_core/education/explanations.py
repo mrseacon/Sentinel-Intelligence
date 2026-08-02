@@ -17,6 +17,11 @@ from typing import Literal
 
 import pandas as pd
 
+from sentinel_core.constants import (
+    BENCHMARK_SCORE_SIMILAR_BAND,
+    BENCHMARK_VOL_SIMILAR_BAND,
+)
+
 AmpelStatus = Literal["green", "yellow", "red"]
 
 LESSON_CONCENTRATION = (
@@ -262,4 +267,50 @@ def volatility_explanation(status: AmpelStatus, annualized_vol: float) -> str:
         f"Dein Depot schwankt stark: rund {_pct(annualized_vol)} pro Jahr. "
         f"In schwachen Marktphasen kann der Depotwert zeitweise erheblich "
         f"einbrechen."
+    )
+
+
+# --- benchmark comparison (risk/benchmark-compare) ---------------------------
+# Deliberately compares only volatility and score, not diversification_ratio
+# or HHI: for a single-ticker benchmark those are always trivially 1.0/None,
+# so any multi-asset portfolio would always look "more diversified" by
+# construction, not because of a real insight — that would be a misleading
+# comparison, not a description (principle 3 also governs what NOT to say).
+
+
+def benchmark_comparison_explanation(
+    benchmark_title: str,
+    portfolio_volatility: float,
+    benchmark_volatility: float,
+    portfolio_score: float,
+    benchmark_score: float,
+) -> str:
+    """Depot-specific comparison text: descriptive, never a recommendation,
+    ticker-free (only the benchmark's own name is mentioned, never a
+    position from the portfolio)."""
+    vol_diff = portfolio_volatility - benchmark_volatility
+    if abs(vol_diff) < BENCHMARK_VOL_SIMILAR_BAND:
+        vol_clause = f"schwankt ähnlich stark wie der {benchmark_title}"
+    elif vol_diff > 0:
+        vol_clause = f"schwankt stärker als der {benchmark_title}"
+    else:
+        vol_clause = f"schwankt ruhiger als der {benchmark_title}"
+
+    score_diff = portfolio_score - benchmark_score
+    if abs(score_diff) < BENCHMARK_SCORE_SIMILAR_BAND:
+        score_clause = "Der Risiko-Score liegt in einer ähnlichen Größenordnung."
+    elif score_diff > 0:
+        score_clause = (
+            f"Der Risiko-Score liegt {round(score_diff)} Punkte höher als "
+            f"beim {benchmark_title}."
+        )
+    else:
+        score_clause = (
+            f"Der Risiko-Score liegt {round(abs(score_diff))} Punkte "
+            f"niedriger als beim {benchmark_title}."
+        )
+
+    return (
+        f"Dein Depot {vol_clause}: {_pct(portfolio_volatility)} gegenüber "
+        f"{_pct(benchmark_volatility)} pro Jahr. {score_clause}"
     )

@@ -303,6 +303,10 @@ WebSockets, mehrere Depots pro Nutzer, Benchmarks/Vergleichsindizes.
   Handelstage) und Dünn-Historie-Schwelle (3 Jahre) sind gesetzte, aber
   unkalibrierte Werte; t-Verteilungs-Vergleichsmodus und Block-Bootstrap
   frühestens Phase 2
+- Benchmark-Vergleich (`risk/benchmark-compare`): "ähnlich"-Bänder für
+  den Vergleichstext (Vol ±2 Prozentpunkte, Score ±5 Punkte) sind
+  gesetzt, aber unkalibriert; weitere Vergleichsindizes (z. B. Nasdaq,
+  Stoxx Europe 600) frühestens Phase 2
 
 **Entschieden am 2026-07-06** (Details + Trade-offs in
 STRESS_TEST_DECISIONS.md): Stress-Replay mit drei festen

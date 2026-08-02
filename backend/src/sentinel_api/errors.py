@@ -38,6 +38,7 @@ ERROR_CODE_REGISTRY: tuple[tuple[str, str], ...] = (
     ("Negative Gewichte", "PORTFOLIO_INVALID"),
     ("Summe der Gewichte", "PORTFOLIO_INVALID"),
     ("Unbekanntes Krisen-Szenario", "STRESS_UNKNOWN_PRESET"),
+    ("Unbekannter Vergleichsindex", "BENCHMARK_UNKNOWN"),
     ("nicht aussagekräftig", "STRESS_INSUFFICIENT_COVERAGE"),
     ("Zeithorizont muss", "SIM_HORIZON_INVALID"),
     ("Zu wenig Kurshistorie", "SIM_INSUFFICIENT_HISTORY"),

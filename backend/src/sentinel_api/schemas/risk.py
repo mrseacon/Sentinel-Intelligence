@@ -16,11 +16,16 @@ from sentinel_api.schemas.common import Period, PortfolioIn
 
 __all__ = [
     "AmpelOut",
+    "BenchmarkCompareIn",
+    "BenchmarkCompareOut",
+    "BenchmarkOptionOut",
+    "BenchmarksOut",
     "RiskAmpelIn",
     "RiskAmpelOut",
     "RiskAnalyzeIn",
     "RiskAnalyzeOut",
     "RiskMetricsOut",
+    "RiskProfileOut",
     "RiskScoreOut",
     "ScoreDriverOut",
 ]
@@ -74,3 +79,40 @@ class AmpelOut(BaseModel):
 
 class RiskAmpelOut(BaseModel):
     ampeln: list[AmpelOut]
+
+
+# --- risk/benchmark-compare ---------------------------------------------------
+
+
+class RiskProfileOut(BaseModel):
+    """metrics + score, no risk_contribution (§4-style aggregation, like
+    RiskAnalyzeOut but trimmed — contribution is meaningless for a
+    single-ticker benchmark and unused for the comparison itself). Shared
+    shape for BOTH the portfolio and the benchmark side, so the frontend
+    can render them with the same component."""
+
+    metrics: RiskMetricsOut
+    score: RiskScoreOut
+
+
+class BenchmarkOptionOut(BaseModel):
+    id: str
+    title: str
+
+
+class BenchmarksOut(BaseModel):
+    benchmarks: list[BenchmarkOptionOut]
+
+
+class BenchmarkCompareIn(BaseModel):
+    portfolio: PortfolioIn
+    benchmark_id: str
+    period: Period = "1y"
+
+
+class BenchmarkCompareOut(BaseModel):
+    portfolio: RiskProfileOut
+    benchmark_id: str
+    benchmark_title: str
+    benchmark: RiskProfileOut
+    comparison: str  # titel-frei, beschreibend, keine Kaufempfehlung (Prinzip 3)
