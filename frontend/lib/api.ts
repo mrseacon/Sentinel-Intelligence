@@ -31,6 +31,7 @@ import type {
   StressReplayOut,
   MonteCarloIn,
   MonteCarloOut,
+  NewsHeadlinesOut,
   TransactionIO,
   ApiErrorBody,
 } from "./types";
@@ -169,6 +170,13 @@ export function postSimulationMonteCarlo(
   body: MonteCarloIn,
 ): Promise<MonteCarloOut> {
   return postJson("/simulation/monte-carlo", body);
+}
+
+// --- news/* -------------------------------------------------------------------
+
+// Kein LLM/AI-Gate: reiner RSS-Fetch, immer verfügbar (s. lib/types.ts).
+export function getNewsHeadlines(ticker: string): Promise<NewsHeadlinesOut> {
+  return request(`/news/headlines?ticker=${encodeURIComponent(ticker)}`);
 }
 
 // --- reports/* --------------------------------------------------------------------

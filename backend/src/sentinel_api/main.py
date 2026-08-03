@@ -16,6 +16,7 @@ from fastapi.responses import JSONResponse
 
 from sentinel_api.errors import register_error_handlers
 from sentinel_api.limits import MAX_BODY_BYTES
+from sentinel_api.routers.news import router as news_router
 from sentinel_api.routers.paper import router as paper_router
 from sentinel_api.routers.portfolio import router as portfolio_router
 from sentinel_api.routers.reports import router as reports_router
@@ -118,6 +119,7 @@ app.include_router(stress_router)
 app.include_router(simulation_router)
 app.include_router(portfolio_router)
 app.include_router(reports_router)
+app.include_router(news_router)
 
 
 @app.get("/health")

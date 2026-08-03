@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { ErrorNotice } from "@/components/ErrorNotice";
+import { PositionNews } from "@/components/PositionNews";
 import { Skeleton } from "@/components/Skeleton";
 import type { ApiError } from "@/lib/api";
 import { useDepot } from "@/lib/DepotProvider";
@@ -133,7 +134,8 @@ function DepotOverview({
                 <th className="py-1 pr-4 font-medium">Ø Kaufpreis</th>
                 <th className="py-1 pr-4 font-medium">Kurs</th>
                 <th className="py-1 pr-4 font-medium">Wert</th>
-                <th className="py-1 font-medium">P&L</th>
+                <th className="py-1 pr-4 font-medium">P&L</th>
+                <th className="py-1 font-medium">Nachrichten</th>
               </tr>
             </thead>
             <tbody>
@@ -154,7 +156,7 @@ function DepotOverview({
                     {p.market_value.toFixed(2)} €
                   </td>
                   <td
-                    className={`py-1.5 ${
+                    className={`py-1.5 pr-4 ${
                       p.unrealized_pnl >= 0
                         ? "text-emerald-600"
                         : "text-red-600"
@@ -162,6 +164,9 @@ function DepotOverview({
                   >
                     {p.unrealized_pnl >= 0 ? "+" : ""}
                     {p.unrealized_pnl.toFixed(2)} €
+                  </td>
+                  <td className="py-1.5">
+                    <PositionNews ticker={p.ticker} />
                   </td>
                 </tr>
               ))}

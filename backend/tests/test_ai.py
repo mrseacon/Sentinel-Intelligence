@@ -17,7 +17,7 @@ from sentinel_core.ai.risk_adjustment import (
     assess_market,
     sentiment_delta,
 )
-from sentinel_core.constants import NEWS_MAX_HEADLINES
+from sentinel_core.constants import NEWS_LIMIT_PER_TICKER, NEWS_MAX_HEADLINES
 
 # --- asymmetric adjustment (§7) -----------------------------------------------
 
@@ -232,9 +232,18 @@ def test_filter_overblocks_by_design():
 # --- news pipeline (§9) ----------------------------------------------------------
 
 
-def rss(*titles: str) -> bytes:
-    items = "".join(f"<item><title>{t}</title></item>" for t in titles)
-    return f"<rss><channel>{items}</channel></rss>".encode()
+def rss(
+    *titles: str, links: list[str] | None = None, pub_dates: list[str] | None = None
+) -> bytes:
+    items = []
+    for i, title in enumerate(titles):
+        fields = f"<title>{title}</title>"
+        if links:
+            fields += f"<link>{links[i]}</link>"
+        if pub_dates:
+            fields += f"<pubDate>{pub_dates[i]}</pubDate>"
+        items.append(f"<item>{fields}</item>")
+    return f"<rss><channel>{''.join(items)}</channel></rss>".encode()
 
 
 def patch_feeds(monkeypatch, feeds: dict[str, bytes | Exception]):
@@ -343,3 +352,90 @@ def test_bucket_classifier_uses_uppercase_ticker(monkeypatch):
     buckets = {h.title: h.bucket for h in headlines}
     assert buckets["NVDA beats estimates"] == "company"
     assert buckets["Fed pauses"] == "macro"
+
+
+def test_headline_captures_link_and_published_date(monkeypatch):
+    patch_feeds(
+        monkeypatch,
+        {
+            "stock%20market%20risk": rss(
+                "Fed pauses - WSJ",
+                links=["https://example.com/fed-pauses"],
+                pub_dates=["Sun, 02 Aug 2026 12:00:00 GMT"],
+            )
+        },
+    )
+
+    headlines = news.fetch_headlines([])
+
+    assert headlines[0].link == "https://example.com/fed-pauses"
+    assert headlines[0].published is not None
+    assert headlines[0].published.year == 2026
+
+
+def test_headline_without_pub_date_degrades_to_none(monkeypatch):
+    patch_feeds(monkeypatch, {"stock%20market%20risk": rss("Plain headline - Reuters")})
+
+    headlines = news.fetch_headlines([])  # must not raise
+
+    assert headlines[0].link == ""
+    assert headlines[0].published is None
+
+
+# --- fetch_ticker_headlines: single-ticker fetch, no macro queries ---------------
+#
+# Separate from fetch_headlines() (see its docstring): real Google feeds
+# return ~100 items per query, so fetch_headlines()'s macro-first order
+# with each macro query capped at NEWS_MAX_HEADLINES starves out the
+# ticker query before it is ever reached. These tests pin the fix:
+# exactly one request, no macro queries, real ticker headlines returned.
+
+
+def test_ticker_headlines_fires_only_the_ticker_query(monkeypatch):
+    urls, sleeps = patch_feeds(
+        monkeypatch, {"NVDA": rss("NVDA beats estimates - CNBC")}
+    )
+
+    headlines = news.fetch_ticker_headlines("NVDA")
+
+    assert len(urls) == 1  # no macro queries at all
+    assert "NVDA" in urls[0]
+    assert sleeps == []  # single request: nothing to throttle between
+    assert [h.title for h in headlines] == ["NVDA beats estimates"]
+    assert headlines[0].bucket == "company"
+
+
+def test_ticker_headlines_deduped_and_capped_at_limit_per_ticker(monkeypatch):
+    titles = [f"NVDA item {i} - X" for i in range(6)]
+    patch_feeds(monkeypatch, {"NVDA": rss(*titles, *titles)})  # duplicated feed
+
+    headlines = news.fetch_ticker_headlines("NVDA")
+
+    assert len(headlines) == NEWS_LIMIT_PER_TICKER
+    assert len({h.title for h in headlines}) == NEWS_LIMIT_PER_TICKER
+
+
+def test_ticker_headlines_captures_link_and_published_date(monkeypatch):
+    patch_feeds(
+        monkeypatch,
+        {
+            "NVDA": rss(
+                "NVDA beats estimates - CNBC",
+                links=["https://example.com/nvda"],
+                pub_dates=["Sun, 02 Aug 2026 12:00:00 GMT"],
+            )
+        },
+    )
+
+    headlines = news.fetch_ticker_headlines("NVDA")
+
+    assert headlines[0].link == "https://example.com/nvda"
+    assert headlines[0].published is not None
+
+
+def test_ticker_headlines_unreachable_feed_is_a_warning_not_an_error(monkeypatch):
+    patch_feeds(monkeypatch, {"NVDA": ConnectionError("Feed nicht erreichbar")})
+
+    headlines = news.fetch_ticker_headlines("NVDA")  # must not raise
+
+    assert headlines == []

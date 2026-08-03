@@ -299,3 +299,20 @@ export interface MonteCarloOut {
 
 // --- §2.12a POST /portfolio/upload --------------------------------------------
 // Request: multipart/form-data (Feld "file"). Response: PortfolioIn.
+
+// --- GET /news/headlines --------------------------------------------------
+// Noch nicht Teil von API_CONTRACT.md (neu), Schema siehe
+// backend/src/sentinel_api/schemas/news.py. Bewusst OHNE LLM/AI-Gate
+// (SENTINEL_AI_ENABLED) — reiner RSS-Fetch, immer verfügbar.
+
+export interface NewsHeadlineOut {
+  title: string;
+  source: string;
+  link: string;
+  published: string | null; // ISO 8601, null wenn der Feed kein Datum lieferte
+}
+
+export interface NewsHeadlinesOut {
+  ticker: string;
+  headlines: NewsHeadlineOut[];
+}

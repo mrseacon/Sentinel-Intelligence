@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import time
 import xml.etree.ElementTree as ET
+from datetime import datetime
+from email.utils import parsedate_to_datetime
 from urllib.parse import quote
 
 import requests
@@ -38,6 +40,8 @@ class Headline(BaseModel):
 
     title: str
     source: str
+    link: str
+    published: datetime | None  # None if the feed omitted/malformed pubDate
     bucket: str  # "macro" | "company"
 
 
@@ -68,10 +72,10 @@ def fetch_headlines(tickers: list[str]) -> list[Headline]:
         if index > 0:
             time.sleep(NEWS_THROTTLE_SECONDS)  # polite throttling (§9)
         taken = 0
-        for raw_title in _fetch_feed(query):
+        for raw_item in _fetch_feed(query):
             if taken >= limit or len(headlines) >= NEWS_MAX_HEADLINES:
                 break
-            title, source = _split_title(raw_title)
+            title, source = _split_title(raw_item["title"])
             # dedupe by lowercase title: the same story arrives via
             # several queries (§9)
             if not title or title.lower() in seen_titles:
@@ -81,6 +85,8 @@ def fetch_headlines(tickers: list[str]) -> list[Headline]:
                 Headline(
                     title=title,
                     source=source,
+                    link=raw_item["link"],
+                    published=_parse_pub_date(raw_item["pub_date"]),
                     bucket=classify_headline_bucket(title, tickers),
                 )
             )
@@ -88,9 +94,52 @@ def fetch_headlines(tickers: list[str]) -> list[Headline]:
     return headlines
 
 
-def _fetch_feed(query: str) -> list[str]:
-    """Raw titles of one RSS query; any failure yields [] (warning-level
-    semantics: news must never break the caller, §9/§14)."""
+def fetch_ticker_headlines(ticker: str) -> list[Headline]:
+    """Company headlines for ONE ticker, no macro queries.
+
+    Deliberately separate from fetch_headlines(), not a thin wrapper
+    around it: that function fires the fixed macro-first query order
+    (§9) with EACH macro query capped at NEWS_MAX_HEADLINES (25), and
+    real Google feeds return ~100 items per query — so on live data the
+    very first macro query alone fills the global cap and the ticker
+    query is never reached (discovered while building
+    GET /news/headlines, which needs real per-ticker results). This
+    function only ever fires the single ticker query, so it always
+    returns ticker news regardless of that cap. fetch_headlines() stays
+    untouched for the (unwired) AI sentiment pipeline, which relies on
+    its macro-first mix and cap.
+
+    Never raises: an unreachable feed simply yields [] (§9/§14).
+    """
+    headlines: list[Headline] = []
+    seen_titles: set[str] = set()
+
+    for raw_item in _fetch_feed(f'"{ticker}" stock'):
+        if len(headlines) >= NEWS_LIMIT_PER_TICKER:
+            break
+        title, source = _split_title(raw_item["title"])
+        # dedupe by lowercase title: the same story can appear twice
+        # in one feed (§9)
+        if not title or title.lower() in seen_titles:
+            continue
+        seen_titles.add(title.lower())
+        headlines.append(
+            Headline(
+                title=title,
+                source=source,
+                link=raw_item["link"],
+                published=_parse_pub_date(raw_item["pub_date"]),
+                # No macro query mixed in here — every result IS
+                # ticker-specific by construction.
+                bucket="company",
+            )
+        )
+    return headlines
+
+
+def _fetch_feed(query: str) -> list[dict[str, str]]:
+    """Raw title/link/pubDate of one RSS query; any failure yields []
+    (warning-level semantics: news must never break the caller, §9/§14)."""
     url = _FEED_URL.format(query=quote(query))
     try:
         response = requests.get(url, headers=_HEADERS, timeout=_TIMEOUT_SECONDS)
@@ -98,7 +147,25 @@ def _fetch_feed(query: str) -> list[str]:
         root = ET.fromstring(response.content)
     except Exception:  # noqa: BLE001 — deliberate: news are optional
         return []
-    return [item.findtext("title") or "" for item in root.iter("item")]
+    return [
+        {
+            "title": item.findtext("title") or "",
+            "link": item.findtext("link") or "",
+            "pub_date": item.findtext("pubDate") or "",
+        }
+        for item in root.iter("item")
+    ]
+
+
+def _parse_pub_date(raw: str) -> datetime | None:
+    """Google's pubDate is RFC 822. Missing/malformed dates degrade to
+    None rather than raising (§9: news must never break the caller)."""
+    if not raw:
+        return None
+    try:
+        return parsedate_to_datetime(raw)
+    except (TypeError, ValueError):
+        return None
 
 
 def _split_title(raw_title: str) -> tuple[str, str]:
