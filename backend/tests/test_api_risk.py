@@ -100,3 +100,36 @@ def test_risk_ampel_negative_weight_gives_contract_error(monkeypatch):
     assert body["code"] == "PORTFOLIO_INVALID"
     assert "Negative Gewichte" in body["detail"]
     assert "MSFT" in body["detail"]
+
+
+# --- /risk/correlation -------------------------------------------------------------
+
+
+def test_risk_correlation_happy_path(monkeypatch):
+    patch_download(monkeypatch, price_frame_from_returns(sample_returns()))
+
+    response = client.post(
+        "/risk/correlation", json={"portfolio": {"weights": WEIGHTS}}
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["tickers"] == sorted(WEIGHTS)
+    n = len(body["tickers"])
+    assert len(body["matrix"]) == n
+    for i, row in enumerate(body["matrix"]):
+        assert len(row) == n
+        assert row[i] == pytest.approx(1.0)
+
+
+def test_risk_correlation_single_asset_gives_contract_error(monkeypatch):
+    patch_download(monkeypatch, price_frame_from_returns(sample_returns(["AAPL"])))
+
+    response = client.post(
+        "/risk/correlation", json={"portfolio": {"weights": {"AAPL": 1.0}}}
+    )
+
+    assert response.status_code == 422
+    body = response.json()
+    assert body["code"] == "CORRELATION_INVALID_INPUT"
+    assert "mindestens 2 Assets" in body["detail"]

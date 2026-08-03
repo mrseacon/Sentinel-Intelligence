@@ -21,6 +21,8 @@ from sentinel_api.schemas.risk import (
     BenchmarkCompareOut,
     BenchmarkOptionOut,
     BenchmarksOut,
+    CorrelationIn,
+    CorrelationOut,
     RiskAmpelIn,
     RiskAmpelOut,
     RiskAnalyzeIn,
@@ -39,6 +41,7 @@ from sentinel_core.education.ampel import (
 from sentinel_core.education.explanations import benchmark_comparison_explanation
 from sentinel_core.risk.benchmark import get_benchmark, list_benchmarks
 from sentinel_core.risk.contribution import risk_contribution
+from sentinel_core.risk.correlation import correlation_matrix
 from sentinel_core.risk.metrics import (
     daily_returns,
     diversification_ratio,
@@ -113,6 +116,14 @@ def post_risk_benchmark_compare(body: BenchmarkCompareIn) -> BenchmarkCompareOut
         benchmark=benchmark_profile,
         comparison=comparison,
     )
+
+
+@router.post("/correlation", response_model=CorrelationOut)
+def post_risk_correlation(body: CorrelationIn) -> CorrelationOut:
+    weights = body.portfolio.weights
+    prices = load_multiple_assets(list(weights), period=body.period)
+    returns = daily_returns(prices)
+    return CorrelationOut(**correlation_matrix(returns))
 
 
 def build_risk_profile_out(

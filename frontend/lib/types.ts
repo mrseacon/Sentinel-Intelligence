@@ -148,6 +148,20 @@ export interface BenchmarkCompareOut {
   comparison: string; // titel-frei, beschreibend, keine Kaufempfehlung (Prinzip 3)
 }
 
+// --- POST /risk/correlation --------------------------------------------------
+// Noch nicht Teil von API_CONTRACT.md (neu), Schema siehe
+// backend/src/sentinel_api/schemas/risk.py.
+
+export interface CorrelationIn {
+  portfolio: PortfolioIn;
+  period?: Period;
+}
+
+export interface CorrelationOut {
+  tickers: string[]; // alphabetisch sortiert, deterministisch
+  matrix: number[][]; // matrix[i][j] = Korrelation(tickers[i], tickers[j]), Diagonale 1.0
+}
+
 // --- §2.6 POST /portfolio/optimize -----------------------------------------
 
 export interface OptimizeIn {

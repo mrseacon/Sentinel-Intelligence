@@ -7,10 +7,11 @@
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 
+import { CorrelationHeatmap } from "@/components/CorrelationHeatmap";
 import { ErrorNotice } from "@/components/ErrorNotice";
 import { ReportDownloadButton } from "@/components/ReportDownloadButton";
 import { Skeleton } from "@/components/Skeleton";
-import { ApiError, postRiskAmpel } from "@/lib/api";
+import { ApiError, postRiskAmpel, postRiskCorrelation } from "@/lib/api";
 import { useDepot } from "@/lib/DepotProvider";
 import { canonicalWeights, derivePortfolioWeights } from "@/lib/portfolio";
 import type { AmpelOut, AmpelStatus, PositionValueOut } from "@/lib/types";
@@ -128,6 +129,8 @@ function AmpelResult({ positions }: { positions: PositionValueOut[] }) {
 
       <ReportDownloadButton portfolio={{ weights }} />
 
+      <CorrelationSection weights={weights} positionCount={positions.length} />
+
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm dark:border-slate-800 dark:bg-slate-900">
         <span className="text-slate-600 dark:text-slate-300">
           Wie hätte sich dein Depot in einer vergangenen Krise geschlagen?
@@ -141,6 +144,59 @@ function AmpelResult({ positions }: { positions: PositionValueOut[] }) {
       </div>
     </div>
   );
+}
+
+function CorrelationSection({
+  weights,
+  positionCount,
+}: {
+  weights: Record<string, number>;
+  positionCount: number;
+}) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <h2 className="text-lg font-semibold">Korrelation deiner Positionen</h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          Positionen mit hoher Korrelation bewegen sich ähnlich, das
+          schwächt den Diversifikationseffekt: Verluste treffen dann
+          mehrere Positionen gleichzeitig statt sich gegenseitig
+          auszugleichen.
+        </p>
+      </div>
+
+      {positionCount < 2 ? (
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          Für eine Korrelationsmatrix braucht es mindestens 2 Positionen im
+          Depot.
+        </p>
+      ) : (
+        <CorrelationResult weights={weights} />
+      )}
+    </div>
+  );
+}
+
+function CorrelationResult({ weights }: { weights: Record<string, number> }) {
+  const correlationQuery = useQuery({
+    queryKey: ["risk", "correlation", canonicalWeights(weights)],
+    queryFn: () => postRiskCorrelation({ portfolio: { weights } }),
+  });
+
+  if (correlationQuery.error instanceof ApiError) {
+    return (
+      <ErrorNotice
+        error={correlationQuery.error}
+        onRetry={() => correlationQuery.refetch()}
+      />
+    );
+  }
+
+  if (correlationQuery.isPending || !correlationQuery.data) {
+    return <Skeleton className="h-48 w-full" />;
+  }
+
+  return <CorrelationHeatmap {...correlationQuery.data} />;
 }
 
 const STATUS_STYLES: Record<

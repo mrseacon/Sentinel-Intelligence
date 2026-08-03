@@ -13,6 +13,8 @@ import type {
   BenchmarkCompareIn,
   BenchmarkCompareOut,
   BenchmarksOut,
+  CorrelationIn,
+  CorrelationOut,
   OptimizeIn,
   OptimizeOut,
   PaperExecuteIn,
@@ -111,6 +113,12 @@ export function postRiskBenchmarkCompare(
   body: BenchmarkCompareIn,
 ): Promise<BenchmarkCompareOut> {
   return postJson("/risk/benchmark-compare", body);
+}
+
+export function postRiskCorrelation(
+  body: CorrelationIn,
+): Promise<CorrelationOut> {
+  return postJson("/risk/correlation", body);
 }
 
 // --- portfolio/* --------------------------------------------------------------

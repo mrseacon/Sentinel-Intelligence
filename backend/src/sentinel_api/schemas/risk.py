@@ -20,6 +20,8 @@ __all__ = [
     "BenchmarkCompareOut",
     "BenchmarkOptionOut",
     "BenchmarksOut",
+    "CorrelationIn",
+    "CorrelationOut",
     "RiskAmpelIn",
     "RiskAmpelOut",
     "RiskAnalyzeIn",
@@ -116,3 +118,16 @@ class BenchmarkCompareOut(BaseModel):
     benchmark_title: str
     benchmark: RiskProfileOut
     comparison: str  # titel-frei, beschreibend, keine Kaufempfehlung (Prinzip 3)
+
+
+# --- risk/correlation ---------------------------------------------------
+
+
+class CorrelationIn(BaseModel):
+    portfolio: PortfolioIn
+    period: Period = "1y"
+
+
+class CorrelationOut(BaseModel):
+    tickers: list[str]  # alphabetisch sortiert, deterministisch
+    matrix: list[list[float]]  # matrix[i][j] = Korrelation(tickers[i], tickers[j])

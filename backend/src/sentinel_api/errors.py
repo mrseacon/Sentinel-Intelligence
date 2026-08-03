@@ -45,6 +45,7 @@ ERROR_CODE_REGISTRY: tuple[tuple[str, str], ...] = (
     ("nicht konvergiert", "OPTIMIZER_NO_CONVERGENCE"),
     ("enthalten Lücken", "OPTIMIZER_INVALID_INPUT"),
     ("degeneriert", "OPTIMIZER_INVALID_INPUT"),
+    ("Korrelationsmatrix benötigt mindestens 2 Assets", "CORRELATION_INVALID_INPUT"),
     ("mindestens 2 Assets", "OPTIMIZER_INVALID_INPUT"),
     ("Zu wenige Datenpunkte", "OPTIMIZER_INVALID_INPUT"),
     ("Die CSV", "UPLOAD_INVALID"),
