@@ -12,10 +12,12 @@ import { useQuery } from "@tanstack/react-query";
 import { ErrorNotice } from "@/components/ErrorNotice";
 import { Skeleton } from "@/components/Skeleton";
 import { ApiError, getNewsHeadlines } from "@/lib/api";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 const MAX_SHOWN_HEADLINES = 4;
 
 export function PositionNews({ ticker }: { ticker: string }) {
+  const { dict } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -24,7 +26,7 @@ export function PositionNews({ ticker }: { ticker: string }) {
       onToggle={(event) => setIsOpen(event.currentTarget.open)}
     >
       <summary className="cursor-pointer font-medium text-slate-600 dark:text-slate-300">
-        Aktuelle Nachrichten
+        {dict.positionNews.summary}
       </summary>
       <div className="mt-2">{isOpen && <NewsList ticker={ticker} />}</div>
     </details>
@@ -32,6 +34,7 @@ export function PositionNews({ ticker }: { ticker: string }) {
 }
 
 function NewsList({ ticker }: { ticker: string }) {
+  const { dict } = useI18n();
   const newsQuery = useQuery({
     queryKey: ["news", "headlines", ticker],
     queryFn: () => getNewsHeadlines(ticker),
@@ -62,16 +65,14 @@ function NewsList({ ticker }: { ticker: string }) {
   // Feed liefert warnend [] statt zu werfen) — still anzeigen.
   if (headlines.length === 0) {
     return (
-      <p className="text-slate-500 dark:text-slate-400">
-        Keine aktuellen Meldungen.
-      </p>
+      <p className="text-slate-500 dark:text-slate-400">{dict.positionNews.none}</p>
     );
   }
 
   return (
     <div>
       <p className="mb-1.5 text-slate-500 dark:text-slate-400">
-        Aktuelle Berichterstattung zu {ticker}:
+        {dict.positionNews.coverageFor(ticker)}
       </p>
       <ul className="space-y-1">
         {headlines.map((headline) => (
