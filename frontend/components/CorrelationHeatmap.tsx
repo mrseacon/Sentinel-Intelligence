@@ -6,6 +6,7 @@
 // garantiert, ohne einen eigenen Farb-Interpolationscode zu schreiben
 // (anders als die hartkodierte Recharts-Stroke-Farbe im Stress-Chart,
 // die im Dark Mode unsichtbar wird).
+import { useI18n } from "@/lib/i18n/I18nProvider";
 import type { CorrelationOut } from "@/lib/types";
 
 interface Bucket {
@@ -50,15 +51,16 @@ function classForValue(value: number): string {
 }
 
 export function CorrelationHeatmap({ tickers, matrix }: CorrelationOut) {
+  const { dict } = useI18n();
+
   return (
     <div className="overflow-x-auto">
       <table
         className="border-separate border-spacing-1 text-xs"
-        aria-label="Korrelationsmatrix der Depot-Positionen"
+        aria-label={dict.ampel.correlation.tableAriaLabel}
       >
         <caption className="sr-only">
-          Korrelation der täglichen Renditen zwischen je zwei Positionen,
-          Werte von -1 (gegenläufig) bis +1 (gleichläufig).
+          {dict.ampel.correlation.tableCaption}
         </caption>
         <thead>
           <tr>

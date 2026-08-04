@@ -9,6 +9,7 @@ import { useMutation } from "@tanstack/react-query";
 
 import { ErrorNotice } from "@/components/ErrorNotice";
 import { ApiError, postReportRiskSummary } from "@/lib/api";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 import type { PortfolioIn } from "@/lib/types";
 
 export function ReportDownloadButton({
@@ -16,6 +17,7 @@ export function ReportDownloadButton({
 }: {
   portfolio: PortfolioIn;
 }) {
+  const { dict } = useI18n();
   const mutation = useMutation({
     mutationFn: () => postReportRiskSummary(portfolio),
     onSuccess: (blob) => {
@@ -48,8 +50,8 @@ export function ReportDownloadButton({
           />
         )}
         {mutation.isPending
-          ? "Report wird erstellt…"
-          : "Als PDF-Report herunterladen"}
+          ? dict.reportDownload.creating
+          : dict.reportDownload.download}
       </button>
 
       {mutation.error instanceof ApiError && (
