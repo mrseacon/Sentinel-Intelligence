@@ -19,8 +19,11 @@ export default function LearnLayout({
       <div className="flex min-h-full flex-1 flex-col">
         <header className="border-b border-slate-200 dark:border-slate-800">
           <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-4 py-3">
-            <LocaleLink href="/" className="text-sm font-semibold">
-              Sentinel
+            <LocaleLink
+              href="/"
+              className="font-serif text-xl tracking-[0.1em] uppercase"
+            >
+              Sentinel<span className="text-accent">.</span>
             </LocaleLink>
             <div className="flex items-center gap-3">
               <Nav />

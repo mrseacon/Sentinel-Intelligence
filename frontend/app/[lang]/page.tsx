@@ -64,11 +64,8 @@ export default async function Home({
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-6 px-6 py-3.5">
           <Link href={href("/")} className="flex items-center gap-2">
-            <span className="flex h-[18px] w-[18px] items-center justify-center rounded border border-slate-400 dark:border-slate-500">
-              <span className="h-1.5 w-1.5 rounded-[1px] bg-slate-400 dark:bg-slate-500" />
-            </span>
-            <span className="text-sm font-semibold tracking-tight">
-              Sentinel
+            <span className="font-serif text-xl tracking-[0.1em] uppercase">
+              Sentinel<span className="text-accent">.</span>
             </span>
           </Link>
           <nav className="hidden items-center gap-1 sm:flex">
