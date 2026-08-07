@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { IBM_Plex_Mono, IBM_Plex_Sans, Newsreader } from "next/font/google";
 import "../globals.css";
 
 import { DEFAULT_LOCALE, isLocale, LOCALES } from "@/lib/i18n/config";
@@ -8,14 +8,23 @@ import { I18nProvider } from "@/lib/i18n/I18nProvider";
 
 import { Providers } from "./providers";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Palette "Graphit & Kupfer" (visuelles Redesign): Newsreader für
+// Headlines, IBM Plex Sans fürs UI, IBM Plex Mono für Zahlen/Kurse.
+const newsreader = Newsreader({
+  variable: "--font-newsreader",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const ibmPlexSans = IBM_Plex_Sans({
+  variable: "--font-plex-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
+});
+
+const ibmPlexMono = IBM_Plex_Mono({
+  variable: "--font-plex-mono",
+  subsets: ["latin"],
+  weight: ["400", "500"],
 });
 
 // I18N_DECISIONS.md §4: jede unterstützte Sprache wird statisch
@@ -42,8 +51,8 @@ export async function generateMetadata({
 // Versionen — s. node_modules/next/dist/docs Hinweis im Repo).
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0f172a" },
+    { media: "(prefers-color-scheme: light)", color: "#fbfaf8" },
+    { media: "(prefers-color-scheme: dark)", color: "#141311" },
   ],
 };
 
@@ -63,9 +72,9 @@ export default async function RootLayout({
   return (
     <html
       lang={lang}
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${newsreader.variable} ${ibmPlexSans.variable} ${ibmPlexMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+      <body className="min-h-full flex flex-col bg-bg text-ink">
         <I18nProvider locale={lang}>
           <Providers>{children}</Providers>
         </I18nProvider>

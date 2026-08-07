@@ -1,26 +1,168 @@
 @import "tailwindcss";
 
+/* Palette "Graphit & Kupfer" – aus dem visuellen Redesign (Claude Design
+   Export) übernommen. Werte bewusst 1:1 aus der Vorlage, nicht neu
+   gemischt – Light/Dark je Rolle (bg/surface/ink/…), nicht je Tailwind-
+   Graustufe, damit Komponenten künftig `bg-surface` statt `bg-white
+   dark:bg-slate-900` schreiben können. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --bg: #fbfaf8;
+  --surface: #ffffff;
+  --sunken: #f1eee8;
+  --border: #ddd9d2;
+  --border-strong: #c9c3b9;
+  --ink: #1c1a17;
+  --soft: #4a4540;
+  --muted: #6e6862;
+  --faint: #8a837b;
+  --accent: #b4623a;
+  --accent-ink: #fbfaf8;
+  --accent-tint: #f6eae2;
+  --ok: #2f6b4f;
+  --warn: #b07b12;
+  --alert: #a33b32;
+  --ok-tint: #e8f0ea;
+  --warn-tint: #f7eeda;
+  --alert-tint: #f7e7e4;
+  --ser-1: #b4623a;
+  --ser-2: #6b7f8c;
+  --ser-3: #8a6d3b;
+  --ser-4: #4a5b52;
+  --ser-5: #a88b6a;
+  --ser-6: #3f4a52;
+  --corr-1: #f1eee8;
+  --corr-2: #e5cfc0;
+  --corr-3: #d0a183;
+  --corr-4: #b4623a;
+  --corr-neg: #6b7f8c;
+  --corr-ink-1: #4a4540;
+  --corr-ink-2: #1c1a17;
+  --corr-ink-3: #1c1a17;
+  --corr-ink-4: #fbfaf8;
+  --corr-ink-neg: #fbfaf8;
+  --grid: #e7e3dc;
+  --shadow-elevated: 0 1px 2px rgba(28, 26, 23, 0.05), 0 8px 24px -18px rgba(28, 26, 23, 0.28);
+  --lamp-off-r: #e2d3d0;
+  --lamp-off-y: #e6dcc8;
+  --lamp-off-g: #d6e0d8;
+  --housing: #2a2723;
+  --housing-in: #14120f;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #141311;
+    --surface: #1c1b18;
+    --sunken: #24221f;
+    --border: #322f2a;
+    --border-strong: #453f38;
+    --ink: #f2efe9;
+    --soft: #c4bdb4;
+    --muted: #a29b92;
+    --faint: #857e75;
+    --accent: #e08a5b;
+    --accent-ink: #1a1512;
+    --accent-tint: #2e241d;
+    --ok: #5ca37d;
+    --warn: #d9a63c;
+    --alert: #e0705f;
+    --ok-tint: #1d2a23;
+    --warn-tint: #2c2517;
+    --alert-tint: #2e1d1a;
+    --ser-1: #e08a5b;
+    --ser-2: #8fa5b3;
+    --ser-3: #c4a263;
+    --ser-4: #7c9a87;
+    --ser-5: #c9ae8e;
+    --ser-6: #6e7d88;
+    --corr-1: #24221f;
+    --corr-2: #43342b;
+    --corr-3: #8a5638;
+    --corr-4: #e08a5b;
+    --corr-neg: #587483;
+    --corr-ink-1: #a29b92;
+    --corr-ink-2: #f2efe9;
+    --corr-ink-3: #f2efe9;
+    --corr-ink-4: #1a1512;
+    --corr-ink-neg: #f2efe9;
+    --grid: #2b2824;
+    --shadow-elevated: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 30px -20px rgba(0, 0, 0, 0.7);
+    --lamp-off-r: #3a2c29;
+    --lamp-off-y: #35301f;
+    --lamp-off-g: #253028;
+    --housing: #0e0d0b;
+    --housing-in: #080706;
   }
 }
 
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-ink: var(--ink);
+  --color-soft: var(--soft);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-tint: var(--accent-tint);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-alert: var(--alert);
+  --color-ok-tint: var(--ok-tint);
+  --color-warn-tint: var(--warn-tint);
+  --color-alert-tint: var(--alert-tint);
+  --color-ser-1: var(--ser-1);
+  --color-ser-2: var(--ser-2);
+  --color-ser-3: var(--ser-3);
+  --color-ser-4: var(--ser-4);
+  --color-ser-5: var(--ser-5);
+  --color-ser-6: var(--ser-6);
+  --color-corr-1: var(--corr-1);
+  --color-corr-2: var(--corr-2);
+  --color-corr-3: var(--corr-3);
+  --color-corr-4: var(--corr-4);
+  --color-corr-neg: var(--corr-neg);
+  --color-corr-ink-1: var(--corr-ink-1);
+  --color-corr-ink-2: var(--corr-ink-2);
+  --color-corr-ink-3: var(--corr-ink-3);
+  --color-corr-ink-4: var(--corr-ink-4);
+  --color-corr-ink-neg: var(--corr-ink-neg);
+  --color-grid: var(--grid);
+  --color-lamp-off-r: var(--lamp-off-r);
+  --color-lamp-off-y: var(--lamp-off-y);
+  --color-lamp-off-g: var(--lamp-off-g);
+  --color-housing: var(--housing);
+  --color-housing-in: var(--housing-in);
+
+  --shadow-elevated: var(--shadow-elevated);
+
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-newsreader), Georgia, serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "SFMono-Regular", monospace;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+
+a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+a:hover {
+  color: var(--ink);
+}
+
+input,
+select,
+button {
+  font: inherit;
+  color: inherit;
 }
