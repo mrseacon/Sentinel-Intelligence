@@ -267,6 +267,7 @@ const de = {
     confirmTrade: "Trade bestätigen",
   },
   ampel: {
+    kicker: "Risikoanalyse",
     title: "Risiko-Ampel",
     subtitle:
       "Drei Ampeln auf Basis deiner aktuellen Depot-Positionen: Klumpenrisiko, Diversifikation und Volatilität.",
@@ -274,6 +275,11 @@ const de = {
     emptyBody:
       "Die Ampel braucht ein Depot mit mindestens einer Position. Starte auf der Depot-Seite mit deinem ersten Trade.",
     statusLabels: { green: "Grün", yellow: "Gelb", red: "Rot" },
+    readings: {
+      concentration: (value: string) => `HHI ${value}`,
+      diversification: (value: string) => `Ratio ${value}`,
+      volatility: (value: string) => `${value} (p.a.)`,
+    },
     stressLinkText: "Wie hätte sich dein Depot in einer vergangenen Krise geschlagen?",
     stressLinkCta: "Zum Stress-Test",
     correlation: {
@@ -285,6 +291,13 @@ const de = {
       tableAriaLabel: "Korrelationsmatrix der Depot-Positionen",
       tableCaption:
         "Korrelation der täglichen Renditen zwischen je zwei Positionen, Werte von -1 (gegenläufig) bis +1 (gleichläufig).",
+      legend: [
+        { glyph: "▲▲▲", label: "sehr hoch", range: "0,70 – 1,00" },
+        { glyph: "▲▲", label: "hoch", range: "0,40 – 0,70" },
+        { glyph: "▲", label: "moderat", range: "0,15 – 0,40" },
+        { glyph: "•", label: "gering", range: "-0,15 – 0,15" },
+        { glyph: "▽", label: "negativ", range: "< -0,15" },
+      ],
     },
     germanOnlyNotice:
       "Die ausführlichen Erklärungen unten liegen aktuell nur auf Deutsch vor; eine englische Version ist für ein späteres Update geplant.",

@@ -267,6 +267,7 @@ const en: Dictionary = {
     confirmTrade: "Confirm trade",
   },
   ampel: {
+    kicker: "Risk analysis",
     title: "Risk traffic light",
     subtitle:
       "Three lights based on your current portfolio positions: concentration risk, diversification and volatility.",
@@ -274,20 +275,32 @@ const en: Dictionary = {
     emptyBody:
       "The risk light needs a portfolio with at least one position. Start on the portfolio page with your first trade.",
     statusLabels: { green: "Green", yellow: "Yellow", red: "Red" },
+    readings: {
+      concentration: (value: string) => `HHI ${value}`,
+      diversification: (value: string) => `Ratio ${value}`,
+      volatility: (value: string) => `${value} (annualized)`,
+    },
     stressLinkText: "How would your portfolio have fared in a past crisis?",
     stressLinkCta: "Go to stress test",
     correlation: {
       title: "Correlation of your positions",
       explanation:
-        "Positions with high correlation move similarly, which weakens the diversification effect: losses then hit several positions at once instead of offsetting each other.",
+        "Positions with high correlation move similarly, which weakens the diversification effect. Losses then hit several positions at once instead of offsetting each other.",
       needsTwoPositions:
         "A correlation matrix needs at least 2 positions in your portfolio.",
       tableAriaLabel: "Correlation matrix of your portfolio positions",
       tableCaption:
         "Correlation of daily returns between each pair of positions, values from -1 (opposite) to +1 (in lockstep).",
+      legend: [
+        { glyph: "▲▲▲", label: "very high", range: "0.70 to 1.00" },
+        { glyph: "▲▲", label: "high", range: "0.40 to 0.70" },
+        { glyph: "▲", label: "moderate", range: "0.15 to 0.40" },
+        { glyph: "•", label: "low", range: "-0.15 to 0.15" },
+        { glyph: "▽", label: "negative", range: "below -0.15" },
+      ],
     },
     germanOnlyNotice:
-      "The detailed explanations below are currently German-only; an English version is planned for a later update.",
+      "The detailed explanations below are currently German only. An English version is planned for a later update.",
   },
   stress: {
     title: "Historical stress test",

@@ -4,6 +4,7 @@
 // `metadata`). Das Portfolio kommt ausschließlich aus den Depot-
 // Positionen (FRONTEND_DECISIONS §4) — kein eigenes Eingabeformular,
 // keine erneute Nutzerabfrage.
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { CorrelationHeatmap } from "@/components/CorrelationHeatmap";
@@ -12,6 +13,9 @@ import { ReportDownloadButton } from "@/components/ReportDownloadButton";
 import { Skeleton } from "@/components/Skeleton";
 import { ApiError, postRiskAmpel, postRiskCorrelation } from "@/lib/api";
 import { useDepot } from "@/lib/DepotProvider";
+import type { Locale } from "@/lib/i18n/config";
+import type { Dictionary } from "@/lib/i18n/dictionaries/de";
+import { formatDecimal, formatPercent } from "@/lib/i18n/format";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { ampelTitle } from "@/lib/i18n/labels";
 import { LocaleLink } from "@/lib/i18n/link";
@@ -26,7 +30,7 @@ export function AmpelView() {
   // Depot noch nicht aus localStorage gelesen (usePaperDepot §2-SSR-Gotcha).
   if (depot === null) {
     return (
-      <section className="space-y-4">
+      <section className="flex flex-col gap-4">
         <Skeleton className="h-8 w-48" />
         <AmpelCardsSkeleton />
       </section>
@@ -34,10 +38,17 @@ export function AmpelView() {
   }
 
   return (
-    <section className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold">{dict.ampel.title}</h1>
-        <p className="text-slate-600 dark:text-slate-300">{dict.ampel.subtitle}</p>
+    <section className="flex flex-col gap-6">
+      <div className="flex max-w-[74ch] flex-col gap-2">
+        <div className="font-mono text-[10.5px] tracking-[0.16em] text-faint uppercase">
+          {dict.ampel.kicker}
+        </div>
+        <h1 className="font-serif text-[34px] leading-[1.1] font-normal">
+          {dict.ampel.title}
+        </h1>
+        <p className="text-[14.5px] leading-relaxed text-soft">
+          {dict.ampel.subtitle}
+        </p>
       </div>
 
       <AmpelContent
@@ -84,14 +95,12 @@ function EmptyHint() {
   const { dict } = useI18n();
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 p-6 dark:border-slate-800 dark:bg-slate-900">
+    <div className="rounded-xl border border-border bg-surface p-6 shadow-elevated">
       <h2 className="text-lg font-semibold">{dict.ampel.emptyTitle}</h2>
-      <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-        {dict.ampel.emptyBody}
-      </p>
+      <p className="mt-1 text-sm text-muted">{dict.ampel.emptyBody}</p>
       <LocaleLink
         href="/depot"
-        className="mt-3 inline-block rounded-md bg-slate-900 px-4 py-1.5 text-sm font-medium text-white dark:bg-slate-100 dark:text-slate-900"
+        className="mt-3 inline-block rounded-md bg-ink px-4 py-1.5 text-sm font-medium text-bg no-underline"
       >
         {dict.common.goToDepot}
       </LocaleLink>
@@ -122,33 +131,31 @@ function AmpelResult({ positions }: { positions: PositionValueOut[] }) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       {/* I18N_DECISIONS.md §5: explanation/lesson kommen unübersetzt vom
           Backend (Phase-2-Frage) — dieser Hinweis macht das im
           englischen UI ehrlich statt wie ein Bug wirken zu lassen. */}
       {locale !== "de" && (
-        <p className="text-xs text-slate-500 italic dark:text-slate-400">
-          {dict.ampel.germanOnlyNotice}
-        </p>
+        <p className="text-xs text-faint italic">{dict.ampel.germanOnlyNotice}</p>
       )}
 
       <div className="grid gap-4 sm:grid-cols-3">
         {ampelQuery.data.ampeln.map((ampel) => (
-          <AmpelCard key={ampel.id} ampel={ampel} />
+          <AmpelCard key={ampel.id} ampel={ampel} locale={locale} />
         ))}
       </div>
 
-      <ReportDownloadButton portfolio={{ weights }} />
+      <div className="rounded-xl border border-border bg-surface p-5 shadow-elevated">
+        <ReportDownloadButton portfolio={{ weights }} />
+      </div>
 
       <CorrelationSection weights={weights} positionCount={positions.length} />
 
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm dark:border-slate-800 dark:bg-slate-900">
-        <span className="text-slate-600 dark:text-slate-300">
-          {dict.ampel.stressLinkText}
-        </span>
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-border bg-sunken px-4 py-3 text-sm">
+        <span className="text-soft">{dict.ampel.stressLinkText}</span>
         <LocaleLink
           href="/stress"
-          className="shrink-0 rounded-md border border-slate-300 px-3 py-1 font-medium hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
+          className="shrink-0 rounded-md border border-border px-3 py-1 font-medium text-soft no-underline transition-colors hover:border-border-strong hover:text-ink"
         >
           {dict.ampel.stressLinkCta}
         </LocaleLink>
@@ -167,20 +174,24 @@ function CorrelationSection({
   const { dict } = useI18n();
 
   return (
-    <div className="space-y-3">
-      <div>
-        <h2 className="text-lg font-semibold">{dict.ampel.correlation.title}</h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+    <div className="rounded-xl border border-border bg-surface p-5 shadow-elevated">
+      <div className="flex flex-wrap items-baseline justify-between gap-4">
+        <h2 className="text-[15px] font-semibold">
+          {dict.ampel.correlation.title}
+        </h2>
+        <span className="max-w-[62ch] text-xs text-muted">
           {dict.ampel.correlation.explanation}
-        </p>
+        </span>
       </div>
 
       {positionCount < 2 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-3 text-sm text-muted">
           {dict.ampel.correlation.needsTwoPositions}
         </p>
       ) : (
-        <CorrelationResult weights={weights} />
+        <div className="mt-4">
+          <CorrelationResult weights={weights} />
+        </div>
       )}
     </div>
   );
@@ -208,62 +219,137 @@ function CorrelationResult({ weights }: { weights: Record<string, number> }) {
   return <CorrelationHeatmap {...correlationQuery.data} />;
 }
 
-const STATUS_STYLES: Record<
-  AmpelStatus,
-  { icon: string; badge: string; border: string }
-> = {
-  green: {
-    icon: "✓",
-    badge:
-      "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200",
-    border: "border-l-emerald-500",
-  },
-  yellow: {
-    icon: "!",
-    badge:
-      "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200",
-    border: "border-l-amber-500",
-  },
-  red: {
-    icon: "✕",
-    badge: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200",
-    border: "border-l-red-500",
-  },
+const STATUS_ORDER: AmpelStatus[] = ["red", "yellow", "green"];
+
+const LAMP_ON_VAR: Record<AmpelStatus, string> = {
+  red: "var(--alert)",
+  yellow: "var(--warn)",
+  green: "var(--ok)",
 };
 
-function AmpelCard({ ampel }: { ampel: AmpelOut }) {
-  const { dict, locale } = useI18n();
-  const style = STATUS_STYLES[ampel.status];
+const LAMP_OFF_VAR: Record<AmpelStatus, string> = {
+  red: "var(--lamp-off-r)",
+  yellow: "var(--lamp-off-y)",
+  green: "var(--lamp-off-g)",
+};
+
+const STATUS_ICON: Record<AmpelStatus, string> = {
+  green: "✓",
+  yellow: "!",
+  red: "✕",
+};
+
+const STATUS_TINT: Record<AmpelStatus, string> = {
+  green: "var(--ok-tint)",
+  yellow: "var(--warn-tint)",
+  red: "var(--alert-tint)",
+};
+
+const STATUS_INK: Record<AmpelStatus, string> = {
+  green: "var(--ok)",
+  yellow: "var(--warn)",
+  red: "var(--alert)",
+};
+
+function AmpelLamp({ status }: { status: AmpelStatus }) {
+  return (
+    <div
+      className="flex flex-none flex-col gap-[7px] rounded-[11px] p-2"
+      style={{ background: "var(--housing)" }}
+    >
+      {STATUS_ORDER.map((lamp) => {
+        const isOn = lamp === status;
+        return (
+          <div
+            key={lamp}
+            className="h-[22px] w-[22px] rounded-full transition-[background-color,box-shadow] duration-500"
+            style={{
+              background: isOn ? LAMP_ON_VAR[lamp] : LAMP_OFF_VAR[lamp],
+              boxShadow: isOn
+                ? `0 0 12px 2px color-mix(in srgb, ${LAMP_ON_VAR[lamp]} 55%, transparent)`
+                : "none",
+              animation: isOn ? "lampGlow 2.4s ease-in-out infinite" : "none",
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function ampelReading(
+  ampel: AmpelOut,
+  locale: Locale,
+  readings: Dictionary["ampel"]["readings"],
+): string {
+  if (ampel.id === "volatility") {
+    return readings.volatility(formatPercent(ampel.value, locale, 1));
+  }
+  if (ampel.id === "diversification") {
+    return readings.diversification(formatDecimal(ampel.value, locale, 2));
+  }
+  return readings.concentration(formatDecimal(ampel.value, locale, 2));
+}
+
+function AmpelCard({ ampel, locale }: { ampel: AmpelOut; locale: Locale }) {
+  const { dict } = useI18n();
+  const [isOpen, setIsOpen] = useState(false);
   const statusLabel = dict.ampel.statusLabels[ampel.status];
   const title = ampelTitle(ampel.id, ampel.title, locale);
 
   return (
-    <div
-      className={`space-y-3 rounded-lg border border-slate-200 border-l-4 p-4 dark:border-slate-800 ${style.border}`}
-    >
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="font-semibold">{title}</h3>
-        {/* Status nie nur über Farbe: Icon + Wort daneben. */}
-        <span
-          className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${style.badge}`}
-        >
-          <span aria-hidden="true">{style.icon}</span>
-          {statusLabel}
-        </span>
+    <div className="flex flex-col rounded-xl border border-border bg-surface shadow-elevated">
+      <div className="flex gap-4 p-5">
+        <AmpelLamp status={ampel.status} />
+        <div className="flex min-w-0 flex-col gap-2">
+          <h2 className="text-[15.5px] leading-tight font-semibold">
+            {title}
+          </h2>
+          <div
+            className="inline-flex w-fit items-center gap-1.5 rounded-full py-1 pr-2.5 pl-2 transition-colors duration-500"
+            style={{
+              background: STATUS_TINT[ampel.status],
+              color: STATUS_INK[ampel.status],
+            }}
+          >
+            <span className="text-[11px] leading-none font-bold" aria-hidden="true">
+              {STATUS_ICON[ampel.status]}
+            </span>
+            <span className="text-xs font-semibold tracking-[0.01em]">
+              {statusLabel}
+            </span>
+          </div>
+          <div className="font-mono text-[12.5px] text-soft">
+            {ampelReading(ampel, locale, dict.ampel.readings)}
+          </div>
+        </div>
       </div>
-
-      <p className="text-sm text-slate-700 dark:text-slate-200">
-        {ampel.explanation}
-      </p>
-
-      <details className="text-sm">
-        <summary className="cursor-pointer font-medium text-slate-600 dark:text-slate-300">
-          {dict.common.whatDoesThisMean}
-        </summary>
-        <p className="mt-2 text-slate-600 dark:text-slate-300">
-          {ampel.lesson}
+      <div className="px-5 pb-4">
+        <p className="text-[13.5px] leading-relaxed text-soft">
+          {ampel.explanation}
         </p>
-      </details>
+      </div>
+      <button
+        type="button"
+        onClick={() => setIsOpen((open) => !open)}
+        aria-expanded={isOpen}
+        className="mx-5 mb-5 flex items-center justify-between gap-2.5 rounded-md border border-border bg-sunken px-3 py-2 text-[12.5px] text-soft transition-colors hover:border-border-strong hover:text-ink"
+      >
+        <span>{dict.common.whatDoesThisMean}</span>
+        <span
+          className={`font-mono transition-transform duration-200 ${isOpen ? "rotate-45" : ""}`}
+          aria-hidden="true"
+        >
+          +
+        </span>
+      </button>
+      {isOpen && (
+        <div className="rounded-b-xl border-t border-border bg-sunken px-5 pt-4 pb-5">
+          <p className="text-[13.5px] leading-relaxed text-soft">
+            {ampel.lesson}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

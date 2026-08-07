@@ -172,3 +172,16 @@
     color: inherit;
   }
 }
+
+/* Sanftes Pulsieren der aktiven Ampel-Leuchte (AmpelView) — keyframes sind
+   nicht von der @layer-Kollision oben betroffen, sie werden nur per Name
+   referenziert, nicht per Selektor-Spezifität aufgelöst. */
+@keyframes lampGlow {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.13);
+  }
+}

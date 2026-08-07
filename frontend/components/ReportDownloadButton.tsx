@@ -36,18 +36,29 @@ export function ReportDownloadButton({
   });
 
   return (
-    <div className="space-y-2">
+    <div className="flex flex-col gap-2">
       <button
         type="button"
         onClick={() => mutation.mutate()}
         disabled={mutation.isPending}
-        className="inline-flex items-center gap-2 rounded-md border border-slate-300 px-4 py-1.5 text-sm font-medium hover:bg-slate-100 disabled:opacity-40 dark:border-slate-700 dark:hover:bg-slate-800"
+        className="inline-flex w-fit items-center gap-2 rounded-md border border-border px-3.5 py-2 text-[13px] text-soft transition-colors hover:border-border-strong hover:text-ink disabled:opacity-40"
       >
-        {mutation.isPending && (
+        {mutation.isPending ? (
           <span
             aria-hidden="true"
-            className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-400 border-t-transparent"
+            className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"
           />
+        ) : (
+          <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" aria-hidden="true">
+            <path
+              d="M8 1.5v8.5m0 0 3-3m-3 3-3-3M2.5 13h11"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         )}
         {mutation.isPending
           ? dict.reportDownload.creating
