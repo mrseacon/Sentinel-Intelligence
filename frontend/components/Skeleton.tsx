@@ -13,7 +13,7 @@ export function Skeleton({ className = "" }: { className?: string }) {
     <div
       role="status"
       aria-label={dict.common.loading}
-      className={`animate-pulse rounded-md bg-slate-200 dark:bg-slate-800 ${className}`}
+      className={`animate-pulse rounded-md bg-sunken ${className}`}
     />
   );
 }

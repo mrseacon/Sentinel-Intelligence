@@ -211,9 +211,8 @@ const en: Dictionary = {
     },
   },
   depot: {
+    kicker: (startCash: string) => `${startCash} virtual capital`,
     title: "Your paper portfolio",
-    subtitle: (startCash: string) =>
-      `Starting capital ${startCash}. Prices are delayed by up to 15 minutes.`,
     firstTradeTitle: "Your first trade",
     firstTradeBody:
       "No positions yet. Try a first purchase to see how your portfolio and your risk change.",
@@ -221,16 +220,33 @@ const en: Dictionary = {
     goToAmpel: "Go to risk light",
     newTrade: "New trade",
     tradeDialog: "Trade dialog",
-    stats: { value: "Portfolio value", cash: "Cash", totalPnl: "Total P&L" },
+    stats: {
+      value: "Portfolio value",
+      cash: "Cash",
+      totalPnl: "Total P&L",
+      positions: "Positions",
+      invested: "Invested",
+      shareOfPortfolio: (pct: string) => `${pct} of portfolio`,
+      largestPosition: (ticker: string, pct: string) =>
+        `Largest: ${ticker} (${pct})`,
+    },
     table: {
       ticker: "Ticker",
       quantity: "Qty",
       avgBuyPrice: "Avg. buy price",
       price: "Price",
       value: "Value",
+      weight: "Weight",
       pnl: "P&L",
       news: "News",
     },
+    weighting: "Position weighting",
+    weightingHint: "by position value",
+    weightingCenterCaption: "Position value",
+    weightingCenterSub: (n: number) =>
+      `${n} ${n === 1 ? "position" : "positions"}`,
+    positionsTitle: "Your positions",
+    positionsHint: "Click to expand",
   },
   tradeForm: {
     popularTickers: "Popular tickers",
@@ -243,15 +259,10 @@ const en: Dictionary = {
     showPrice: "Show price",
     tickerFormatError:
       "Ticker may only contain uppercase letters, digits and . - ^ = (max. 15 characters).",
-    quotePreview: (
-      side: string,
-      quantity: number,
-      ticker: string,
-      price: string,
-      time: string,
-    ) => `${side} of ${quantity}× ${ticker} at ${price} (price as of ${time})`,
-    fee: (fee: string) => `Fee: ${fee}`,
-    cashDelta: (delta: string) => `Cash change: ${delta}`,
+    orderVolume: "Order volume",
+    cashAfter: "Cash after",
+    weightAfter: "Weight after",
+    feeLabel: "Fee",
     executing: "Executing…",
     confirmTrade: "Confirm trade",
   },

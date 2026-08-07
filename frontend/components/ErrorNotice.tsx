@@ -37,14 +37,14 @@ export function ErrorNotice({ error, onRetry }: ErrorNoticeProps) {
     return (
       <div
         role="alert"
-        className="flex items-center justify-between gap-4 rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200"
+        className="flex items-center justify-between gap-4 rounded-md border border-alert bg-alert-tint px-4 py-3 text-sm text-alert"
       >
         <span>{message}</span>
         {canRetry && (
           <button
             type="button"
             onClick={onRetry}
-            className="shrink-0 rounded-md border border-red-400 px-3 py-1 font-medium hover:bg-red-100 dark:border-red-700 dark:hover:bg-red-900"
+            className="shrink-0 rounded-md border border-alert px-3 py-1 font-medium hover:bg-alert/10"
           >
             {dict.common.retry}
           </button>
@@ -54,7 +54,7 @@ export function ErrorNotice({ error, onRetry }: ErrorNoticeProps) {
   }
 
   return (
-    <p role="alert" className="text-sm text-red-700 dark:text-red-300">
+    <p role="alert" className="text-sm text-alert">
       {message}
     </p>
   );

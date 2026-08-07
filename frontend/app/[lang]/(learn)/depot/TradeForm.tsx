@@ -12,7 +12,7 @@ import { ErrorNotice } from "@/components/ErrorNotice";
 import { Skeleton } from "@/components/Skeleton";
 import { ApiError, postPaperExecute, postPaperQuote } from "@/lib/api";
 import { useDepot } from "@/lib/DepotProvider";
-import { formatClockTime, formatCurrency } from "@/lib/i18n/format";
+import { formatCurrency, formatPercent } from "@/lib/i18n/format";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { isValidTicker } from "@/lib/limits";
 import { POPULAR_TICKERS } from "@/lib/popular-tickers";
@@ -30,12 +30,17 @@ interface QuoteParams {
   quantity: number;
 }
 
+const fieldLabelClass =
+  "text-[11px] tracking-[0.08em] text-faint uppercase";
+const fieldInputClass =
+  "rounded-md border border-border bg-surface px-3 py-2.5 font-mono text-sm focus:border-accent focus:outline-none";
+
 export function TradeForm({
   defaultTicker = "",
   defaultQuantity = 1,
   onExecuted,
 }: TradeFormProps) {
-  const { depot, addTransaction } = useDepot();
+  const { depot, addTransaction, valuation } = useDepot();
   const { dict, locale } = useI18n();
 
   const [ticker, setTicker] = useState(defaultTicker);
@@ -93,152 +98,181 @@ export function TradeForm({
     setPreviewParams({ ticker, side, quantity });
   }
 
+  const quote = quoteQuery.data;
+
+  // Reine Anzeige-Arithmetik aus bereits vom Backend gelieferten Werten
+  // (quote.cash_delta/gross_value, valuation.*) — keine eigene Risiko-
+  // oder Positionsberechnung (§Harte Regeln 1). "Cash danach" =
+  // cash + cash_delta laut Kommentar in lib/types.ts.
+  const cashBefore = valuation?.cash ?? depot?.account.start_cash ?? 0;
+  const totalBefore = valuation?.total_value ?? depot?.account.start_cash ?? 0;
+  const currentPositionValue =
+    valuation?.positions.find((p) => p.ticker === quote?.ticker)
+      ?.market_value ?? 0;
+
+  let cashAfterValue = cashBefore;
+  let weightAfterValue = 0;
+  if (quote) {
+    const deltaMarketValue =
+      quote.side === "BUY" ? quote.gross_value : -quote.gross_value;
+    cashAfterValue = cashBefore + quote.cash_delta;
+    const newPositionValue = Math.max(
+      0,
+      currentPositionValue + deltaMarketValue,
+    );
+    const newTotalValue = totalBefore + quote.cash_delta + deltaMarketValue;
+    weightAfterValue = newTotalValue > 0 ? newPositionValue / newTotalValue : 0;
+  }
+
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4">
       <div>
-        <span className="block text-xs font-medium text-slate-600 dark:text-slate-300">
-          {dict.tradeForm.popularTickers}
-        </span>
-        <div className="mt-1.5 flex flex-wrap gap-1.5">
+        <span className={fieldLabelClass}>{dict.tradeForm.popularTickers}</span>
+        <div className="mt-2 flex flex-wrap gap-1.5">
           {POPULAR_TICKERS.map((popular) => (
             <button
               key={popular.ticker}
               type="button"
               aria-label={dict.tradeForm.selectAria(popular.name)}
               onClick={() => updateField({ ticker: popular.ticker })}
-              className="rounded-full border border-slate-300 px-3 py-1 text-xs font-medium text-slate-600 hover:border-slate-400 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-800"
+              className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-border-strong hover:text-ink"
             >
-              {popular.name}{" "}
-              <span className="text-slate-400 dark:text-slate-500">
-                {popular.ticker}
-              </span>
+              {popular.name} <span className="text-faint">{popular.ticker}</span>
             </button>
           ))}
         </div>
       </div>
 
-      <form
-        onSubmit={handlePreview}
-        className="flex flex-wrap items-end gap-3"
-      >
-        <div>
-          <label
-            htmlFor="trade-ticker"
-            className="block text-xs font-medium text-slate-600 dark:text-slate-300"
-          >
-            {dict.tradeForm.ticker}
-          </label>
+      <form onSubmit={handlePreview} className="flex flex-col gap-4">
+        <div className="flex gap-[3px] rounded-lg border border-border bg-sunken p-[3px]">
+          {(["BUY", "SELL"] as const).map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => updateField({ side: s })}
+              className={`flex-1 rounded-md py-2 text-sm font-medium transition-colors ${
+                side === s
+                  ? "bg-surface text-ink shadow-elevated"
+                  : "text-muted"
+              }`}
+            >
+              {s === "BUY" ? dict.tradeForm.buy : dict.tradeForm.sell}
+            </button>
+          ))}
+        </div>
+
+        <label className="flex flex-col gap-1.5">
+          <span className={fieldLabelClass}>{dict.tradeForm.ticker}</span>
           <input
-            id="trade-ticker"
             value={ticker}
             maxLength={15}
             onChange={(e) => updateField({ ticker: e.target.value })}
             placeholder="AAPL"
-            className="w-28 rounded-md border border-slate-300 px-2 py-1.5 text-sm uppercase dark:border-slate-700 dark:bg-slate-900"
+            className={`${fieldInputClass} uppercase`}
           />
-        </div>
-        <div>
-          <span className="block text-xs font-medium text-slate-600 dark:text-slate-300">
-            {dict.tradeForm.side}
-          </span>
-          <div className="flex overflow-hidden rounded-md border border-slate-300 dark:border-slate-700">
-            {(["BUY", "SELL"] as const).map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => updateField({ side: s })}
-                className={`px-3 py-1.5 text-sm font-medium ${
-                  side === s
-                    ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
-                    : "bg-transparent text-slate-600 dark:text-slate-300"
-                }`}
-              >
-                {s === "BUY" ? dict.tradeForm.buy : dict.tradeForm.sell}
-              </button>
-            ))}
+        </label>
+
+        <div className="grid grid-cols-2 gap-3">
+          <label className="flex flex-col gap-1.5">
+            <span className={fieldLabelClass}>{dict.tradeForm.quantity}</span>
+            <input
+              type="number"
+              min={1}
+              step={1}
+              value={quantity}
+              onChange={(e) =>
+                updateField({ quantity: Math.trunc(Number(e.target.value)) })
+              }
+              className={fieldInputClass}
+            />
+          </label>
+          <div className="flex flex-col gap-1.5">
+            <span className={fieldLabelClass}>{dict.tradeForm.showPrice}</span>
+            <div className="rounded-md border border-border bg-sunken px-3 py-2.5 font-mono text-sm text-soft">
+              {quote ? formatCurrency(quote.price, locale) : "–"}
+            </div>
           </div>
         </div>
-        <div>
-          <label
-            htmlFor="trade-quantity"
-            className="block text-xs font-medium text-slate-600 dark:text-slate-300"
-          >
-            {dict.tradeForm.quantity}
-          </label>
-          <input
-            id="trade-quantity"
-            type="number"
-            min={1}
-            step={1}
-            value={quantity}
-            onChange={(e) =>
-              updateField({ quantity: Math.trunc(Number(e.target.value)) })
-            }
-            className="w-24 rounded-md border border-slate-300 px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-900"
+
+        {ticker.length > 0 && !tickerValid && (
+          <p className="text-xs text-alert">{dict.tradeForm.tickerFormatError}</p>
+        )}
+
+        {quoteQuery.isPending && previewParams && (
+          <Skeleton className="h-24 w-full" />
+        )}
+
+        {quoteQuery.error instanceof ApiError && (
+          <ErrorNotice
+            error={quoteQuery.error}
+            onRetry={() => quoteQuery.refetch()}
           />
-        </div>
+        )}
+
+        {quote && (
+          <div className="flex flex-col gap-2 rounded-lg border border-border bg-sunken p-3">
+            <SummaryRow
+              label={dict.tradeForm.orderVolume}
+              value={formatCurrency(quote.gross_value, locale)}
+            />
+            <SummaryRow
+              label={dict.tradeForm.cashAfter}
+              value={formatCurrency(cashAfterValue, locale)}
+              tone={cashAfterValue < 0 ? "alert" : undefined}
+            />
+            <SummaryRow
+              label={dict.tradeForm.weightAfter}
+              value={formatPercent(weightAfterValue, locale, 1)}
+            />
+            <SummaryRow
+              label={dict.tradeForm.feeLabel}
+              value={formatCurrency(quote.fees, locale)}
+            />
+          </div>
+        )}
+
         <button
-          type="submit"
-          disabled={!tickerValid || !quantityValid}
-          className="rounded-md bg-slate-900 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-40 dark:bg-slate-100 dark:text-slate-900"
+          type={quote ? "button" : "submit"}
+          onClick={quote ? () => executeMutation.mutate() : undefined}
+          disabled={
+            quote
+              ? executeMutation.isPending
+              : !tickerValid || !quantityValid
+          }
+          className="rounded-lg bg-ink py-3 text-sm font-semibold tracking-[0.01em] text-bg transition-transform hover:-translate-y-px active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {dict.tradeForm.showPrice}
-        </button>
-      </form>
-
-      {ticker.length > 0 && !tickerValid && (
-        <p className="text-xs text-red-600 dark:text-red-400">
-          {dict.tradeForm.tickerFormatError}
-        </p>
-      )}
-
-      {quoteQuery.isPending && previewParams && (
-        <Skeleton className="h-24 w-full max-w-sm" />
-      )}
-
-      {quoteQuery.error instanceof ApiError && (
-        <ErrorNotice
-          error={quoteQuery.error}
-          onRetry={() => quoteQuery.refetch()}
-        />
-      )}
-
-      {quoteQuery.data && (
-        <div className="max-w-sm space-y-2 rounded-md border border-slate-200 p-4 text-sm dark:border-slate-800">
-          <p>
-            {dict.tradeForm.quotePreview(
-              quoteQuery.data.side === "BUY" ? dict.tradeForm.buy : dict.tradeForm.sell,
-              quoteQuery.data.quantity,
-              quoteQuery.data.ticker,
-              formatCurrency(quoteQuery.data.price, locale),
-              formatClockTime(quoteQuery.data.price_asof, locale),
-            )}
-          </p>
-          <p>{dict.tradeForm.fee(formatCurrency(quoteQuery.data.fees, locale))}</p>
-          <p className="font-medium">
-            {dict.tradeForm.cashDelta(
-              `${quoteQuery.data.cash_delta >= 0 ? "+" : ""}${formatCurrency(
-                quoteQuery.data.cash_delta,
-                locale,
-              )}`,
-            )}
-          </p>
-          <button
-            type="button"
-            onClick={() => executeMutation.mutate()}
-            disabled={executeMutation.isPending}
-            className="rounded-md bg-emerald-600 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-40"
-          >
-            {executeMutation.isPending
+          {quote
+            ? executeMutation.isPending
               ? dict.tradeForm.executing
-              : dict.tradeForm.confirmTrade}
-          </button>
-        </div>
-      )}
+              : dict.tradeForm.confirmTrade
+            : dict.tradeForm.showPrice}
+        </button>
 
-      {executeMutation.error instanceof ApiError && (
-        <ErrorNotice error={executeMutation.error} />
-      )}
+        {executeMutation.error instanceof ApiError && (
+          <ErrorNotice error={executeMutation.error} />
+        )}
+      </form>
+    </div>
+  );
+}
+
+function SummaryRow({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone?: "alert";
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 text-xs">
+      <span className="text-muted">{label}</span>
+      <span
+        className={`font-mono ${tone === "alert" ? "text-alert" : "text-ink"}`}
+      >
+        {value}
+      </span>
     </div>
   );
 }

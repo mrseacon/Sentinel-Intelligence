@@ -211,9 +211,8 @@ const de = {
     },
   },
   depot: {
+    kicker: (startCash: string) => `${startCash} virtuelles Kapital`,
     title: "Dein Paper-Depot",
-    subtitle: (startCash: string) =>
-      `Startkapital ${startCash}. Kurse sind bis zu 15 Minuten verzögert.`,
     firstTradeTitle: "Dein erster Trade",
     firstTradeBody:
       "Noch keine Positionen. Probier einen ersten Kauf aus, um zu sehen, wie sich dein Depot und dein Risiko verändern.",
@@ -221,16 +220,33 @@ const de = {
     goToAmpel: "Zur Ampel",
     newTrade: "Neuer Trade",
     tradeDialog: "Trade-Dialog",
-    stats: { value: "Depotwert", cash: "Cash", totalPnl: "Gesamt-P&L" },
+    stats: {
+      value: "Depotwert",
+      cash: "Cash",
+      totalPnl: "Gesamt-P&L",
+      positions: "Positionen",
+      invested: "Investiert",
+      shareOfPortfolio: (pct: string) => `${pct} des Depots`,
+      largestPosition: (ticker: string, pct: string) =>
+        `Größte: ${ticker} (${pct})`,
+    },
     table: {
       ticker: "Ticker",
       quantity: "Stück",
       avgBuyPrice: "Ø Kaufpreis",
       price: "Kurs",
       value: "Wert",
+      weight: "Gewicht",
       pnl: "P&L",
       news: "Nachrichten",
     },
+    weighting: "Positionsgewichtung",
+    weightingHint: "nach Positionswert",
+    weightingCenterCaption: "Positionswert",
+    weightingCenterSub: (n: number) =>
+      `${n} ${n === 1 ? "Position" : "Positionen"}`,
+    positionsTitle: "Deine Positionen",
+    positionsHint: "Zum Aufklappen klicken",
   },
   tradeForm: {
     popularTickers: "Beliebte Werte",
@@ -243,15 +259,10 @@ const de = {
     showPrice: "Preis anzeigen",
     tickerFormatError:
       "Ticker darf nur Großbuchstaben, Ziffern und . - ^ = enthalten (max. 15 Zeichen).",
-    quotePreview: (
-      side: string,
-      quantity: number,
-      ticker: string,
-      price: string,
-      time: string,
-    ) => `${side} von ${quantity}× ${ticker} zu ${price} (Kurs von ${time})`,
-    fee: (fee: string) => `Gebühr: ${fee}`,
-    cashDelta: (delta: string) => `Cash-Änderung: ${delta}`,
+    orderVolume: "Ordervolumen",
+    cashAfter: "Cash danach",
+    weightAfter: "Gewicht danach",
+    feeLabel: "Gebühr",
     executing: "Wird ausgeführt…",
     confirmTrade: "Trade bestätigen",
   },
