@@ -43,6 +43,11 @@ const en: Dictionary = {
       ctaShort: "Start",
     },
     ctaStart: "Start for free",
+    facts: [
+      { value: "€10,000", label: "Virtual starting capital" },
+      { value: "15 min", label: "Price data delay" },
+      { value: "3", label: "Historical crisis scenarios" },
+    ],
     hero: {
       eyebrow: "Every number comes with an explanation",
       title: "Understand, don't guess.",

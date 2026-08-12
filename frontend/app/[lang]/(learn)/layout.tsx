@@ -17,7 +17,7 @@ export default function LearnLayout({
   return (
     <DepotProvider>
       <div className="flex min-h-full flex-1 flex-col">
-        <header className="border-b border-slate-200 dark:border-slate-800">
+        <header className="border-b border-border">
           <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-4 py-3">
             <LocaleLink
               href="/"
@@ -34,7 +34,7 @@ export default function LearnLayout({
         <div className="mx-auto w-full max-w-4xl flex-1 px-4 py-8">
           {children}
         </div>
-        <footer className="border-t border-slate-200 dark:border-slate-800">
+        <footer className="border-t border-border">
           <Disclaimer />
         </footer>
       </div>

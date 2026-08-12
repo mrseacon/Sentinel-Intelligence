@@ -43,6 +43,11 @@ const de = {
       ctaShort: "Starten",
     },
     ctaStart: "Kostenlos starten",
+    facts: [
+      { value: "10.000 €", label: "Virtuelles Startkapital" },
+      { value: "15 Min.", label: "Verzögerung der Kursdaten" },
+      { value: "3", label: "Historische Krisen-Szenarien" },
+    ],
     hero: {
       eyebrow: "Jede Kennzahl kommt mit einer Erklärung",
       title: "Verstehen statt raten.",

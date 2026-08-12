@@ -28,10 +28,8 @@ export function Nav() {
           <LocaleLink
             key={href}
             href={href}
-            className={`rounded-md px-3 py-2 text-sm font-medium whitespace-nowrap ${
-              isActive
-                ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
-                : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+            className={`rounded-md px-3 py-2 text-sm font-medium whitespace-nowrap no-underline transition-colors ${
+              isActive ? "bg-ink text-bg" : "text-soft hover:bg-sunken"
             }`}
           >
             {label}

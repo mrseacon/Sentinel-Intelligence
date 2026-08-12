@@ -25,21 +25,16 @@ const DEFAULT_MIX: [number, number, number] = [55, 20, 25];
 
 type Level = "green" | "yellow" | "red";
 
-const STATUS_STYLES: Record<Level, { icon: string; badge: string }> = {
-  green: {
-    icon: "✓",
-    badge:
-      "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200",
-  },
-  yellow: {
-    icon: "!",
-    badge:
-      "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200",
-  },
-  red: {
-    icon: "✕",
-    badge: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200",
-  },
+const STATUS_ICON: Record<Level, string> = { green: "✓", yellow: "!", red: "✕" };
+const STATUS_TINT: Record<Level, string> = {
+  green: "var(--ok-tint)",
+  yellow: "var(--warn-tint)",
+  red: "var(--alert-tint)",
+};
+const STATUS_INK: Record<Level, string> = {
+  green: "var(--ok)",
+  yellow: "var(--warn)",
+  red: "var(--alert)",
 };
 
 function levelFor(topShare: number): Level {
@@ -79,7 +74,6 @@ export function HeroDemo() {
   const topSectorKey: SectorKey = SECTOR_KEYS[topIndex];
   const topName = t.sectors[topSectorKey];
   const level = levelFor(top);
-  const style = STATUS_STYLES[level];
 
   const text =
     level === "red"
@@ -92,19 +86,16 @@ export function HeroDemo() {
     level === "red" ? t.lessonRed : level === "yellow" ? t.lessonYellow : t.lessonGreen;
 
   return (
-    <div className="w-full max-w-3xl rounded-2xl border border-slate-200 bg-white/60 p-6 text-left shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-900/60 sm:p-8">
+    <div className="w-full max-w-3xl rounded-2xl border border-border bg-surface p-6 text-left shadow-elevated sm:p-8">
       <div className="grid gap-8 sm:grid-cols-2">
         <div className="space-y-5">
           {SECTOR_KEYS.map((key, index) => (
             <div key={key} className="space-y-1.5">
               <div className="flex items-center justify-between text-sm">
-                <label
-                  htmlFor={`hero-slider-${key}`}
-                  className="font-medium text-slate-700 dark:text-slate-200"
-                >
+                <label htmlFor={`hero-slider-${key}`} className="font-medium text-ink">
                   {t.sectors[key]}
                 </label>
-                <span className="font-mono text-xs text-slate-500 dark:text-slate-400">
+                <span className="font-mono text-xs text-muted">
                   {mix[index]}&nbsp;%
                 </span>
               </div>
@@ -117,14 +108,14 @@ export function HeroDemo() {
                 value={mix[index]}
                 aria-valuetext={t.ariaValueText(mix[index])}
                 onChange={(e) => setSlot(index, Number(e.target.value))}
-                className="w-full accent-slate-900 dark:accent-slate-100"
+                className="w-full accent-accent"
               />
             </div>
           ))}
           <button
             type="button"
             onClick={() => setMix(DEFAULT_MIX)}
-            className="text-xs font-medium text-slate-500 hover:underline dark:text-slate-400"
+            className="text-xs font-medium text-muted hover:underline"
           >
             {t.reset}
           </button>
@@ -132,24 +123,21 @@ export function HeroDemo() {
 
         <div
           aria-live="polite"
-          className="flex flex-col justify-center gap-3 border-t border-slate-200 pt-6 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-8 dark:border-slate-800"
+          className="flex flex-col justify-center gap-3 border-t border-border pt-6 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-8"
         >
-          <span className="font-mono text-[11px] tracking-wide text-slate-500 uppercase dark:text-slate-400">
+          <span className="font-mono text-[11px] tracking-wide text-faint uppercase">
             {t.concentrationLabel}
           </span>
           <span
-            className={`inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${style.badge}`}
+            className="inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium"
+            style={{ background: STATUS_TINT[level], color: STATUS_INK[level] }}
           >
-            <span aria-hidden="true">{style.icon}</span>
+            <span aria-hidden="true">{STATUS_ICON[level]}</span>
             {dict.ampel.statusLabels[level]}
           </span>
-          <p className="text-sm text-slate-700 dark:text-slate-200">{text}</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            {lesson}
-          </p>
-          <span className="text-xs text-slate-400 dark:text-slate-500">
-            {t.liveHint}
-          </span>
+          <p className="text-sm text-soft">{text}</p>
+          <p className="text-xs text-muted">{lesson}</p>
+          <span className="text-xs text-faint">{t.liveHint}</span>
         </div>
       </div>
     </div>

@@ -45,10 +45,8 @@ export function LanguageSwitcher() {
               ? dict.languageSwitcher.switchToGerman
               : dict.languageSwitcher.switchToEnglish
           }
-          className={`rounded-md px-2 py-1 uppercase ${
-            candidate === locale
-              ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
-              : "text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+          className={`rounded-md px-2 py-1 uppercase no-underline transition-colors ${
+            candidate === locale ? "bg-ink text-bg" : "text-muted hover:bg-sunken"
           }`}
         >
           {candidate}

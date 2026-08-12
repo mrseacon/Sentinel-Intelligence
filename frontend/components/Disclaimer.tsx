@@ -9,7 +9,7 @@ export function Disclaimer() {
   const { dict } = useI18n();
 
   return (
-    <p className="mx-auto max-w-3xl px-4 py-6 text-center text-xs text-slate-500 dark:text-slate-400">
+    <p className="mx-auto max-w-3xl px-4 py-6 text-center text-xs text-muted">
       {dict.disclaimer.intro}
       <strong>{dict.disclaimer.strong}</strong>
       {dict.disclaimer.tail}
