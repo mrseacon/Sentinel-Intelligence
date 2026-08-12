@@ -9,9 +9,11 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
+  CartesianGrid,
   Line,
   LineChart,
   ReferenceDot,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -42,7 +44,7 @@ export function StressView() {
   // Depot noch nicht aus localStorage gelesen (usePaperDepot §2-SSR-Gotcha).
   if (depot === null) {
     return (
-      <section className="space-y-4">
+      <section className="flex flex-col gap-4">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-72 w-full" />
       </section>
@@ -50,10 +52,17 @@ export function StressView() {
   }
 
   return (
-    <section className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold">{dict.stress.title}</h1>
-        <p className="text-slate-600 dark:text-slate-300">{dict.stress.subtitle}</p>
+    <section className="flex flex-col gap-6">
+      <div className="flex max-w-[74ch] flex-col gap-2">
+        <div className="font-mono text-[10.5px] tracking-[0.16em] text-faint uppercase">
+          {dict.stress.kicker}
+        </div>
+        <h1 className="font-serif text-[34px] leading-[1.1] font-normal">
+          {dict.stress.title}
+        </h1>
+        <p className="text-[14.5px] leading-relaxed text-soft">
+          {dict.stress.subtitle}
+        </p>
       </div>
 
       <StressContent
@@ -100,14 +109,12 @@ function EmptyHint() {
   const { dict } = useI18n();
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 p-6 dark:border-slate-800 dark:bg-slate-900">
+    <div className="rounded-xl border border-border bg-surface p-6 shadow-elevated">
       <h2 className="text-lg font-semibold">{dict.stress.emptyTitle}</h2>
-      <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-        {dict.stress.emptyBody}
-      </p>
+      <p className="mt-1 text-sm text-muted">{dict.stress.emptyBody}</p>
       <LocaleLink
         href="/depot"
-        className="mt-3 inline-block rounded-md bg-slate-900 px-4 py-1.5 text-sm font-medium text-white dark:bg-slate-100 dark:text-slate-900"
+        className="mt-3 inline-block rounded-md bg-ink px-4 py-1.5 text-sm font-medium text-bg no-underline"
       >
         {dict.common.goToDepot}
       </LocaleLink>
@@ -116,6 +123,7 @@ function EmptyHint() {
 }
 
 function StressResult({ positions }: { positions: PositionValueOut[] }) {
+  const { dict } = useI18n();
   const weights = derivePortfolioWeights(positions);
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(
     null,
@@ -142,7 +150,7 @@ function StressResult({ positions }: { positions: PositionValueOut[] }) {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <PresetPicker
         presetsQuery={presetsQuery}
         selectedPresetId={selectedPresetId}
@@ -155,6 +163,16 @@ function StressResult({ positions }: { positions: PositionValueOut[] }) {
           onRetry={() => replayQuery.refetch()}
         />
       )}
+
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-border bg-sunken px-4 py-3 text-sm">
+        <span className="text-soft">{dict.stress.simulationLinkText}</span>
+        <LocaleLink
+          href="/simulation"
+          className="shrink-0 rounded-md border border-border px-3 py-1 font-medium text-soft no-underline transition-colors hover:border-border-strong hover:text-ink"
+        >
+          {dict.stress.simulationLinkCta}
+        </LocaleLink>
+      </div>
     </div>
   );
 }
@@ -183,42 +201,47 @@ function PresetPicker({
 
   if (presetsQuery.isPending || !presetsQuery.data) {
     return (
-      <div className="flex flex-wrap gap-2">
-        <Skeleton className="h-16 w-48" />
-        <Skeleton className="h-16 w-48" />
-        <Skeleton className="h-16 w-48" />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <Skeleton className="h-20 w-full" />
+        <Skeleton className="h-20 w-full" />
+        <Skeleton className="h-20 w-full" />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-wrap gap-2">
-      {presetsQuery.data.presets.map((preset) => (
-        <button
-          key={preset.id}
-          type="button"
-          onClick={() => onSelect(preset.id)}
-          className={`rounded-lg border px-4 py-2 text-left text-sm ${
-            selectedPresetId === preset.id
-              ? "border-slate-900 bg-slate-900 text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-900"
-              : "border-slate-300 hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
-          }`}
-        >
-          <span className="block font-medium">
-            {stressPresetTitle(preset.id, preset.title, locale)}
-          </span>
-          <span
-            className={
-              selectedPresetId === preset.id
-                ? "text-xs text-slate-300 dark:text-slate-600"
-                : "text-xs text-slate-500 dark:text-slate-400"
-            }
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      {presetsQuery.data.presets.map((preset) => {
+        const isSelected = selectedPresetId === preset.id;
+        return (
+          <button
+            key={preset.id}
+            type="button"
+            onClick={() => onSelect(preset.id)}
+            className="flex flex-col gap-1.5 rounded-lg border px-4 py-3.5 text-left text-sm transition-colors"
+            style={{
+              borderColor: isSelected ? "var(--accent)" : "var(--border)",
+              background: isSelected ? "var(--accent-tint)" : "var(--surface)",
+            }}
           >
-            {formatIsoDate(preset.start, locale)} {dict.stress.to}{" "}
-            {formatIsoDate(preset.end, locale)}
-          </span>
-        </button>
-      ))}
+            <span className="flex items-center justify-between gap-2.5">
+              <span className="font-semibold text-ink">
+                {stressPresetTitle(preset.id, preset.title, locale)}
+              </span>
+              <span
+                className="h-2 w-2 flex-none rounded-full transition-colors"
+                style={{
+                  background: isSelected ? "var(--accent)" : "var(--border-strong)",
+                }}
+              />
+            </span>
+            <span className="font-mono text-[11px] text-faint">
+              {formatIsoDate(preset.start, locale)} {dict.stress.to}{" "}
+              {formatIsoDate(preset.end, locale)}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -254,61 +277,95 @@ function ReplayResult({
   );
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4">
       {/* I18N_DECISIONS.md §5: explanation/lesson/disclaimer bleiben
           unübersetzt vom Backend (Phase-2-Frage). */}
       {locale !== "de" && (
-        <p className="text-xs text-slate-500 italic dark:text-slate-400">
-          {dict.stress.germanOnlyNotice}
-        </p>
+        <p className="text-xs text-faint italic">{dict.stress.germanOnlyNotice}</p>
       )}
 
-      <p className="text-sm text-slate-700 dark:text-slate-200">
-        {result.explanation}
-      </p>
+      <p className="text-sm text-soft">{result.explanation}</p>
 
       {result.excluded_tickers.length > 0 && (
-        <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+        <div
+          className="rounded-lg border px-4 py-3 text-sm"
+          style={{
+            borderColor: "var(--warn)",
+            background: "var(--warn-tint)",
+            color: "var(--warn)",
+          }}
+        >
           <strong>{dict.stress.coverage(coveragePct)}</strong>{" "}
           {dict.stress.excluded(result.excluded_tickers.join(", "))}
         </div>
       )}
 
-      <div className="h-72">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={rows} margin={{ top: 16, right: 36 }}>
-            <XAxis
-              dataKey="date"
-              tickFormatter={(iso: string) => formatMonthYear(iso, locale, dict.stress.monthsShort)}
-              minTickGap={40}
-            />
-            <YAxis
-              tickFormatter={(v: number) => `${Math.round((v - 1) * 100)} %`}
-            />
-            <Tooltip
-              formatter={(value) => [
-                `${Math.round((Number(value) - 1) * 100)} %`,
-                dict.stress.chartValueTooltip,
-              ]}
-              labelFormatter={(label) => formatIsoDate(String(label), locale)}
-            />
-            <Line
-              dataKey="factor"
-              dot={false}
-              strokeWidth={2}
-              isAnimationActive={false}
-              stroke="#0f172a"
-            />
-            <ReferenceDot
-              x={rows[troughIndex]?.date}
-              y={result.value_path[troughIndex]}
-              r={4}
-              fill="#dc2626"
-              stroke="none"
-              label={{ value: dict.stress.trough, position: "top", fontSize: 11 }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+      <div className="rounded-xl border border-border bg-surface p-5 shadow-elevated">
+        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-4">
+          <h2 className="text-[15px] font-semibold">{dict.stress.chartTitle}</h2>
+          <div className="flex gap-4">
+            <LegendSwatch kind="line" color="var(--ser-1)" label={dict.stress.legendDepot} />
+            <LegendSwatch kind="dashed" color="var(--border-strong)" label={dict.stress.legendStart} />
+          </div>
+        </div>
+        <div className="h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={rows} margin={{ top: 16, right: 36 }}>
+              <CartesianGrid vertical={false} stroke="var(--grid)" />
+              <XAxis
+                dataKey="date"
+                tickFormatter={(iso: string) => formatMonthYear(iso, locale, dict.stress.monthsShort)}
+                minTickGap={40}
+                tick={{ fill: "var(--faint)", fontSize: 11 }}
+                axisLine={{ stroke: "var(--border-strong)" }}
+                tickLine={{ stroke: "var(--border-strong)" }}
+              />
+              <YAxis
+                tickFormatter={(v: number) => `${Math.round((v - 1) * 100)} %`}
+                tick={{ fill: "var(--faint)", fontSize: 11 }}
+                axisLine={{ stroke: "var(--border-strong)" }}
+                tickLine={{ stroke: "var(--border-strong)" }}
+              />
+              <Tooltip
+                formatter={(value) => [
+                  `${Math.round((Number(value) - 1) * 100)} %`,
+                  dict.stress.chartValueTooltip,
+                ]}
+                labelFormatter={(label) => formatIsoDate(String(label), locale)}
+                contentStyle={{
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 8,
+                  fontSize: 12.5,
+                }}
+                labelStyle={{ color: "var(--muted)" }}
+                itemStyle={{ color: "var(--ink)" }}
+              />
+              <ReferenceLine y={1} stroke="var(--border-strong)" strokeDasharray="2 3" />
+              <Line
+                dataKey="factor"
+                dot={false}
+                strokeWidth={2.4}
+                isAnimationActive={false}
+                stroke="var(--ser-1)"
+              />
+              <ReferenceDot
+                x={rows[troughIndex]?.date}
+                y={result.value_path[troughIndex]}
+                r={4}
+                fill="var(--surface)"
+                stroke="var(--ser-1)"
+                strokeWidth={2.4}
+                label={{
+                  value: dict.stress.trough,
+                  position: "top",
+                  fontSize: 11,
+                  fill: "var(--soft)",
+                }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
@@ -331,30 +388,38 @@ function ReplayResult({
       </div>
 
       <details className="text-sm">
-        <summary className="cursor-pointer font-medium text-slate-600 dark:text-slate-300">
+        <summary className="cursor-pointer font-medium text-soft">
           {dict.common.whatDoesThisMean}
         </summary>
-        <p className="mt-2 text-slate-600 dark:text-slate-300">
-          {result.lesson}
-        </p>
+        <p className="mt-2 text-soft">{result.lesson}</p>
       </details>
 
-      <p className="text-xs text-slate-500 dark:text-slate-400">
-        {result.disclaimer}
-      </p>
-
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm dark:border-slate-800 dark:bg-slate-900">
-        <span className="text-slate-600 dark:text-slate-300">
-          {dict.stress.simulationLinkText}
-        </span>
-        <LocaleLink
-          href="/simulation"
-          className="shrink-0 rounded-md border border-slate-300 px-3 py-1 font-medium hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
-        >
-          {dict.stress.simulationLinkCta}
-        </LocaleLink>
-      </div>
+      <p className="text-xs text-faint">{result.disclaimer}</p>
     </div>
+  );
+}
+
+function LegendSwatch({
+  kind,
+  color,
+  label,
+}: {
+  kind: "line" | "dashed";
+  color: string;
+  label: string;
+}) {
+  return (
+    <span className="flex items-center gap-1.5 text-xs text-soft">
+      {kind === "line" ? (
+        <span className="h-[3px] w-[18px] rounded" style={{ background: color }} />
+      ) : (
+        <span
+          className="w-[18px] border-t-2"
+          style={{ borderColor: color, borderStyle: "dashed" }}
+        />
+      )}
+      {label}
+    </span>
   );
 }
 
@@ -368,16 +433,18 @@ function StatCard({
   tone?: "positive" | "negative";
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
-      <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
+    <div className="flex flex-col gap-1.5 rounded-lg border border-border bg-surface p-4 shadow-elevated">
+      <p className="text-[11px] tracking-[0.08em] text-faint uppercase">{label}</p>
       <p
-        className={`mt-1 text-lg font-semibold ${
-          tone === "positive"
-            ? "text-emerald-600"
-            : tone === "negative"
-              ? "text-red-600"
-              : ""
-        }`}
+        className="font-mono text-[22px] tracking-[-0.02em]"
+        style={{
+          color:
+            tone === "positive"
+              ? "var(--ok)"
+              : tone === "negative"
+                ? "var(--alert)"
+                : "var(--ink)",
+        }}
       >
         {value}
       </p>

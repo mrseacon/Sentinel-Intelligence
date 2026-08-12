@@ -303,6 +303,7 @@ const en: Dictionary = {
       "The detailed explanations below are currently German only. An English version is planned for a later update.",
   },
   stress: {
+    kicker: "Historical crises",
     title: "Historical stress test",
     subtitle:
       "How would your portfolio have developed in a past crisis? Choose a scenario.",
@@ -312,7 +313,10 @@ const en: Dictionary = {
     coverage: (pct: number) => `${pct}% of your portfolio simulated.`,
     excluded: (tickers: string) =>
       `Not included: ${tickers} (not yet tradable in this period).`,
+    chartTitle: "Portfolio value through the crisis",
     chartValueTooltip: "Portfolio value",
+    legendDepot: "Portfolio value",
+    legendStart: "Starting value",
     trough: "Trough",
     stats: {
       maxDrawdown: "Maximum drawdown",
@@ -340,13 +344,28 @@ const en: Dictionary = {
     to: "to",
   },
   simulation: {
+    kicker: "Monte Carlo simulation",
     title: "Future simulation",
     subtitle: "Where could your portfolio go from here? Choose a time horizon.",
     emptyTitle: "No positions yet",
     emptyBody:
       "The simulation needs a portfolio with at least one position. Start on the portfolio page with your first trade.",
+    horizonLabel: "Time horizon",
     horizon1Year: "1 year",
     horizonYears: (n: number) => `${n} years`,
+    chartTitle: "Possible value development",
+    legendBand: "80% of paths",
+    legendMedian: "Median",
+    legendStart: "Starting value",
+    assumptions: {
+      title: "Simulation assumptions",
+      horizon: "Horizon",
+      paths: "Simulated paths",
+      history: "Price history",
+      recyclingFactor: "Reuse factor",
+      years: (n: string) => `${n} years`,
+      factor: (n: string) => `×${n}`,
+    },
     thinHistoryLabel: "Thin data basis:",
     thinHistoryBody: (
       years: string,

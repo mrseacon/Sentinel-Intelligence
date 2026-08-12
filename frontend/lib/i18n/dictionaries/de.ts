@@ -303,6 +303,7 @@ const de = {
       "Die ausführlichen Erklärungen unten liegen aktuell nur auf Deutsch vor; eine englische Version ist für ein späteres Update geplant.",
   },
   stress: {
+    kicker: "Historische Krisen",
     title: "Historischer Stress-Test",
     subtitle:
       "Wie hätte sich dein heutiges Depot in einer vergangenen Krise entwickelt? Wähle ein Szenario aus.",
@@ -312,7 +313,10 @@ const de = {
     coverage: (pct: number) => `${pct} % deines Depots simuliert.`,
     excluded: (tickers: string) =>
       `Nicht enthalten: ${tickers} (im Zeitraum noch nicht handelbar).`,
+    chartTitle: "Depotwert im Krisenverlauf",
     chartValueTooltip: "Depotwert",
+    legendDepot: "Depotwert",
+    legendStart: "Ausgangswert",
     trough: "Tiefpunkt",
     stats: {
       maxDrawdown: "Maximaler Drawdown",
@@ -340,13 +344,28 @@ const de = {
     to: "bis",
   },
   simulation: {
+    kicker: "Monte-Carlo-Simulation",
     title: "Zukunftssimulation",
     subtitle: "Wohin könnte sich dein heutiges Depot entwickeln? Wähle einen Zeithorizont.",
     emptyTitle: "Noch keine Positionen",
     emptyBody:
       "Die Simulation braucht ein Depot mit mindestens einer Position. Starte auf der Depot-Seite mit deinem ersten Trade.",
+    horizonLabel: "Zeithorizont",
     horizon1Year: "1 Jahr",
     horizonYears: (n: number) => `${n} Jahre`,
+    chartTitle: "Mögliche Wertentwicklung",
+    legendBand: "80 % der Verläufe",
+    legendMedian: "Median",
+    legendStart: "Ausgangswert",
+    assumptions: {
+      title: "Annahmen der Simulation",
+      horizon: "Horizont",
+      paths: "Simulierte Pfade",
+      history: "Kurshistorie",
+      recyclingFactor: "Wiederverwendungsfaktor",
+      years: (n: string) => `${n} Jahre`,
+      factor: (n: string) => `×${n}`,
+    },
     thinHistoryLabel: "Dünne Datenbasis:",
     thinHistoryBody: (
       years: string,

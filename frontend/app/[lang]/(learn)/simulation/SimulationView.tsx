@@ -9,8 +9,10 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Area,
+  CartesianGrid,
   ComposedChart,
   Line,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -44,7 +46,7 @@ export function SimulationView() {
   // Depot noch nicht aus localStorage gelesen (usePaperDepot §2-SSR-Gotcha).
   if (depot === null) {
     return (
-      <section className="space-y-4">
+      <section className="flex flex-col gap-4">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-72 w-full" />
       </section>
@@ -52,10 +54,15 @@ export function SimulationView() {
   }
 
   return (
-    <section className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold">{dict.simulation.title}</h1>
-        <p className="text-slate-600 dark:text-slate-300">
+    <section className="flex flex-col gap-6">
+      <div className="flex max-w-[74ch] flex-col gap-2">
+        <div className="font-mono text-[10.5px] tracking-[0.16em] text-faint uppercase">
+          {dict.simulation.kicker}
+        </div>
+        <h1 className="font-serif text-[34px] leading-[1.1] font-normal">
+          {dict.simulation.title}
+        </h1>
+        <p className="text-[14.5px] leading-relaxed text-soft">
           {dict.simulation.subtitle}
         </p>
       </div>
@@ -104,14 +111,12 @@ function EmptyHint() {
   const { dict } = useI18n();
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 p-6 dark:border-slate-800 dark:bg-slate-900">
+    <div className="rounded-xl border border-border bg-surface p-6 shadow-elevated">
       <h2 className="text-lg font-semibold">{dict.simulation.emptyTitle}</h2>
-      <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-        {dict.simulation.emptyBody}
-      </p>
+      <p className="mt-1 text-sm text-muted">{dict.simulation.emptyBody}</p>
       <LocaleLink
         href="/depot"
-        className="mt-3 inline-block rounded-md bg-slate-900 px-4 py-1.5 text-sm font-medium text-white dark:bg-slate-100 dark:text-slate-900"
+        className="mt-3 inline-block rounded-md bg-ink px-4 py-1.5 text-sm font-medium text-bg no-underline"
       >
         {dict.common.goToDepot}
       </LocaleLink>
@@ -142,24 +147,32 @@ function SimulationResult({ positions }: { positions: PositionValueOut[] }) {
   });
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap gap-2">
-        {HORIZONS.map((horizon) => (
-          <button
-            key={horizon}
-            type="button"
-            onClick={() => setSelectedHorizon(horizon)}
-            className={`rounded-lg border px-4 py-2 text-sm font-medium ${
-              selectedHorizon === horizon
-                ? "border-slate-900 bg-slate-900 text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-900"
-                : "border-slate-300 hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
-            }`}
-          >
-            {horizon === 1
-              ? dict.simulation.horizon1Year
-              : dict.simulation.horizonYears(horizon)}
-          </button>
-        ))}
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-2">
+        <span className="text-[11px] tracking-[0.08em] text-faint uppercase">
+          {dict.simulation.horizonLabel}
+        </span>
+        <div className="flex w-fit gap-[3px] rounded-lg border border-border bg-sunken p-[3px]">
+          {HORIZONS.map((horizon) => {
+            const isSelected = selectedHorizon === horizon;
+            return (
+              <button
+                key={horizon}
+                type="button"
+                onClick={() => setSelectedHorizon(horizon)}
+                className="rounded-md px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors"
+                style={{
+                  background: isSelected ? "var(--ink)" : "transparent",
+                  color: isSelected ? "var(--bg)" : "var(--soft)",
+                }}
+              >
+                {horizon === 1
+                  ? dict.simulation.horizon1Year
+                  : dict.simulation.horizonYears(horizon)}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {selectedHorizon !== null && (
@@ -203,24 +216,27 @@ function SimulationChart({
   const fmt = (value: number) => `×${formatDecimal(value, locale)}`;
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4">
       {/* I18N_DECISIONS.md §5: explanation/lesson/disclaimer bleiben
           unübersetzt vom Backend (Phase-2-Frage). */}
       {locale !== "de" && (
-        <p className="text-xs text-slate-500 italic dark:text-slate-400">
-          {dict.simulation.germanOnlyNotice}
-        </p>
+        <p className="text-xs text-faint italic">{dict.simulation.germanOnlyNotice}</p>
       )}
 
       {/* Frequenz-Formulierung 1:1 vom Backend übernommen (MONTE_CARLO_
           DECISIONS §5): das Frontend formuliert keine eigene
           Wahrscheinlichkeitsaussage. */}
-      <p className="text-sm text-slate-700 dark:text-slate-200">
-        {result.explanation}
-      </p>
+      <p className="text-sm text-soft">{result.explanation}</p>
 
       {result.thin_history && (
-        <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+        <div
+          className="rounded-lg border px-4 py-3 text-sm"
+          style={{
+            borderColor: "var(--warn)",
+            background: "var(--warn-tint)",
+            color: "var(--warn)",
+          }}
+        >
           <strong>{dict.simulation.thinHistoryLabel}</strong>{" "}
           {dict.simulation.thinHistoryBody(
             formatDecimal(result.history_years, locale, 1),
@@ -232,43 +248,71 @@ function SimulationChart({
         </div>
       )}
 
-      <div className="h-72">
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={rows}>
-            <XAxis
-              dataKey="day"
-              tickFormatter={(day: number) => formatAxisTick(day, horizon, dict)}
-              minTickGap={40}
-            />
-            <YAxis tickFormatter={(v: number) => fmt(v)} domain={["auto", "auto"]} />
-            <Tooltip
-              formatter={(value, name) => {
-                if (name === "band") {
-                  const [low, high] = value as unknown as [number, number];
-                  return [`${fmt(low)} – ${fmt(high)}`, dict.simulation.bandTooltip];
+      <div className="rounded-xl border border-border bg-surface p-5 shadow-elevated">
+        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-4">
+          <h2 className="text-[15px] font-semibold">{dict.simulation.chartTitle}</h2>
+          <div className="flex flex-wrap gap-4">
+            <LegendSwatch kind="band" color="var(--accent-tint)" borderColor="var(--ser-1)" label={dict.simulation.legendBand} />
+            <LegendSwatch kind="line" color="var(--ser-1)" label={dict.simulation.legendMedian} />
+            <LegendSwatch kind="dashed" color="var(--ser-2)" label={dict.simulation.legendStart} />
+          </div>
+        </div>
+        <div className="h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={rows}>
+              <CartesianGrid vertical={false} stroke="var(--grid)" />
+              <XAxis
+                dataKey="day"
+                tickFormatter={(day: number) => formatAxisTick(day, horizon, dict)}
+                minTickGap={40}
+                tick={{ fill: "var(--faint)", fontSize: 11 }}
+                axisLine={{ stroke: "var(--border-strong)" }}
+                tickLine={{ stroke: "var(--border-strong)" }}
+              />
+              <YAxis
+                tickFormatter={(v: number) => fmt(v)}
+                domain={["auto", "auto"]}
+                tick={{ fill: "var(--faint)", fontSize: 11 }}
+                axisLine={{ stroke: "var(--border-strong)" }}
+                tickLine={{ stroke: "var(--border-strong)" }}
+              />
+              <Tooltip
+                formatter={(value, name) => {
+                  if (name === "band") {
+                    const [low, high] = value as unknown as [number, number];
+                    return [`${fmt(low)} – ${fmt(high)}`, dict.simulation.bandTooltip];
+                  }
+                  return [fmt(Number(value)), dict.simulation.medianTooltip];
+                }}
+                labelFormatter={(day) =>
+                  formatTooltipLabel(Number(day), horizon, dict)
                 }
-                return [fmt(Number(value)), dict.simulation.medianTooltip];
-              }}
-              labelFormatter={(day) =>
-                formatTooltipLabel(Number(day), horizon, dict)
-              }
-            />
-            <Area
-              dataKey="band"
-              stroke="none"
-              fill="#0f172a"
-              fillOpacity={0.15}
-              isAnimationActive={false}
-            />
-            <Line
-              dataKey="p50"
-              dot={false}
-              strokeWidth={2}
-              stroke="#0f172a"
-              isAnimationActive={false}
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
+                contentStyle={{
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 8,
+                  fontSize: 12.5,
+                }}
+                labelStyle={{ color: "var(--muted)" }}
+                itemStyle={{ color: "var(--ink)" }}
+              />
+              <ReferenceLine y={1} stroke="var(--ser-2)" strokeDasharray="6 5" strokeWidth={2} />
+              <Area
+                dataKey="band"
+                stroke="none"
+                fill="var(--accent-tint)"
+                isAnimationActive={false}
+              />
+              <Line
+                dataKey="p50"
+                dot={false}
+                strokeWidth={2.6}
+                stroke="var(--ser-1)"
+                isAnimationActive={false}
+              />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
@@ -277,29 +321,99 @@ function SimulationChart({
         <StatCard label={dict.simulation.stats.p90} value={fmt(result.final_p90)} />
       </div>
 
+      <div className="rounded-xl border border-border bg-surface p-5 shadow-elevated">
+        <h2 className="mb-3 text-[15px] font-semibold">
+          {dict.simulation.assumptions.title}
+        </h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <AssumptionTile
+            label={dict.simulation.assumptions.horizon}
+            value={
+              horizon === 1
+                ? dict.simulation.horizon1Year
+                : dict.simulation.horizonYears(horizon)
+            }
+          />
+          <AssumptionTile
+            label={dict.simulation.assumptions.paths}
+            value={formatDecimal(result.n_paths, locale, 0)}
+          />
+          <AssumptionTile
+            label={dict.simulation.assumptions.history}
+            value={dict.simulation.assumptions.years(
+              formatDecimal(result.history_years, locale, 1),
+            )}
+          />
+          <AssumptionTile
+            label={dict.simulation.assumptions.recyclingFactor}
+            value={dict.simulation.assumptions.factor(
+              formatDecimal(result.recycling_factor, locale, 1),
+            )}
+          />
+        </div>
+      </div>
+
       <details className="text-sm">
-        <summary className="cursor-pointer font-medium text-slate-600 dark:text-slate-300">
+        <summary className="cursor-pointer font-medium text-soft">
           {dict.common.whatDoesThisMean}
         </summary>
-        <p className="mt-2 text-slate-600 dark:text-slate-300">
-          {result.lesson}
-        </p>
+        <p className="mt-2 text-soft">{result.lesson}</p>
       </details>
 
       {/* Fester Disclaimer, absichtlich NICHT aufklappbar (Prinzip 3 /
           Designprinzip 1): muss immer sichtbar sein. */}
-      <p className="text-xs text-slate-500 dark:text-slate-400">
-        {result.disclaimer}
-      </p>
+      <p className="text-xs text-faint">{result.disclaimer}</p>
+    </div>
+  );
+}
+
+function LegendSwatch({
+  kind,
+  color,
+  borderColor,
+  label,
+}: {
+  kind: "line" | "dashed" | "band";
+  color: string;
+  borderColor?: string;
+  label: string;
+}) {
+  return (
+    <span className="flex items-center gap-1.5 text-xs text-soft">
+      {kind === "line" && (
+        <span className="h-[3px] w-[18px] rounded" style={{ background: color }} />
+      )}
+      {kind === "dashed" && (
+        <span
+          className="w-[18px] border-t-2"
+          style={{ borderColor: color, borderStyle: "dashed" }}
+        />
+      )}
+      {kind === "band" && (
+        <span
+          className="h-[10px] w-[18px] rounded-[3px] border"
+          style={{ background: color, borderColor }}
+        />
+      )}
+      {label}
+    </span>
+  );
+}
+
+function AssumptionTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-col gap-1 rounded-lg border border-border bg-sunken p-3">
+      <span className="text-[11.5px] text-muted">{label}</span>
+      <span className="font-mono text-sm">{value}</span>
     </div>
   );
 }
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
-      <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
-      <p className="mt-1 text-lg font-semibold">{value}</p>
+    <div className="flex flex-col gap-1.5 rounded-lg border border-border bg-surface p-4 shadow-elevated">
+      <p className="text-[11px] tracking-[0.08em] text-faint uppercase">{label}</p>
+      <p className="font-mono text-[22px] tracking-[-0.02em]">{value}</p>
     </div>
   );
 }
