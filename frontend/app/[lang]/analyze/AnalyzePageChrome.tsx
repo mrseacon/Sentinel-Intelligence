@@ -14,16 +14,23 @@ export function AnalyzePageChrome({ children }: { children: React.ReactNode }) {
   return (
     <>
       <div className="flex items-center justify-between gap-4">
-        <LocaleLink
-          href="/"
-          className="text-sm text-slate-500 hover:underline dark:text-slate-400"
-        >
+        <LocaleLink href="/" className="text-sm text-soft">
           {dict.analyze.backToHome}
         </LocaleLink>
         <LanguageSwitcher />
       </div>
-      <section className="mt-6 space-y-4">
-        <h1 className="text-2xl font-semibold">{dict.analyze.pageTitle}</h1>
+      <section className="mt-6 flex flex-col gap-6">
+        <div className="flex max-w-[74ch] flex-col gap-2">
+          <div className="font-mono text-[10.5px] tracking-[0.16em] text-faint uppercase">
+            {dict.analyze.kicker}
+          </div>
+          <h1 className="font-serif text-[34px] leading-[1.1] font-normal">
+            {dict.analyze.pageTitle}
+          </h1>
+          <p className="text-[14.5px] leading-relaxed text-soft">
+            {dict.analyze.independentNote}
+          </p>
+        </div>
         {children}
       </section>
     </>

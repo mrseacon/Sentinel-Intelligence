@@ -390,14 +390,31 @@ const de = {
   },
   analyze: {
     backToHome: "← Zur Startseite",
+    kicker: "Eigenes Portfolio",
     pageTitle: "Freie Portfolio-Analyse",
     independentNote: "Dies ist eine unabhängige Analyse, kein Bezug zu deinem Paper-Depot.",
     sectionAnalyze: "Analyse",
     sectionBenchmark: "Vergleich mit Index",
     sectionOptimize: "Optimieren",
+    source: {
+      title: "Portfolio-Quelle",
+      manualTab: "Manuell",
+      csvTab: "CSV",
+    },
+    score: {
+      hint: "Basierend auf Volatilität, Drawdown, VaR/CVaR und Konzentration",
+      gaugeLow: "Niedrig",
+      gaugeHigh: "Sehr hoch",
+      note: "Score von 0 bis 100, höher bedeutet höheres Risiko.",
+    },
     csvUpload: {
       title: "CSV-Upload",
       body: "Spalten ticker und weight, beliebige positive Skala (z. B. Euro-Beträge oder Stückzahlen).",
+      dropTitle: "Datei hier ablegen",
+      dropSub: "oder klicken, um eine Datei auszuwählen",
+      formatLabel: "Format",
+      formatHead: "ticker,weight",
+      formatRow: "AAPL,5000",
       chooseFile: "Datei auswählen",
       onlyCsv: "Nur .csv-Dateien werden unterstützt.",
       tooLarge: (sizeMb: string, maxMb: number) =>
@@ -445,6 +462,9 @@ const de = {
       volatility: "Volatilität (p.a.)",
       sharpeRatio: "Sharpe Ratio",
       suggestedWeights: "Vorgeschlagene Gewichtung",
+      positionCol: "Position",
+      currentCol: "Aktuell",
+      modelCol: "Modell",
       germanOnlyNotice:
         "Der Disclaimer unten liegt aktuell nur auf Deutsch vor; eine englische Version ist für ein späteres Update geplant.",
     },

@@ -1,10 +1,10 @@
 "use client";
 
-// Zwei gleichwertige, nebeneinander stehende Eingabewege für ein freies
-// Portfolio (FRONTEND_DECISIONS §8/ARCHITECTURE §6): CSV-Upload und
-// manuelle Ticker/Betrag-Paare. Beide melden ein fertiges PortfolioIn
-// über onPortfolioReady — die Analyse-Logik lebt in AnalyzeView, nicht
-// hier.
+// Zwei gleichwertige Eingabewege für ein freies Portfolio (FRONTEND_
+// DECISIONS §8/ARCHITECTURE §6): CSV-Upload und manuelle Ticker/Betrag-
+// Paare, als Tabs EINER Karte statt zwei nebeneinander stehender Karten
+// (Redesign-Layout). Beide melden ein fertiges PortfolioIn über
+// onPortfolioReady — die Analyse-Logik lebt in AnalyzeView, nicht hier.
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 
@@ -19,12 +19,59 @@ interface PortfolioBuilderProps {
   onPortfolioReady: (portfolio: PortfolioIn) => void;
 }
 
+type Source = "manual" | "csv";
+
 export function PortfolioBuilder({ onPortfolioReady }: PortfolioBuilderProps) {
+  const { dict } = useI18n();
+  const [source, setSource] = useState<Source>("manual");
+
   return (
-    <div className="grid gap-6 sm:grid-cols-2">
-      <CsvUploadCard onPortfolioReady={onPortfolioReady} />
-      <ManualEntryCard onPortfolioReady={onPortfolioReady} />
+    <div className="rounded-xl border border-border bg-surface p-5 shadow-elevated">
+      <h2 className="mb-3 text-[15px] font-semibold">{dict.analyze.source.title}</h2>
+      <div className="mb-4 flex w-fit gap-[3px] rounded-lg border border-border bg-sunken p-[3px]">
+        <SourceTab
+          isActive={source === "manual"}
+          onClick={() => setSource("manual")}
+          label={dict.analyze.source.manualTab}
+        />
+        <SourceTab
+          isActive={source === "csv"}
+          onClick={() => setSource("csv")}
+          label={dict.analyze.source.csvTab}
+        />
+      </div>
+
+      {source === "manual" ? (
+        <ManualEntryCard onPortfolioReady={onPortfolioReady} />
+      ) : (
+        <CsvUploadCard onPortfolioReady={onPortfolioReady} />
+      )}
     </div>
+  );
+}
+
+function SourceTab({
+  isActive,
+  onClick,
+  label,
+}: {
+  isActive: boolean;
+  onClick: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="rounded-md px-4 py-2 text-sm font-medium transition-colors"
+      style={{
+        background: isActive ? "var(--surface)" : "transparent",
+        color: isActive ? "var(--ink)" : "var(--soft)",
+        boxShadow: isActive ? "var(--shadow-elevated)" : "none",
+      }}
+    >
+      {label}
+    </button>
   );
 }
 
@@ -65,20 +112,34 @@ function CsvUploadCard({ onPortfolioReady }: PortfolioBuilderProps) {
   }
 
   return (
-    <div className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
-      <h3 className="font-semibold">{dict.analyze.csvUpload.title}</h3>
-      <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-        {dict.analyze.csvUpload.body}
-      </p>
+    <div className="flex flex-col gap-3">
+      <p className="text-sm text-soft">{dict.analyze.csvUpload.body}</p>
+
       {/* Nativer file-selector-button rendert plattformabhängig sehr
           inkonsistent (Preflight setzt ihn u.a. auf Breite/Padding 0
           zurück). Robusteres Muster: Input visuell verstecken (sr-only,
-          bleibt fokussier-/tastaturbedienbar), ein <label> triggert es. */}
+          bleibt fokussier-/tastaturbedienbar), ein <label> triggert es
+          und trägt jetzt die Dropzone-Optik aus dem Redesign. */}
       <label
         htmlFor="csv-upload-input"
-        className="mt-3 inline-block cursor-pointer rounded-md bg-slate-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
+        className="flex cursor-pointer flex-col items-center gap-2 rounded-[10px] border border-dashed border-border-strong bg-sunken px-5 py-7 text-center"
       >
-        {dict.analyze.csvUpload.chooseFile}
+        <svg viewBox="0 0 20 20" className="h-5 w-5 text-faint" aria-hidden="true">
+          <path
+            d="M10 14V4m0 0 3.4 3.4M10 4 6.6 7.4M3 16.5h14"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+        <span className="text-[13.5px] font-semibold text-ink">
+          {dict.analyze.csvUpload.dropTitle}
+        </span>
+        <span className="max-w-[40ch] text-xs text-muted">
+          {dict.analyze.csvUpload.dropSub}
+        </span>
       </label>
       <input
         id="csv-upload-input"
@@ -88,14 +149,22 @@ function CsvUploadCard({ onPortfolioReady }: PortfolioBuilderProps) {
         className="sr-only"
       />
 
-      {clientError && (
-        <p className="mt-2 text-xs text-red-600 dark:text-red-400">
-          {clientError}
-        </p>
-      )}
+      <div className="flex flex-col gap-1.5 rounded-lg border border-border bg-sunken p-3.5">
+        <span className="text-[11px] tracking-[0.08em] text-faint uppercase">
+          {dict.analyze.csvUpload.formatLabel}
+        </span>
+        <span className="font-mono text-[11.5px] leading-relaxed text-soft">
+          {dict.analyze.csvUpload.formatHead}
+        </span>
+        <span className="font-mono text-[11.5px] leading-relaxed text-muted">
+          {dict.analyze.csvUpload.formatRow}
+        </span>
+      </div>
+
+      {clientError && <p className="text-xs text-alert">{clientError}</p>}
 
       {file && !clientError && (
-        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+        <p className="text-xs text-muted">
           {file.name} ({(file.size / 1000).toFixed(0)} KB)
         </p>
       )}
@@ -105,7 +174,7 @@ function CsvUploadCard({ onPortfolioReady }: PortfolioBuilderProps) {
           type="button"
           onClick={() => uploadMutation.mutate(file)}
           disabled={uploadMutation.isPending}
-          className="mt-3 rounded-md bg-slate-900 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-40 dark:bg-slate-100 dark:text-slate-900"
+          className="w-fit rounded-md bg-ink px-4 py-1.5 text-sm font-medium text-bg disabled:opacity-40"
         >
           {uploadMutation.isPending
             ? dict.analyze.csvUpload.uploading
@@ -114,9 +183,7 @@ function CsvUploadCard({ onPortfolioReady }: PortfolioBuilderProps) {
       )}
 
       {uploadMutation.error instanceof ApiError && (
-        <div className="mt-3">
-          <ErrorNotice error={uploadMutation.error} />
-        </div>
+        <ErrorNotice error={uploadMutation.error} />
       )}
     </div>
   );
@@ -193,38 +260,31 @@ function ManualEntryCard({ onPortfolioReady }: PortfolioBuilderProps) {
   }
 
   return (
-    <div className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
+    <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-2">
-        <h3 className="font-semibold">{dict.analyze.manualEntry.title}</h3>
-        <span className="text-xs text-slate-500 dark:text-slate-400">
+        <span className="text-[11px] tracking-[0.08em] text-faint uppercase">
+          {dict.analyze.manualEntry.popularTickers}
+        </span>
+        <span className="text-xs text-muted">
           {dict.analyze.manualEntry.countOf(filledRows.length, MAX_PORTFOLIO_TICKERS)}
         </span>
       </div>
-
-      <div className="mt-3">
-        <span className="block text-xs font-medium text-slate-600 dark:text-slate-300">
-          {dict.analyze.manualEntry.popularTickers}
-        </span>
-        <div className="mt-1.5 flex flex-wrap gap-1.5">
-          {POPULAR_TICKERS.map((popular) => (
-            <button
-              key={popular.ticker}
-              type="button"
-              disabled={atLimit}
-              aria-label={dict.analyze.manualEntry.addAria(popular.name)}
-              onClick={() => addPopular(popular.ticker)}
-              className="rounded-full border border-slate-300 px-3 py-1 text-xs font-medium text-slate-600 hover:border-slate-400 hover:bg-slate-100 disabled:opacity-40 dark:border-slate-700 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-800"
-            >
-              {popular.name}{" "}
-              <span className="text-slate-400 dark:text-slate-500">
-                {popular.ticker}
-              </span>
-            </button>
-          ))}
-        </div>
+      <div className="flex flex-wrap gap-1.5">
+        {POPULAR_TICKERS.map((popular) => (
+          <button
+            key={popular.ticker}
+            type="button"
+            disabled={atLimit}
+            aria-label={dict.analyze.manualEntry.addAria(popular.name)}
+            onClick={() => addPopular(popular.ticker)}
+            className="rounded-full border border-border px-3 py-1 text-xs font-medium text-soft transition-colors hover:border-border-strong hover:text-ink disabled:opacity-40"
+          >
+            {popular.name} <span className="text-faint">{popular.ticker}</span>
+          </button>
+        ))}
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-4 space-y-2">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-2">
         {rows.map((row) => {
           const trimmed = row.ticker.trim().toUpperCase();
           const tickerInvalid = trimmed.length > 0 && !isValidTicker(trimmed);
@@ -238,11 +298,10 @@ function ManualEntryCard({ onPortfolioReady }: PortfolioBuilderProps) {
                 onChange={(e) =>
                   updateRow(row.id, { ticker: e.target.value.toUpperCase() })
                 }
-                className={`w-24 rounded-md border px-2 py-1 text-sm uppercase dark:bg-slate-900 ${
-                  tickerInvalid
-                    ? "border-red-400 dark:border-red-700"
-                    : "border-slate-300 dark:border-slate-700"
-                }`}
+                className="w-24 rounded-md border bg-surface px-2 py-1.5 font-mono text-sm uppercase"
+                style={{
+                  borderColor: tickerInvalid ? "var(--alert)" : "var(--border)",
+                }}
               />
               <input
                 value={row.weight}
@@ -250,14 +309,14 @@ function ManualEntryCard({ onPortfolioReady }: PortfolioBuilderProps) {
                 placeholder={dict.analyze.manualEntry.amountPlaceholder}
                 aria-label={dict.analyze.manualEntry.amountPlaceholder}
                 onChange={(e) => updateRow(row.id, { weight: e.target.value })}
-                className="w-24 rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-900"
+                className="w-24 rounded-md border border-border bg-surface px-2 py-1.5 font-mono text-sm"
               />
               <button
                 type="button"
                 onClick={() => removeRow(row.id)}
                 disabled={rows.length <= 1}
                 aria-label={dict.analyze.manualEntry.removePosition}
-                className="rounded-md px-2 py-1 text-slate-400 hover:bg-slate-100 hover:text-red-600 disabled:opacity-30 dark:hover:bg-slate-800"
+                className="rounded-md px-2 py-1 text-faint transition-colors hover:text-alert disabled:opacity-30"
               >
                 ×
               </button>
@@ -269,23 +328,19 @@ function ManualEntryCard({ onPortfolioReady }: PortfolioBuilderProps) {
           type="button"
           onClick={addRow}
           disabled={atLimit}
-          className="text-sm font-medium text-slate-600 hover:underline disabled:opacity-40 dark:text-slate-300"
+          className="w-fit text-sm font-medium text-soft hover:underline disabled:opacity-40"
         >
           {dict.analyze.manualEntry.addPosition}
         </button>
 
         {hasInvalidTicker && (
-          <p className="text-xs text-red-600 dark:text-red-400">
-            {dict.analyze.manualEntry.invalidTicker}
-          </p>
+          <p className="text-xs text-alert">{dict.analyze.manualEntry.invalidTicker}</p>
         )}
         {!hasInvalidTicker && hasInvalidWeight && (
-          <p className="text-xs text-red-600 dark:text-red-400">
-            {dict.analyze.manualEntry.invalidWeight}
-          </p>
+          <p className="text-xs text-alert">{dict.analyze.manualEntry.invalidWeight}</p>
         )}
         {atLimit && (
-          <p className="text-xs text-slate-500 dark:text-slate-400">
+          <p className="text-xs text-muted">
             {dict.analyze.manualEntry.limitReached(MAX_PORTFOLIO_TICKERS)}
           </p>
         )}
@@ -294,7 +349,7 @@ function ManualEntryCard({ onPortfolioReady }: PortfolioBuilderProps) {
           <button
             type="submit"
             disabled={!canSubmit}
-            className="mt-2 rounded-md bg-slate-900 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-40 dark:bg-slate-100 dark:text-slate-900"
+            className="mt-2 rounded-md bg-ink px-4 py-1.5 text-sm font-medium text-bg disabled:opacity-40"
           >
             {dict.analyze.manualEntry.submit}
           </button>

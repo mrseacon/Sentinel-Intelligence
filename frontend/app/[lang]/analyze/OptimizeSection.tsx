@@ -14,6 +14,17 @@ import { ApiError, postPortfolioOptimize } from "@/lib/api";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import type { PortfolioIn } from "@/lib/types";
 
+/** `PortfolioIn.weights` erlaubt eine beliebige Skala (§1.5, die API
+ * renormalisiert serverseitig) — für die Anzeige "Aktuell"-Spalte neben
+ * den Modell-Prozenten brauchen wir dieselbe Normierung hier lokal. */
+function normalizeWeights(weights: Record<string, number>): Record<string, number> {
+  const total = Object.values(weights).reduce((sum, v) => sum + v, 0);
+  if (total <= 0) return weights;
+  return Object.fromEntries(
+    Object.entries(weights).map(([ticker, value]) => [ticker, value / total]),
+  );
+}
+
 export function OptimizeSection({ portfolio }: { portfolio: PortfolioIn }) {
   const { dict, locale } = useI18n();
   const tickers = Object.keys(portfolio.weights);
@@ -26,20 +37,16 @@ export function OptimizeSection({ portfolio }: { portfolio: PortfolioIn }) {
   });
 
   if (tickers.length < 2) {
-    return (
-      <p className="text-sm text-slate-500 dark:text-slate-400">
-        {dict.analyze.optimize.needsTwoPositions}
-      </p>
-    );
+    return <p className="text-sm text-muted">{dict.analyze.optimize.needsTwoPositions}</p>;
   }
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4">
       {!requested && (
         <button
           type="button"
           onClick={() => setRequested(true)}
-          className="rounded-md border border-slate-300 px-4 py-1.5 text-sm font-medium hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
+          className="w-fit rounded-md border border-border px-4 py-1.5 text-sm font-medium text-soft transition-colors hover:border-border-strong hover:text-ink"
         >
           {dict.analyze.optimize.cta}
         </button>
@@ -54,63 +61,87 @@ export function OptimizeSection({ portfolio }: { portfolio: PortfolioIn }) {
       )}
 
       {query.data && (
-        <div className="space-y-3">
+        <div className="flex flex-col gap-5">
           <div className="grid gap-3 sm:grid-cols-3">
-            <StatCard
+            <StatTile
               label={dict.analyze.optimize.expectedReturn}
               value={`${(query.data.expected_return * 100).toFixed(1)} %`}
             />
-            <StatCard
+            <StatTile
               label={dict.analyze.optimize.volatility}
               value={`${(query.data.volatility * 100).toFixed(1)} %`}
             />
-            <StatCard
+            <StatTile
               label={dict.analyze.optimize.sharpeRatio}
               value={query.data.sharpe.toFixed(2)}
             />
           </div>
 
-          <div>
-            <p className="text-xs font-medium text-slate-600 dark:text-slate-300">
-              {dict.analyze.optimize.suggestedWeights}
-            </p>
-            <ul className="mt-1 space-y-1 text-sm">
-              {Object.entries(query.data.weights)
-                .sort(([, a], [, b]) => b - a)
-                .map(([ticker, weight]) => (
-                  <li
-                    key={ticker}
-                    className="flex justify-between text-slate-700 dark:text-slate-200"
-                  >
-                    <span>{ticker}</span>
-                    <span>{Math.round(weight * 100)} %</span>
-                  </li>
-                ))}
-            </ul>
-          </div>
+          <WeightsTable
+            currentWeights={normalizeWeights(portfolio.weights)}
+            modelWeights={query.data.weights}
+          />
 
           {/* I18N_DECISIONS.md §5: disclaimer bleibt unübersetzt vom
               Backend (Phase-2-Frage), Prinzip 3 verlangt trotzdem
               IMMER sichtbar, nicht aufklappbar. */}
           {locale !== "de" && (
-            <p className="text-xs text-slate-500 italic dark:text-slate-400">
-              {dict.analyze.optimize.germanOnlyNotice}
-            </p>
+            <p className="text-xs text-faint italic">{dict.analyze.optimize.germanOnlyNotice}</p>
           )}
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            {query.data.disclaimer}
-          </p>
+          <p className="text-xs text-faint">{query.data.disclaimer}</p>
         </div>
       )}
     </div>
   );
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
+function WeightsTable({
+  currentWeights,
+  modelWeights,
+}: {
+  currentWeights: Record<string, number>;
+  modelWeights: Record<string, number>;
+}) {
+  const { dict } = useI18n();
+  const tickers = Object.keys(modelWeights).sort(
+    (a, b) => modelWeights[b] - modelWeights[a],
+  );
+
   return (
-    <div className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
-      <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
-      <p className="mt-1 text-lg font-semibold">{value}</p>
+    <div className="flex flex-col gap-2">
+      <p className="text-[11px] tracking-[0.08em] text-faint uppercase">
+        {dict.analyze.optimize.suggestedWeights}
+      </p>
+      <div className="grid grid-cols-[1fr_78px_78px] gap-2.5 text-[11px] tracking-[0.07em] text-faint uppercase">
+        <span>{dict.analyze.optimize.positionCol}</span>
+        <span className="text-right">{dict.analyze.optimize.currentCol}</span>
+        <span className="text-right">{dict.analyze.optimize.modelCol}</span>
+      </div>
+      {tickers.map((ticker) => (
+        <div
+          key={ticker}
+          className="grid grid-cols-[1fr_78px_78px] items-center gap-2.5 border-b border-border pb-2"
+        >
+          <span className="font-mono text-xs tracking-[0.04em]">{ticker}</span>
+          <span className="text-right font-mono text-xs text-soft">
+            {currentWeights[ticker] !== undefined
+              ? `${Math.round(currentWeights[ticker] * 100)} %`
+              : "–"}
+          </span>
+          <span className="text-right font-mono text-xs">
+            {Math.round(modelWeights[ticker] * 100)} %
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function StatTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-col gap-1 rounded-lg border border-border bg-sunken p-3.5">
+      <p className="text-xs text-muted">{label}</p>
+      <p className="font-mono text-lg">{value}</p>
     </div>
   );
 }

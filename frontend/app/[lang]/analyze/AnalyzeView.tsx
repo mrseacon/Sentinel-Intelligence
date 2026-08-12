@@ -4,7 +4,7 @@
 // manueller Eingabe (PortfolioBuilder), danach Analyse + Optimierung.
 // Bewusst kein Bezug zum Paper-Depot (ARCHITECTURE §1: "Was wäre wenn"-
 // Portfolios dürfen das Lern-Depot nicht verfälschen, FRONTEND_DECISIONS
-// §4).
+// §4). Die independentNote lebt jetzt im Seitenkopf (AnalyzePageChrome).
 import { useState } from "react";
 
 import { useI18n } from "@/lib/i18n/I18nProvider";
@@ -20,27 +20,29 @@ export function AnalyzeView() {
   const [portfolio, setPortfolio] = useState<PortfolioIn | null>(null);
 
   return (
-    <div className="space-y-8">
-      <p className="rounded-md border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
-        {dict.analyze.independentNote}
-      </p>
-
+    <div className="flex flex-col gap-6">
       <PortfolioBuilder onPortfolioReady={setPortfolio} />
 
       {portfolio && (
         <>
-          <section className="space-y-3">
-            <h2 className="text-lg font-semibold">{dict.analyze.sectionAnalyze}</h2>
+          <section className="rounded-xl border border-border bg-surface p-5 shadow-elevated">
+            <h2 className="mb-4 text-[15px] font-semibold">
+              {dict.analyze.sectionAnalyze}
+            </h2>
             <AnalyzeResult portfolio={portfolio} />
           </section>
 
-          <section className="space-y-3">
-            <h2 className="text-lg font-semibold">{dict.analyze.sectionBenchmark}</h2>
+          <section className="rounded-xl border border-border bg-surface p-5 shadow-elevated">
+            <h2 className="mb-4 text-[15px] font-semibold">
+              {dict.analyze.sectionBenchmark}
+            </h2>
             <BenchmarkCompare portfolio={portfolio} />
           </section>
 
-          <section className="space-y-3">
-            <h2 className="text-lg font-semibold">{dict.analyze.sectionOptimize}</h2>
+          <section className="rounded-xl border border-border bg-surface p-5 shadow-elevated">
+            <h2 className="mb-4 text-[15px] font-semibold">
+              {dict.analyze.sectionOptimize}
+            </h2>
             <OptimizeSection portfolio={portfolio} />
           </section>
         </>

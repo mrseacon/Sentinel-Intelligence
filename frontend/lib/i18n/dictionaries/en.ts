@@ -390,14 +390,31 @@ const en: Dictionary = {
   },
   analyze: {
     backToHome: "← Back to home",
+    kicker: "Custom portfolio",
     pageTitle: "Free portfolio analysis",
     independentNote: "This is an independent analysis, not connected to your paper portfolio.",
     sectionAnalyze: "Analysis",
     sectionBenchmark: "Compare with index",
     sectionOptimize: "Optimize",
+    source: {
+      title: "Portfolio source",
+      manualTab: "Manual",
+      csvTab: "CSV",
+    },
+    score: {
+      hint: "Based on volatility, drawdown, VaR/CVaR and concentration",
+      gaugeLow: "Low",
+      gaugeHigh: "Severe",
+      note: "Score from 0 to 100, higher means higher risk.",
+    },
     csvUpload: {
       title: "CSV upload",
       body: "Columns ticker and weight, any positive scale (e.g. euro amounts or share counts).",
+      dropTitle: "Drop your file here",
+      dropSub: "or click to choose a file",
+      formatLabel: "Format",
+      formatHead: "ticker,weight",
+      formatRow: "AAPL,5000",
       chooseFile: "Choose file",
       onlyCsv: "Only .csv files are supported.",
       tooLarge: (sizeMb: string, maxMb: number) =>
@@ -445,6 +462,9 @@ const en: Dictionary = {
       volatility: "Volatility (annualized)",
       sharpeRatio: "Sharpe ratio",
       suggestedWeights: "Suggested weighting",
+      positionCol: "Position",
+      currentCol: "Current",
+      modelCol: "Model",
       germanOnlyNotice:
         "The disclaimer below is currently German-only; an English version is planned for a later update.",
     },

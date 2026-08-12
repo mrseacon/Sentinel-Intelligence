@@ -13,11 +13,25 @@ import { useI18n } from "@/lib/i18n/I18nProvider";
 import { canonicalWeights } from "@/lib/portfolio";
 import type { PortfolioIn, RiskScoreOut } from "@/lib/types";
 
-const LABEL_BADGE: Record<RiskScoreOut["label"], string> = {
-  Low: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200",
-  Moderate: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200",
-  High: "bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-200",
-  Severe: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200",
+const LABEL_TINT: Record<RiskScoreOut["label"], string> = {
+  Low: "var(--ok-tint)",
+  Moderate: "var(--warn-tint)",
+  High: "var(--alert-tint)",
+  Severe: "var(--alert-tint)",
+};
+
+const LABEL_INK: Record<RiskScoreOut["label"], string> = {
+  Low: "var(--ok)",
+  Moderate: "var(--warn)",
+  High: "var(--alert)",
+  Severe: "var(--alert)",
+};
+
+const LABEL_ICON: Record<RiskScoreOut["label"], string> = {
+  Low: "✓",
+  Moderate: "!",
+  High: "✕",
+  Severe: "✕",
 };
 
 export function AnalyzeResult({ portfolio }: { portfolio: PortfolioIn }) {
@@ -46,95 +60,131 @@ export function AnalyzeResult({ portfolio }: { portfolio: PortfolioIn }) {
 
   const { score, metrics, risk_contribution } = query.data;
   const labelText = dict.analyze.result.labels[score.label];
-  const labelBadge = LABEL_BADGE[score.label];
+  const scoreLeft = `${Math.min(100, Math.max(0, score.score))}%`;
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-lg border border-slate-200 border-l-4 border-l-slate-400 p-4 dark:border-slate-800">
-        <div className="flex items-center justify-between gap-2">
-          <h3 className="font-semibold">{dict.analyze.result.riskScore}</h3>
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-3">
+        <div className="flex items-baseline justify-between gap-3">
+          <h3 className="text-[15px] font-semibold">{dict.analyze.result.riskScore}</h3>
+          <span className="text-xs text-muted">{dict.analyze.score.hint}</span>
+        </div>
+
+        <div className="flex items-end gap-3.5">
+          <span className="font-mono text-[46px] leading-none tracking-[-0.03em]">
+            {Math.round(score.score)}
+          </span>
+          <span className="pb-1 font-mono text-[15px] text-faint">/ 100</span>
           <span
-            className={`rounded-full px-2 py-0.5 text-xs font-medium ${labelBadge}`}
+            className="mb-1 inline-flex items-center gap-1.5 rounded-full py-1 pr-2.5 pl-2 transition-colors"
+            style={{ background: LABEL_TINT[score.label], color: LABEL_INK[score.label] }}
           >
-            {labelText}
+            <span className="text-[11px] font-bold" aria-hidden="true">
+              {LABEL_ICON[score.label]}
+            </span>
+            <span className="text-xs font-semibold">{labelText}</span>
           </span>
         </div>
-        <p className="mt-1 text-2xl font-semibold">
-          {Math.round(score.score)} / 100
-        </p>
+
+        <div className="flex flex-col gap-1.5">
+          <div className="relative h-2.5 rounded-full border border-border bg-sunken">
+            <div
+              className="absolute -top-1 -bottom-1 w-[3px] rounded-sm bg-ink transition-[left] duration-500"
+              style={{ left: scoreLeft }}
+            />
+          </div>
+          <div className="flex justify-between font-mono text-[10.5px] text-faint">
+            <span>{dict.analyze.score.gaugeLow}</span>
+            <span>{dict.analyze.score.gaugeHigh}</span>
+          </div>
+        </div>
 
         {score.drivers.length > 0 && (
-          <div className="mt-3">
-            <p className="text-xs font-medium text-slate-600 dark:text-slate-300">
-              {dict.analyze.result.topDrivers}
-            </p>
-            <ul className="mt-1 space-y-1 text-sm text-slate-700 dark:text-slate-200">
-              {score.drivers.map((driver) => (
-                <li key={driver.factor} className="flex justify-between">
-                  <span>{driver.factor}</span>
-                  <span>{Math.round(driver.contribution * 100)} %</span>
-                </li>
-              ))}
-            </ul>
+          <div className="flex flex-col gap-2.5 border-t border-border pt-3.5">
+            {score.drivers.map((driver) => (
+              <div
+                key={driver.factor}
+                className="grid grid-cols-[minmax(0,150px)_1fr_44px] items-center gap-3"
+              >
+                <span className="truncate text-[13px]">{driver.factor}</span>
+                <div className="h-1.5 rounded-full bg-sunken">
+                  <div
+                    className="h-full rounded-full bg-accent transition-[width] duration-500"
+                    style={{ width: `${Math.min(100, driver.contribution * 100)}%` }}
+                  />
+                </div>
+                <span className="text-right font-mono text-xs text-soft">
+                  {Math.round(driver.contribution * 100)} %
+                </span>
+              </div>
+            ))}
           </div>
         )}
+        <p className="text-xs text-faint">{dict.analyze.score.note}</p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard
+      <div className="grid gap-3 border-t border-border pt-5 sm:grid-cols-3">
+        <StatTile
           label={dict.analyze.result.volatility}
           value={`${Math.round(metrics.volatility * 100)} %`}
         />
-        <StatCard
+        <StatTile
           label={dict.analyze.result.maxDrawdown}
           value={`${Math.round(metrics.max_drawdown * 100)} %`}
           tone="negative"
         />
-        <StatCard
+        <StatTile
           label={dict.analyze.result.diversificationRatio}
           value={metrics.diversification_ratio.toFixed(2)}
         />
-        <StatCard
+        <StatTile
           label={dict.analyze.result.var95}
           value={`${(metrics.var_95 * 100).toFixed(2)} %`}
           tone="negative"
         />
-        <StatCard
+        <StatTile
           label={dict.analyze.result.cvar95}
           value={`${(metrics.cvar_95 * 100).toFixed(2)} %`}
           tone="negative"
         />
-        <StatCard
+        <StatTile
           label={dict.analyze.result.hhi}
           value={metrics.hhi === null ? dict.common.notAvailable : metrics.hhi.toFixed(2)}
         />
       </div>
 
-      <div>
-        <p className="text-xs font-medium text-slate-600 dark:text-slate-300">
+      <div className="border-t border-border pt-5">
+        <p className="mb-2 text-[11px] tracking-[0.08em] text-faint uppercase">
           {dict.analyze.result.riskContributionPerPosition}
         </p>
-        <ul className="mt-1 space-y-1 text-sm">
+        <div className="flex flex-col gap-2">
           {Object.entries(risk_contribution)
             .sort(([, a], [, b]) => b - a)
             .map(([ticker, share]) => (
-              <li
-                key={ticker}
-                className="flex justify-between text-slate-700 dark:text-slate-200"
-              >
-                <span>{ticker}</span>
-                <span>{Math.round(share * 100)} %</span>
-              </li>
+              <div key={ticker} className="grid grid-cols-[80px_1fr_44px] items-center gap-3">
+                <span className="font-mono text-xs tracking-[0.04em]">{ticker}</span>
+                <div className="h-1.5 rounded-full bg-sunken">
+                  <div
+                    className="h-full rounded-full bg-accent transition-[width] duration-500"
+                    style={{ width: `${Math.min(100, share * 100)}%` }}
+                  />
+                </div>
+                <span className="text-right font-mono text-xs text-soft">
+                  {Math.round(share * 100)} %
+                </span>
+              </div>
             ))}
-        </ul>
+        </div>
       </div>
 
-      <ReportDownloadButton portfolio={portfolio} />
+      <div className="border-t border-border pt-5">
+        <ReportDownloadButton portfolio={portfolio} />
+      </div>
     </div>
   );
 }
 
-function StatCard({
+function StatTile({
   label,
   value,
   tone,
@@ -144,16 +194,18 @@ function StatCard({
   tone?: "positive" | "negative";
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
-      <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
+    <div className="flex flex-col gap-1 rounded-lg border border-border bg-sunken p-3.5">
+      <p className="text-xs text-muted">{label}</p>
       <p
-        className={`mt-1 text-lg font-semibold ${
-          tone === "positive"
-            ? "text-emerald-600"
-            : tone === "negative"
-              ? "text-red-600"
-              : ""
-        }`}
+        className="font-mono text-lg"
+        style={{
+          color:
+            tone === "positive"
+              ? "var(--ok)"
+              : tone === "negative"
+                ? "var(--alert)"
+                : "var(--ink)",
+        }}
       >
         {value}
       </p>
