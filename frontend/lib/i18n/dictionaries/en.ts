@@ -51,7 +51,7 @@ const en: Dictionary = {
     hero: {
       eyebrow: "Every number comes with an explanation",
       title: "Understand, don't guess.",
-      body: "Sentinel doesn't just show you a risk number — it explains in one sentence where it comes from: which position weighs too much, where diversification is missing, how much your prices have historically swung.",
+      body: "Sentinel doesn't just show you a risk number. It explains in one sentence where it comes from: which position weighs too much, where diversification is missing, how much your prices have historically swung.",
       ctaHint: "With virtual capital. No sign-up required.",
     },
     how: {
@@ -188,7 +188,7 @@ const en: Dictionary = {
     start: {
       eyebrow: "Practice now",
       title: "Your first mistake shouldn't cost you anything.",
-      body: "Start with virtual capital, watch your risk, and decide later with real money — informed this time.",
+      body: "Start with virtual capital, watch your risk, and decide later with real money, this time informed.",
       ctaHint: "No sign-up, no payment details, no real money.",
     },
     heroDemo: {
@@ -331,7 +331,7 @@ const en: Dictionary = {
     simulationLinkText: "Where could your portfolio go in the future?",
     simulationLinkCta: "Go to simulation",
     germanOnlyNotice:
-      "The detailed explanation, lesson card and disclaimer below are currently German-only; an English version is planned for a later update.",
+      "The detailed explanation, lesson card and disclaimer below are currently German only. An English version is planned for a later update.",
     monthsShort: [
       "Jan",
       "Feb",
@@ -387,7 +387,7 @@ const en: Dictionary = {
       p90: "Upper percentile (90%)",
     },
     germanOnlyNotice:
-      "The detailed explanation, lesson card and disclaimer below are currently German-only; an English version is planned for a later update.",
+      "The detailed explanation, lesson card and disclaimer below are currently German only. An English version is planned for a later update.",
     axisMonths: "mo.",
     axisYears: "yr.",
     afterMonth: (n: number) => `after ${n} ${n === 1 ? "month" : "months"}`,
@@ -458,7 +458,7 @@ const en: Dictionary = {
       yourPortfolio: "Your portfolio",
       riskScore: "Risk score",
       germanOnlyNotice:
-        "The comparison text below is currently German-only; an English version is planned for a later update.",
+        "The comparison text below is currently German only. An English version is planned for a later update.",
     },
     optimize: {
       needsTwoPositions: "Optimization needs at least 2 positions.",
@@ -471,7 +471,7 @@ const en: Dictionary = {
       currentCol: "Current",
       modelCol: "Model",
       germanOnlyNotice:
-        "The disclaimer below is currently German-only; an English version is planned for a later update.",
+        "The disclaimer below is currently German only. An English version is planned for a later update.",
     },
   },
   positionNews: {
