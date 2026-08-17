@@ -5,6 +5,7 @@ import "../globals.css";
 import { DEFAULT_LOCALE, isLocale, LOCALES } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { I18nProvider } from "@/lib/i18n/I18nProvider";
+import { OG_LOCALE, SITE_URL } from "@/lib/i18n/metadata";
 
 import { Providers } from "./providers";
 
@@ -38,11 +39,25 @@ export async function generateMetadata({
 }: {
   params: Promise<{ lang: string }>;
 }): Promise<Metadata> {
-  const { lang } = await params;
-  const dict = await getDictionary(isLocale(lang) ? lang : DEFAULT_LOCALE);
+  const { lang: rawLang } = await params;
+  const lang = isLocale(rawLang) ? rawLang : DEFAULT_LOCALE;
+  const dict = await getDictionary(lang);
   return {
+    // Basis für alle relativen URL-Metadata-Felder (alternates, openGraph
+    // .images per Datei-Konvention) in Kind-Segmenten — s. generate-
+    // metadata.md "metadataBase". Fallback = README "Live Demo"-URL; für
+    // einen anderen Deploy per NEXT_PUBLIC_SITE_URL überschreiben.
+    metadataBase: new URL(SITE_URL),
     title: { default: "Sentinel", template: "%s · Sentinel" },
     description: dict.meta.description,
+    applicationName: "Sentinel",
+    robots: { index: true, follow: true },
+    // Seiten setzen ihr eigenes vollständiges openGraph-Objekt (Merging
+    // ersetzt es sonst komplett, s. generate-metadata.md "Overwriting
+    // fields") — dieser Fallback greift nur, falls eine Route keins
+    // definiert. og:image kommt unabhängig davon aus opengraph-image.tsx.
+    openGraph: { siteName: "Sentinel", type: "website", locale: OG_LOCALE[lang] },
+    twitter: { card: "summary_large_image" },
   };
 }
 

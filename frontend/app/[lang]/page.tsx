@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Disclaimer } from "@/components/Disclaimer";
@@ -5,6 +6,24 @@ import { HeroDemo } from "@/components/HeroDemo";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { DEFAULT_LOCALE, isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
+import { buildPageMetadata, SITE_URL } from "@/lib/i18n/metadata";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}): Promise<Metadata> {
+  const { lang: rawLang } = await params;
+  const lang = isLocale(rawLang) ? rawLang : DEFAULT_LOCALE;
+  const dict = await getDictionary(lang);
+  return buildPageMetadata({
+    lang,
+    path: "",
+    title: dict.meta.landing.title,
+    description: dict.meta.landing.description,
+    titleIsAbsolute: true,
+  });
+}
 
 // Reine Server-Komponente bis auf HeroDemo (Client, simulierter Slider
 // ohne Backend-Anbindung; holt sein Dictionary selbst über useI18n(),
@@ -65,8 +84,31 @@ export default async function Home({
   const t = dict.landing;
   const href = (path: string) => `/${lang}${path}`;
 
+  // Structured Data (SEO-Redesign, Next.js-Doku empfiehlt genau dieses
+  // Muster statt eines dedizierten Metadata-Feldes, s.
+  // node_modules/next/dist/docs/.../json-ld.md). WebApplication statt
+  // SoftwareApplication: Sentinel läuft im Browser, ist keine
+  // installierbare Software. `<`-Escaping laut Doku gegen XSS über den
+  // JSON-Payload.
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: "Sentinel",
+    description: dict.meta.landing.description,
+    url: `${SITE_URL}/${lang}`,
+    inLanguage: lang,
+    applicationCategory: "FinanceApplication",
+    operatingSystem: "Web",
+    isAccessibleForFree: true,
+    offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" },
+  };
+
   return (
     <div className="flex flex-1 flex-col">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
+      />
       <header className="sticky top-0 z-20 border-b border-border bg-bg/90 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-6 px-6 py-3.5">
           <Link href={href("/")} className="flex items-center gap-2 no-underline">

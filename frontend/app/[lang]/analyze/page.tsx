@@ -4,15 +4,22 @@ import { AnalyzePageChrome } from "./AnalyzePageChrome";
 import { AnalyzeView } from "./AnalyzeView";
 import { DEFAULT_LOCALE, isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
+import { buildPageMetadata } from "@/lib/i18n/metadata";
 
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ lang: string }>;
 }): Promise<Metadata> {
-  const { lang } = await params;
-  const dict = await getDictionary(isLocale(lang) ? lang : DEFAULT_LOCALE);
-  return { title: dict.analyze.pageTitle };
+  const { lang: rawLang } = await params;
+  const lang = isLocale(rawLang) ? rawLang : DEFAULT_LOCALE;
+  const dict = await getDictionary(lang);
+  return buildPageMetadata({
+    lang,
+    path: "/analyze",
+    title: dict.analyze.pageTitle,
+    description: dict.meta.analyze.description,
+  });
 }
 
 // Bewusst außerhalb der (learn)-Route-Group (FRONTEND_DECISIONS.md §7):

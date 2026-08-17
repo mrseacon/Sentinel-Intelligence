@@ -10,6 +10,31 @@ const de = {
   meta: {
     description:
       "Paper-Trading mit Risiko-Ampel: vom ersten Spielgeld-Trade zum verstandenen Portfolio.",
+    landing: {
+      title: "Sentinel – Paper-Trading mit Risiko-Ampel",
+      description:
+        "Baue ein Paper-Depot mit 10.000 € virtuellem Kapital auf, lies dein Risiko in einer Ampel ab und teste dein Portfolio gegen historische Krisen. Kostenlos, ohne Anmeldung.",
+    },
+    depot: {
+      description:
+        "Verwalte dein Paper-Trading-Depot mit 10.000 € virtuellem Startkapital: Positionen, Kurse und Gewichtung auf einen Blick.",
+    },
+    ampel: {
+      description:
+        "Drei Ampeln zeigen Klumpenrisiko, Diversifikation und Volatilität deines Depots, mit Erklärung statt Black-Box-Score.",
+    },
+    stress: {
+      description:
+        "Teste dein Depot gegen reale Krisenzeiträume wie die Finanzkrise 2008 oder den Corona-Crash und sieh den historischen Verlauf.",
+    },
+    simulation: {
+      description:
+        "Monte-Carlo-Simulation auf Basis echter historischer Renditen: eine Bandbreite möglicher Verläufe für dein Depot, keine Prognose.",
+    },
+    analyze: {
+      description:
+        "Analysiere ein beliebiges Portfolio unabhängig von deinem Paper-Depot: Risiko-Score, Vergleich mit einem Index und Optimierungsvorschlag.",
+    },
   },
   nav: {
     depot: "Depot",

@@ -10,6 +10,31 @@ const en: Dictionary = {
   meta: {
     description:
       "Paper trading with a risk traffic light: from your first play-money trade to a portfolio you understand.",
+    landing: {
+      title: "Sentinel – Paper Trading with a Risk Traffic Light",
+      description:
+        "Build a paper portfolio with €10,000 in virtual capital, read your risk from a traffic light, and test your portfolio against historical crises. Free, no sign-up.",
+    },
+    depot: {
+      description:
+        "Manage your paper-trading portfolio with €10,000 in virtual starting capital: positions, prices and weighting at a glance.",
+    },
+    ampel: {
+      description:
+        "Three traffic lights show your portfolio's concentration risk, diversification and volatility, explained instead of a black-box score.",
+    },
+    stress: {
+      description:
+        "Test your portfolio against real crisis periods like the 2008 financial crisis or the Covid crash and see the historical path.",
+    },
+    simulation: {
+      description:
+        "Monte Carlo simulation based on real historical returns: a range of possible paths for your portfolio, not a forecast.",
+    },
+    analyze: {
+      description:
+        "Analyze any portfolio independently of your paper portfolio: risk score, index comparison and an optimization suggestion.",
+    },
   },
   nav: {
     depot: "Portfolio",

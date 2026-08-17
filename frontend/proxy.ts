@@ -53,7 +53,11 @@ function detectFromAcceptLanguage(request: NextRequest): string | undefined {
 }
 
 export const config = {
-  // Assets/Metadaten/API aussparen, sonst blockiert der Redirect
-  // CSS/JS/Bilder und die eigenständigen /manifest.webmanifest-Bytes.
-  matcher: ["/((?!_next|favicon.ico|manifest.webmanifest).*)"],
+  // Assets/Metadaten aussparen, sonst blockiert der Redirect CSS/JS/Bilder
+  // und die eigenständigen Metadata-Routen (SEO-Redesign: sitemap.xml,
+  // robots.txt, opengraph-image, twitter-image landen sonst unter
+  // /de/sitemap.xml etc. und 404en, weil es dort keine passende Route gibt).
+  matcher: [
+    "/((?!_next|favicon.ico|manifest.webmanifest|sitemap.xml|robots.txt|opengraph-image|twitter-image).*)",
+  ],
 };
