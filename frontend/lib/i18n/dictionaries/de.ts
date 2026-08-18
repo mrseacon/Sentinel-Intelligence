@@ -42,6 +42,12 @@ const de = {
     stress: "Stress-Test",
     simulation: "Simulation",
   },
+  demo: {
+    cta: "Beispieldepot ansehen",
+    ctaHint: "Fertig befülltes Depot zum Ausprobieren, ganz ohne eigene Trades.",
+    bannerText: "Beispieldaten – nicht dein echtes Depot.",
+    exit: "Zu meinem Depot",
+  },
   disclaimer: {
     intro:
       "Sentinel beschreibt Portfolioeigenschaften (z. B. Klumpenrisiko, Volatilität) auf Basis vergangener Kurse. Das ist ",

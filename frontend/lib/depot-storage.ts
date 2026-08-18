@@ -11,10 +11,13 @@
 import type { PaperAccountIn, TransactionIO } from "./types";
 
 const STORAGE_KEY = "sentinel_paper_depot";
-const CURRENT_SCHEMA_VERSION = 1;
+// Exportiert, damit lib/demo-depot.ts (Beispieldepot-Modus) denselben
+// Wert verwendet statt ihn zu duplizieren.
+export const CURRENT_SCHEMA_VERSION = 1;
 
-/** Startkapital, identisch zu sentinel_core/constants.py PAPER_START_CASH. */
-const PAPER_START_CASH = 10_000;
+/** Startkapital, identisch zu sentinel_core/constants.py PAPER_START_CASH.
+ * Exportiert für lib/demo-depot.ts, s. CURRENT_SCHEMA_VERSION oben. */
+export const PAPER_START_CASH = 10_000;
 
 export interface DepotState {
   schema_version: number;

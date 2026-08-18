@@ -48,6 +48,12 @@ const navLinkClass = "rounded-md px-3 py-2 text-sm font-medium text-soft no-unde
 const ctaClass =
   "inline-flex items-center justify-center rounded-full bg-accent px-7 py-3.5 text-base font-semibold text-accent-ink no-underline transition-transform hover:-translate-y-0.5";
 
+// Zweitrangige CTA ("Beispieldepot ansehen"): kein gefüllter Accent-
+// Pill wie ctaClass, sonst konkurriert sie mit dem Haupt-CTA "Kostenlos
+// starten" um die Aufmerksamkeit.
+const secondaryCtaClass =
+  "inline-flex items-center justify-center rounded-full border border-border-strong px-6 py-3 text-sm font-medium text-ink no-underline transition-colors hover:border-accent hover:text-accent";
+
 const eyebrowClass = "font-mono text-[11px] tracking-[0.16em] text-faint uppercase";
 
 const headingClass = "font-serif font-normal tracking-tight text-balance";
@@ -164,6 +170,13 @@ export default async function Home({
                 {t.ctaStart}
               </Link>
               <span className="text-sm text-muted">{t.hero.ctaHint}</span>
+            </div>
+
+            <div className="flex flex-col items-center gap-1.5">
+              <Link href={href("/depot?demo=1")} className={secondaryCtaClass}>
+                {dict.demo.cta}
+              </Link>
+              <span className="text-xs text-faint">{dict.demo.ctaHint}</span>
             </div>
 
             <div className="grid w-full max-w-2xl grid-cols-1 gap-px overflow-hidden rounded-[10px] border border-border bg-border sm:grid-cols-3">

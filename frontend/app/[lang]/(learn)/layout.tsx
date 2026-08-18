@@ -1,3 +1,4 @@
+import { DemoModeBanner } from "@/components/DemoModeBanner";
 import { Disclaimer } from "@/components/Disclaimer";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Nav } from "@/components/Nav";
@@ -17,6 +18,9 @@ export default function LearnLayout({
   return (
     <DepotProvider>
       <div className="flex min-h-full flex-1 flex-col">
+        {/* Rendert sich selbst weg außerhalb des Beispieldepot-Modus
+            (DemoModeBanner liest isDemoMode aus demselben Context). */}
+        <DemoModeBanner />
         <header className="border-b border-border">
           <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-4 py-3">
             <LocaleLink

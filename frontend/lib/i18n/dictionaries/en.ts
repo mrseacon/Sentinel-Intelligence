@@ -42,6 +42,12 @@ const en: Dictionary = {
     stress: "Stress Test",
     simulation: "Simulation",
   },
+  demo: {
+    cta: "View sample portfolio",
+    ctaHint: "A pre-filled portfolio to explore, no trades of your own needed.",
+    bannerText: "Sample data – not your real portfolio.",
+    exit: "Go to my portfolio",
+  },
   disclaimer: {
     intro:
       "Sentinel describes portfolio properties (e.g. concentration risk, volatility) based on past prices. This is ",
