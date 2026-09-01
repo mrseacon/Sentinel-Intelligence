@@ -23,8 +23,13 @@ import { canonicalWeights, derivePortfolioWeights } from "@/lib/portfolio";
 import type { AmpelOut, AmpelStatus, PositionValueOut } from "@/lib/types";
 
 export function AmpelView() {
-  const { depot, valuation, isValuationLoading, valuationError } =
-    useDepot();
+  const {
+    depot,
+    valuation,
+    isValuationLoading,
+    valuationError,
+    refetchValuation,
+  } = useDepot();
   const { dict } = useI18n();
 
   // Depot noch nicht aus localStorage gelesen (usePaperDepot §2-SSR-Gotcha).
@@ -56,6 +61,7 @@ export function AmpelView() {
         isValuationLoading={isValuationLoading}
         valuationError={valuationError}
         positions={valuation?.positions}
+        onRetryValuation={refetchValuation}
       />
     </section>
   );
@@ -66,18 +72,20 @@ function AmpelContent({
   isValuationLoading,
   valuationError,
   positions,
+  onRetryValuation,
 }: {
   hasTransactions: boolean;
   isValuationLoading: boolean;
   valuationError: ApiError | null;
   positions: PositionValueOut[] | undefined;
+  onRetryValuation: () => void;
 }) {
   if (!hasTransactions) {
     return <EmptyHint />;
   }
 
   if (valuationError) {
-    return <ErrorNotice error={valuationError} />;
+    return <ErrorNotice error={valuationError} onRetry={onRetryValuation} />;
   }
 
   if (isValuationLoading || positions === undefined) {

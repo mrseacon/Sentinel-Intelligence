@@ -15,17 +15,16 @@ import { expect, test } from "@playwright/test";
  * Response-Mocking — der Request geht real raus und schlägt real fehl,
  * nur eben durch einen abgebrochenen Request statt einen toten Server.
  *
- * Ziel-Endpunkt bewusst POST /risk/ampel, nicht POST /paper/valuation:
- * AmpelView.tsx übergibt seiner ampelQuery ein onRetry (refetch), die
- * ErrorNotice zeigt den Retry-Button also nur bei RETRYABLE_CODES UND
- * gesetztem onRetry (FRONTEND_DECISIONS §3). Der valuation-Fehlerpfad
- * in DepotView/AmpelView übergibt aktuell KEIN onRetry — dort bliebe
- * "Erneut versuchen" unsichtbar, was eher nach einer bestehenden Lücke
- * in dem Pfad aussieht als nach Testfall-Fehlverhalten; hier separat
- * geflaggt statt stillschweigend mit-"repariert".
+ * Erster Testfall zielt auf POST /risk/ampel (AmpelView.tsx übergibt
+ * seiner ampelQuery ein onRetry). Der valuation-Fehlerpfad in
+ * DepotView/AmpelView hatte ursprünglich KEIN onRetry an ErrorNotice
+ * durchgereicht — mittlerweile gefixt (lib/usePaperDepot.ts:
+ * refetchValuation, durchgereicht über DepotProvider/DepotView/
+ * AmpelView), zweiter Testfall unten deckt genau das jetzt auch für
+ * POST /paper/valuation ab.
  */
 test.describe("Fehlerfall: Backend nicht erreichbar", () => {
-  test("ErrorNotice mit Retry erscheint und erholt sich nach Retry", async ({
+  test("ErrorNotice mit Retry erscheint und erholt sich nach Retry (/risk/ampel)", async ({
     page,
   }) => {
     await page.route("**/risk/ampel", (route) => route.abort("failed"));
@@ -60,5 +59,33 @@ test.describe("Fehlerfall: Backend nicht erreichbar", () => {
     await expect(
       page.getByRole("heading", { name: "Klumpenrisiko", exact: true }),
     ).toBeVisible({ timeout: 15_000 });
+  });
+
+  test("ErrorNotice mit Retry erscheint und erholt sich nach Retry (/paper/valuation)", async ({
+    page,
+  }) => {
+    await page.route("**/paper/valuation", (route) => route.abort("failed"));
+
+    await page.goto("/de/depot?demo=1");
+
+    const errorBanner = page
+      .getByRole("alert")
+      .filter({ hasText: "Server nicht erreichbar" });
+    await expect(errorBanner).toBeVisible({ timeout: 15_000 });
+    const retryButton = errorBanner.getByRole("button", {
+      name: "Erneut versuchen",
+    });
+    await expect(retryButton).toBeVisible();
+
+    // Depot-Inhalt darf währenddessen nicht erscheinen.
+    await expect(page.getByText("Größte: AAPL")).not.toBeVisible();
+
+    await page.unroute("**/paper/valuation");
+    await retryButton.click();
+
+    await expect(errorBanner).not.toBeVisible();
+    await expect(page.getByText("Größte: AAPL")).toBeVisible({
+      timeout: 15_000,
+    });
   });
 });

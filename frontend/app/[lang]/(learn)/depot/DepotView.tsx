@@ -28,8 +28,13 @@ function seriesColor(index: number): string {
 }
 
 export function DepotView() {
-  const { depot, valuation, isValuationLoading, valuationError } =
-    useDepot();
+  const {
+    depot,
+    valuation,
+    isValuationLoading,
+    valuationError,
+    refetchValuation,
+  } = useDepot();
   const { dict, locale } = useI18n();
   const [justTraded, setJustTraded] = useState(false);
 
@@ -74,6 +79,7 @@ export function DepotView() {
           error={valuationError}
           valuation={valuation}
           onExecuted={() => setJustTraded(true)}
+          onRetry={refetchValuation}
         />
       ) : (
         <>
@@ -117,15 +123,17 @@ function DepotOverview({
   error,
   valuation,
   onExecuted,
+  onRetry,
 }: {
   isLoading: boolean;
   error: ApiError | null;
   valuation: AccountValuationOut | undefined;
   onExecuted: () => void;
+  onRetry: () => void;
 }) {
   const { dict, locale } = useI18n();
 
-  if (error) return <ErrorNotice error={error} />;
+  if (error) return <ErrorNotice error={error} onRetry={onRetry} />;
 
   if (isLoading || !valuation) {
     return (

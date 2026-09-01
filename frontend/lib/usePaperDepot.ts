@@ -31,6 +31,12 @@ export interface UsePaperDepotResult {
   valuation: AccountValuationOut | undefined;
   isValuationLoading: boolean;
   valuationError: ApiError | null;
+  /** Erneuter Versuch der paper/valuation-Query — für
+   * `<ErrorNotice onRetry={refetchValuation}>` an jedem Ort, der
+   * valuationError direkt anzeigt (DepotView, AmpelView, StressView,
+   * SimulationView: RETRYABLE_CODES brauchen laut FRONTEND_DECISIONS §3
+   * einen Retry-Button, sonst bleibt ErrorNotice ohne Button). */
+  refetchValuation: () => void;
 }
 
 export interface UsePaperDepotOptions {
@@ -105,6 +111,7 @@ export function usePaperDepot(
     data: valuation,
     isPending: isValuationLoading,
     error,
+    refetch: refetchValuationQuery,
   } = useQuery({
     queryKey: [
       "paper",
@@ -127,5 +134,8 @@ export function usePaperDepot(
     valuation,
     isValuationLoading,
     valuationError: error instanceof ApiError ? error : null,
+    refetchValuation: () => {
+      refetchValuationQuery();
+    },
   };
 }
