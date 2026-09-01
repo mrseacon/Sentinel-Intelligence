@@ -368,7 +368,15 @@ function PositionsTable({ positions }: { positions: PositionValueOut[] }) {
   const investedTotal = positions.reduce((sum, p) => sum + p.market_value, 0);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-elevated">
+    // data-testid: "AAPL" allein ist auf dieser Seite mehrdeutig (Donut-
+    // Legende zeigt denselben Ticker) — der Testid ist der stabilere
+    // Anker als Text/Rolle-Scoping über verschachtelte divs (E2E-Suite,
+    // e2e/trade-flow.spec.ts), ohne die Selektor-Strategie sonst zu
+    // ändern (weiterhin Text/Rolle für alles Eindeutige).
+    <div
+      data-testid="positions-table"
+      className="overflow-hidden rounded-xl border border-border bg-surface shadow-elevated"
+    >
       <div className="flex items-baseline justify-between gap-3 px-5 pt-4.5 pb-3.5">
         <h2 className="text-[15px] font-semibold">
           {dict.depot.positionsTitle}
