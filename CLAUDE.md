@@ -59,6 +59,14 @@ der Nutzer entscheidet explizit anders (dann ARCHITECTURE.md aktualisieren!).
 - Vor größeren Aufgaben kurzen Plan zeigen, dann umsetzen.
 - Tests gehören zur Definition of Done – mindestens die Pflichtfälle aus
   ARCHITECTURE.md §9 für den berührten Bereich.
+- **Vor Abschluss jedes Features/Redesigns im Frontend:** `npm run test:e2e`
+  laufen lassen (statt oder zusätzlich zum bisherigen manuellen
+  Durchklicken) – die Playwright-Suite (`frontend/e2e/`) deckt die
+  Kern-Flows ab (Trade, Ampel+Korrelation, Stress-Test, Simulation,
+  Analyze+Benchmark, PDF-Report, Demo-Modus-Isolation, Sprachumschalter,
+  Fehlerfall/Retry). Startet Backend + Frontend selbst (`playwright.config.ts`,
+  `webServer`), braucht also keinen manuell laufenden Server. Läuft
+  zusätzlich in CI (`.github/workflows/ci.yml`, Job `e2e`).
 - Lint/Format: ruff (E,F,I,B,UP) + black; CI muss grün bleiben.
 - Commits: Conventional Commits (`feat:`, `fix:`, `chore:`, `test:`, …),
   Subject < 70 Zeichen, imperativ.
@@ -77,6 +85,8 @@ ruff check . && black --check .
 cd frontend && npm install
 npm run dev                 # http://localhost:3000
 npm run build               # muss vor jedem PR/Push durchlaufen
+npm run test                # vitest – reine Logik-Unit-Tests
+npm run test:e2e            # Playwright – echte Kern-Flows gegen Backend+Frontend
 ```
 
 ## Was NICHT tun

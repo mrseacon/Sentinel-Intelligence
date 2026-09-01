@@ -286,8 +286,13 @@ WebSockets, mehrere Depots pro Nutzer, Benchmarks/Vergleichsindizes.
 - **Neue Pflicht-Tests Paper-Engine:** Verkauf > Bestand, Kauf > Cash,
   Positions-Berechnung aus Transaktionen (inkl. Teilverkäufe,
   avg_buy_price), Gebührenwirkung auf Cash, Ampel-Schwellen-Grenzfälle.
-- Frontend v1: Playwright-Smoke-Test für den Kern-Loop
-  (Trade ausführen → Ampel ändert sich), nicht mehr.
+- Frontend v1: Playwright-E2E-Suite (`frontend/e2e/`, CI-Job `e2e`) gegen
+  echtes Backend+Frontend (kein Mocking) statt des ursprünglich
+  geplanten einzelnen Smoke-Tests — deckt inzwischen alle Kern-Flows ab
+  (Trade, Ampel+Korrelation, Stress-Test, Simulation, Analyze+Benchmark,
+  PDF-Report, Demo-Modus-Isolation, Sprachumschalter, Fehlerfall/Retry)
+  und ersetzt das bisherige manuelle Durchklicken vor jedem
+  Feature-Abschluss (CLAUDE.md "Arbeitsweise").
 
 ---
 
