@@ -60,6 +60,8 @@ const de = {
     whatDoesThisMean: "Was heißt das?",
     goToDepot: "Zum Depot",
     notAvailable: "nicht verfügbar",
+    slowRequest:
+      "Das Backend startet gerade und kann bis zu einer Minute brauchen. Bitte kurz Geduld.",
   },
   languageSwitcher: {
     switchToGerman: "Zu Deutsch wechseln",

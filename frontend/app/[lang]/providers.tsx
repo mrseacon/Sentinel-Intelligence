@@ -7,6 +7,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 
+import { SlowRequestNotice } from "@/components/SlowRequestNotice";
 import { ApiError } from "@/lib/api";
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
@@ -33,6 +34,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      {children}
+      <SlowRequestNotice />
+    </QueryClientProvider>
   );
 }

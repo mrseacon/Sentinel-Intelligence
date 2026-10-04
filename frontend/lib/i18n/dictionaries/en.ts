@@ -60,6 +60,8 @@ const en: Dictionary = {
     whatDoesThisMean: "What does this mean?",
     goToDepot: "Go to portfolio",
     notAvailable: "not available",
+    slowRequest:
+      "The backend is starting up and can take up to a minute. Thanks for your patience.",
   },
   languageSwitcher: {
     switchToGerman: "Zu Deutsch wechseln",
