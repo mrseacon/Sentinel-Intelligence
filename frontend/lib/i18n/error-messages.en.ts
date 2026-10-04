@@ -3,7 +3,7 @@
  * (I18N_DECISIONS.md §3) — nicht über das deutsche `detail`, das bleibt
  * backend-seitig unangetastet (Phase-2-Frage). Jeder Code aus
  * `backend/src/sentinel_api/errors.py` (ERROR_CODE_REGISTRY, FALLBACK_CODE,
- * die drei Handler-Literale) plus `PAYLOAD_TOO_LARGE` aus `main.py` MUSS
+ * die drei Handler-Literale) plus `PAYLOAD_TOO_LARGE` aus `main.py` und `RATE_LIMITED` aus `rate_limit.py` MUSS
  * hier einen Eintrag haben — durchgesetzt vom Vollständigkeitstest in
  * `error-messages.test.ts`, der die Codes direkt aus den Backend-Dateien
  * ausliest statt eine zweite, von Hand gepflegte Liste zu duplizieren.
@@ -32,6 +32,7 @@ export const ERROR_MESSAGES_EN: Record<string, string> = {
   UPSTREAM_UNAVAILABLE: "Price data source is currently unavailable. Please try again later.",
   INTERNAL_ERROR: "Internal server error. Please try again later.",
   PAYLOAD_TOO_LARGE: "This request is too large.",
+  RATE_LIMITED: "Too many requests. Please wait a moment and try again.",
   // FALLBACK_CODE in errors.py — auch der generische Rückfall für jeden
   // Code, den diese Tabelle (noch) nicht kennt, s. englishErrorMessage().
   DOMAIN_ERROR: "Something went wrong. Please try again.",

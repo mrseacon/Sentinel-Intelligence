@@ -56,7 +56,11 @@ export default defineConfig({
     {
       // Identischer Start-Befehl wie render.yaml (Produktions-Deploy) —
       // eine Quelle für "wie startet man den Backend-Prozess".
-      command: "PYTHONPATH=src uvicorn sentinel_api.main:app --host 0.0.0.0 --port 8000",
+      // Rate-Limit aus: alle Testrequests kommen von einer IP (F9, getestet
+      // in backend/tests/test_rate_limit.py); sonst würde die Suite sich
+      // selbst drosseln. Der Zusatz ändert nur die Env, nicht den Start.
+      command:
+        "SENTINEL_RATE_LIMIT_PER_MINUTE=0 PYTHONPATH=src uvicorn sentinel_api.main:app --host 0.0.0.0 --port 8000",
       cwd: "../backend",
       url: "http://localhost:8000/docs",
       reuseExistingServer: !process.env.CI,

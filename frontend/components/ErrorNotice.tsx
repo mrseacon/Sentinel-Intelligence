@@ -12,7 +12,11 @@ import type { ApiError } from "@/lib/api";
 import { englishErrorMessage } from "@/lib/i18n/error-messages.en";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 
-const RETRYABLE_CODES = new Set(["UPSTREAM_UNAVAILABLE", "INTERNAL_ERROR"]);
+const RETRYABLE_CODES = new Set([
+  "UPSTREAM_UNAVAILABLE",
+  "INTERNAL_ERROR",
+  "RATE_LIMITED",
+]);
 
 function resolveVariant(code: string): "banner" | "inline" {
   // Retry sinnvoll + der praktisch unerreichbare PAYLOAD_TOO_LARGE-Fallback

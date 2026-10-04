@@ -15,7 +15,8 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 
 from sentinel_api.errors import register_error_handlers
-from sentinel_api.limits import MAX_BODY_BYTES
+from sentinel_api.limits import DEFAULT_RATE_LIMIT_PER_MINUTE, MAX_BODY_BYTES
+from sentinel_api.rate_limit import RateLimitMiddleware
 from sentinel_api.routers.news import router as news_router
 from sentinel_api.routers.paper import router as paper_router
 from sentinel_api.routers.portfolio import router as portfolio_router
@@ -100,6 +101,16 @@ app.add_middleware(
     TrustedHostMiddleware,
     allowed_hosts=_split_env_list("TRUSTED_HOSTS", _DEFAULT_TRUSTED_HOSTS),
 )
+
+# F9: Rate-Limit pro IP. Registriert NACH TrustedHost und VOR CORS, damit
+# CORS äußerste Schicht bleibt und eine 429-Antwort noch CORS-Header
+# bekommt (sonst sähe der Browser nur einen CORS-Fehler statt RATE_LIMITED).
+# 0 deaktiviert (Tests/E2E setzen das, weil alle Requests von einer IP kommen).
+_rate_limit = int(
+    os.environ.get("SENTINEL_RATE_LIMIT_PER_MINUTE", DEFAULT_RATE_LIMIT_PER_MINUTE)
+)
+if _rate_limit > 0:
+    app.add_middleware(RateLimitMiddleware, limit=_rate_limit)
 
 # Zuletzt registriert = äußerste Schicht (s. Kommentar oben) — muss JEDE
 # Anfrage als Erstes sehen, damit Preflights immer korrekt beantwortet

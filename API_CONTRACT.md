@@ -26,6 +26,7 @@ class ErrorResponse(BaseModel):
 | 422 | Request-Schema verletzt (pydantic) | `VALIDATION_ERROR` |
 | 422 | Fachlicher `SentinelError` aus sentinel_core | spezifischer Code, s.u. |
 | 413 | Request-Body über der globalen Grenze (s. §1.5 Limits) | `PAYLOAD_TOO_LARGE` |
+| 429 | Pro-IP-Rate-Limit überschritten (F9, `Retry-After`-Header, Default 120/min) | `RATE_LIMITED` |
 | 503 | Kursdatenquelle nicht erreichbar (Netzwerk/yfinance) | `UPSTREAM_UNAVAILABLE` |
 | 500 | Unerwarteter Fehler (inkl. fremder Bibliotheks-Exceptions) | `INTERNAL_ERROR` (detail generisch, keine Interna) |
 

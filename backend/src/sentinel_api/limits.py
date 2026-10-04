@@ -26,3 +26,9 @@ MAX_BODY_BYTES = 2_000_000
 # CSV upload cap, enforced streaming (abort while reading, F2) —
 # a portfolio CSV is a few KB; 1 MB is generous.
 MAX_CSV_BYTES = 1_000_000
+
+# Per-IP request budget per minute (F9, rate_limit.py). Generous on
+# purpose: one page view fires roughly 5-10 calls, so 120/min only bites
+# scripted amplification against our Yahoo egress IP. Override with
+# SENTINEL_RATE_LIMIT_PER_MINUTE (0 disables).
+DEFAULT_RATE_LIMIT_PER_MINUTE = 120

@@ -54,11 +54,13 @@ describe("English error message completeness vs. backend errors.py", () => {
   it("has an entry for every code the backend can actually return", () => {
     const errorsPyPath = path.join(backendApiDir, "errors.py");
     const mainPyPath = path.join(backendApiDir, "main.py");
+    const rateLimitPyPath = path.join(backendApiDir, "rate_limit.py");
 
     const backendCodes = new Set([
       ...extractRegistryCodes(errorsPyPath),
       ...extractLiteralCodes(errorsPyPath),
       ...extractLiteralCodes(mainPyPath),
+      ...extractLiteralCodes(rateLimitPyPath),
     ]);
 
     // Sanity check on the parser itself: if this ever drops to a
