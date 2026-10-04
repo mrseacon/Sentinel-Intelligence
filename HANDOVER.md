@@ -73,6 +73,8 @@ npm run build && npm test && npm run test:e2e
 
 `PYTHONPATH=src` statt Editable-Install ist Absicht (macOS-Hidden-Flag-
 Problem mit `.pth` in `.venv`, siehe `pyproject.toml`).
+`numpy` (2.4.x) und `scipy` (1.17.x) sind bewusst auf die letzten
+Python-3.11-kompatiblen Versionen begrenzt (neuere verlangen ≥ 3.12).
 Pins bewusst ändern: `pyproject.toml` (direkte Deps) UND
 `requirements*.txt` (kompletter Baum) gemeinsam aktualisieren, in einem
 frischen venv neu auflösen, dann alle Tests + E2E laufen lassen.

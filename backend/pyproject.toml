@@ -20,7 +20,9 @@ dependencies = [
     # First consumer-shared scientific dependency: SLSQP for the
     # max-Sharpe optimizer (KNOWLEDGE_EXTRACTION §11) and norm.pdf/ppf
     # for the parametric CVaR (§4).
-    "scipy==1.18.1",
+    # scipy 1.18 / numpy 2.5 require Python >= 3.12; stay on the last
+    # releases supporting 3.11 (requires-python above, CI runs 3.11).
+    "scipy==1.17.1",
     # News RSS fetching (KNOWLEDGE_EXTRACTION §9). Already a transitive
     # dependency via yfinance — declared explicitly because sentinel_core
     # imports it directly. NOTE: 'anthropic' is deliberately NOT listed —
