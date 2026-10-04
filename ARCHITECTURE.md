@@ -265,9 +265,18 @@ WebSockets, mehrere Depots pro Nutzer, Benchmarks/Vergleichsindizes.
 - Reverse-Proxy-Limits setzen: Request-Timeout und Body-Größe auch für
   Chunked-Bodies ohne Content-Length (die App-Middleware prüft nur den
   Header) sowie Concurrency-Limit für die yfinance-Endpunkte.
-- Rate-Limiting scharf stellen (F9): globale Middleware in
-  `sentinel_api/main.py` ist die vorgesehene Stelle — schützt primär
-  unsere Yahoo-Ausgangs-IP vor Sperrung durch Amplifikations-Requests.
+- ✅ Rate-Limiting (F9) **umgesetzt**: `sentinel_api/rate_limit.py`
+  (reine ASGI-Middleware, Sliding Window pro Client-IP, In-Memory, keine
+  Dependency), eingehängt in `main.py` zwischen TrustedHost und CORS
+  (CORS bleibt äußerste Schicht, damit auch die 429 CORS-Header trägt).
+  Default 120 Anfragen/Minute (`limits.py`), per
+  `SENTINEL_RATE_LIMIT_PER_MINUTE` änderbar, `0` = aus (Tests/E2E).
+  `/health` und Preflights sind ausgenommen; Antwort 429 mit
+  `{detail, code: RATE_LIMITED}` + `Retry-After`. Client-IP = rechtester
+  `X-Forwarded-For`-Eintrag (vom Platform-Proxy angehängt, nicht
+  fälschbar), sonst Socket-Peer. Grenzen: Zustand pro Prozess (bei
+  mehreren Workern multipliziert sich das Limit) und die Annahme genau
+  eines vertrauenswürdigen Proxys davor. Tests: `tests/test_rate_limit.py`.
 - Frontend-Hinweis (F6): Falls je Nutzer-Portfolios als CSV/Excel zum
   Download angeboten werden, klassische CSV-Injection beachten
   (Zellen mit führendem `=`/`+`/`-`/`@` escapen); backendseitig ist der
@@ -308,6 +317,8 @@ WebSockets, mehrere Depots pro Nutzer, Benchmarks/Vergleichsindizes.
   Handelstage) und Dünn-Historie-Schwelle (3 Jahre) sind gesetzte, aber
   unkalibrierte Werte; t-Verteilungs-Vergleichsmodus und Block-Bootstrap
   frühestens Phase 2
+- Rate-Limit (F9): 120 Anfragen/Minute/IP ist ein gesetzter, unkalibrierter
+  Wert (`limits.py`); bei realem Traffic gegen die Yahoo-Last abstimmen
 - Benchmark-Vergleich (`risk/benchmark-compare`): "ähnlich"-Bänder für
   den Vergleichstext (Vol ±2 Prozentpunkte, Score ±5 Punkte) sind
   gesetzt, aber unkalibriert; weitere Vergleichsindizes (z. B. Nasdaq,

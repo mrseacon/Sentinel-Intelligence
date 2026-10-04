@@ -2,6 +2,14 @@
 
 **Portfolio-Risiko verstehen, nicht nur berechnen.**
 
+🔗 **Live-Demo: [sentinel-intelligence-delta.vercel.app](https://sentinel-intelligence-delta.vercel.app)**
+(Der Backend-Kaltstart kann beim ersten Aufruf bis zu einer Minute dauern, s.
+[Bekannte Einschränkungen](#bekannte-einschränkungen).)
+
+> **Status: Feature-complete, nicht in aktiver Entwicklung.** Das Projekt ist
+> eingefroren: alle Abhängigkeiten sind exakt gepinnt, die Demo läuft ohne
+> Pflege weiter. Neustart und Übergabe: [`HANDOVER.md`](./HANDOVER.md).
+
 Sentinel ist ein Lern-Tool für Einsteiger:innen, die Portfoliorisiko wirklich
 verstehen wollen, statt nur eine Kennzahl zu sehen. Mit virtuellem Spielgeld
 ein Depot aufbauen, zu echten (verzögerten) Kursen handeln, und dabei in
@@ -13,8 +21,6 @@ verständlicher Sprache erklärt bekommen, wo die eigenen Risiken liegen.
 ---
 
 ## Live Demo
-
-🔗 **[sentinel-intelligence-delta.vercel.app](https://sentinel-intelligence-delta.vercel.app)**
 
 Das Backend läuft auf einem kostenlosen Render-Tier und schläft nach
 Inaktivität ein. Beim ersten Aufruf nach einer Weile kann deshalb ein
@@ -79,7 +85,7 @@ nicht nur Funktionalität.
 **Backend:**
 ```bash
 cd backend
-pip install -e ".[dev]" --break-system-packages
+pip install -r requirements-dev.txt   # exakt gepinnter Dependency-Baum
 PYTHONPATH=src uvicorn sentinel_api.main:app --reload
 ```
 
@@ -106,7 +112,7 @@ und werden nur für den Live-Deploy explizit gesetzt – siehe
 cd backend && pytest && ruff check . && black --check .
 
 # Frontend
-cd frontend && npm run build
+cd frontend && npm run build && npm test && npm run test:e2e
 ```
 
 ## KI-Funktion
@@ -131,10 +137,24 @@ Solo-Side-Project neben dem Wirtschaftsinformatik-Studium. Das Projekt ist
 funktional vollständig (Kern-Loop Depot → Ampel → Stress-Test → Simulation
 sowie unabhängige Analyse/Optimierung).
 
-Offene Punkte:
-- Rate-Limiting ist bewusst noch nicht scharf gestellt (Phase 1, geringer
-  Traffic – die vorhandenen Schutz-Limits reichen vorerst)
-- Lizenz noch nicht final gewählt (s. unten)
+Das Projekt ist **eingefroren** (Details, offene Punkte und Neustart-Anleitung
+in [`HANDOVER.md`](./HANDOVER.md)). Das Backend hat ein großzügiges
+Pro-IP-Rate-Limit (Default 120 Anfragen/Minute).
+
+## Bekannte Einschränkungen
+
+- **yfinance ist inoffiziell.** Die Kursdaten kommen über eine nicht
+  offizielle Yahoo-Finance-Schnittstelle ohne Verfügbarkeitsgarantie. Yahoo
+  kann sie jederzeit ändern oder sperren. Dann liefern die Endpunkte einen
+  freundlichen Fehler (`UPSTREAM_UNAVAILABLE`), Rechnen mit Kursdaten geht
+  nicht mehr, bis die Datenquelle ersetzt ist.
+- **Erklärtexte sind in der englischen Oberfläche noch deutsch.** UI, Labels
+  und Fehlermeldungen sind übersetzt, die vom Backend erzeugten Erklärtexte
+  (Ampel, Stress-Test, Simulation, Lernkarten) nur auf Deutsch.
+- **Cold-Start auf dem Free-Tier.** Das Backend schläft nach Inaktivität ein;
+  der erste Aufruf braucht 30–60 Sekunden. Die App zeigt nach ca. 8 Sekunden
+  einen Hinweis dazu.
+- Keine Anlageberatung, Kurse sind verzögert (ca. 15 Minuten).
 
 ## Lizenz
 

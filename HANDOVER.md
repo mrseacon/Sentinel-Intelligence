@@ -1,139 +1,149 @@
-# HANDOVER – Fachlogik abgeschlossen, bereit für API & Frontend (2026-07-09)
+# HANDOVER – Sentinel ist eingefroren (2026-10-04)
 
-Orientierungshilfe für die nächsten Sessions. **Primäre Referenzen:
-CLAUDE.md (Arbeitsregeln), ARCHITECTURE.md (Grundsatzentscheidungen),
-API_CONTRACT.md (der komplette API-Vertrag für die nächste Phase).**
-Dieses Dokument ist die Landkarte, nicht die Spezifikation.
+**Status: Feature-complete, nicht in aktiver Entwicklung.** Das Projekt läuft
+ohne Pflege weiter; dieses Dokument sagt, was fertig ist, was offen bleibt
+und wie man es nach Monaten wieder zum Laufen bringt.
 
-**Modellwechsel-Hinweis:** Die bisherige Arbeit lief auf Fable; der
-Wechsel zu Sonnet für die verbleibende Arbeit ist beabsichtigt und
-unproblematisch – alle offenen Design-Fragen sind entschieden und
-dokumentiert, was bleibt, ist sorgfältiges Handwerk nach Vertrag.
+Primäre Referenzen: **CLAUDE.md** (Arbeitsregeln), **ARCHITECTURE.md**
+(Grundsatzentscheidungen, §8 Deploy-Checkliste), **API_CONTRACT.md**
+(API-Vertrag). Dieses Dokument ist die Landkarte, nicht die Spezifikation.
 
-## 1. Status: Fachlogik-Schicht vollständig
+## 1. Was ist fertig
 
-`sentinel_core/` ist komplett und getestet (**146 Tests, CI grün**,
-ruff + black sauber). **KNOWLEDGE_EXTRACTION.md §1–§12 ist vollständig
-portiert – es gibt keinen offenen Fachteil mehr.**
+- **Fachlogik** (`backend/src/sentinel_core`): vollständig, KNOWLEDGE_EXTRACTION
+  §1–§12 portiert. Paper-Engine (Event-Sourcing), Risiko-Score/VaR/CVaR,
+  Ampel, Stress-Replay, Monte-Carlo, Optimizer, CSV-Upload, optionale KI.
+- **API** (`sentinel_api`): alle Endpunkte nach API_CONTRACT.md, einheitliches
+  `{detail, code}`-Fehlerformat, Schutz-Limits (`limits.py`), **Pro-IP-Rate-
+  Limit** (`rate_limit.py`, Default 120/min, F9).
+- **Frontend** (Next.js App Router, DE/EN): Landing, Depot/Trading, Ampel,
+  Stress-Test, Simulation, Analyze + Benchmark, PDF-Report, Demo-Modus,
+  Sprachumschalter, Retry-Pfade (inkl. valuation), Hinweis bei Anfragen
+  >8 s (Cold-Start).
+- **Qualität:** 225 pytest-Tests, ruff + black sauber, 26 Playwright-E2E-
+  Tests (Light/Dark), Frontend-Build grün. CI: `.github/workflows/ci.yml`.
+- **Reproduzierbarkeit:** alle Versionen exakt gepinnt (s. §3).
 
-| Modul | Zweck |
-|---|---|
-| `constants.py` | EINZIGE Quelle aller fachlichen Konstanten (Anker, Schwellen, Gebühren, Presets, Sim-Parameter) |
-| `data/loader.py` | yfinance mit voller Fallback-Kette (§1), letzte Kurse + Datumsfenster |
-| `paper/ledger.py` | Event-Sourcing: Transaktionen → Positionen/Cash, deterministisches Replay |
-| `paper/engine.py` | Quote/Execute mit harten Validierungen (kein Margin, Gebühren-Deckung) |
-| `paper/valuation.py` | Depotwert, P&L, Positionsbewertung aus der Historie |
-| `risk/metrics.py` | Vol, HHI, DR, Portfolio-Returns, Max Drawdown – alle mit Namens-Alignment |
-| `risk/var.py` | Historischer VaR/CVaR (Score-Basis) + parametrischer CVaR (nur Vergleich) |
-| `risk/scoring.py` | Erklärbarer Risk Score mit dokumentierten Ankern/Gewichten, Top-3-Treiber |
-| `risk/contribution.py` | Varianzbasierte Risikobeiträge (summieren zu 1) |
-| `education/ampel.py` | Drei Ampeln (Klumpen/Diversifikation/Vol) über den Metriken |
-| `education/explanations.py` | Statische deutsche Templates + Lernkarten (kein LLM im Kernpfad) |
-| `stress/replay.py` | Historische Krisen-Szenarien (3 Presets, Datei-Cache) – s. STRESS_TEST_DECISIONS.md |
-| `simulation/monte_carlo.py` | Zukunfts-Fächer per Bootstrap (1/5/10 J., deterministischer Seed) – s. MONTE_CARLO_DECISIONS.md |
-| `portfolio/optimization.py` | Max-Sharpe (SLSQP, long-only, 0.6-Cap) |
-| `portfolio/upload.py` | CSV-Validierung (§10: Duplikate summiert, deutsche Excel-Dialekte) |
-| `ai/news.py` | Google News RSS, key-los, wirft nie |
-| `ai/llm_client.py` | LLM-Kaskade (Anthropic Claude Haiku, Tool-Use, `LLMProvider`-Abstraktion): Flag/Key/Paket/Parsing-Fehler → Aufrufer fällt zurück |
-| `ai/risk_adjustment.py` | Asymmetrische Sentiment-Adjustierung; `assess_market` wirft NIE |
-| `ai/guardrails.py` | Runtime-Filter für LLM-Text (Prinzip 3) |
+## 2. Was ist offen (bewusst nicht gebaut)
 
-## 2. Die nächste Phase ist fertig entschieden: API_CONTRACT.md
+- **Phase 2/3** (Accounts, serverseitige Depots/DB, Payments, native App)
+  – siehe ARCHITECTURE.md §1/§8. Nichts davon begonnen.
+- **Major-Upgrades** (nur vorgeschlagen, nicht durchgeführt): `typescript`
+  5→7, `eslint` 9→10, `vitest` 4→5, `@types/node` 20→26,
+  `@formatjs/intl-localematcher` 0.8→0.9 (0.x-Minor = potenziell
+  brechend), GitHub Actions (`checkout`, `setup-python`, `setup-node`,
+  `upload-artifact`, `cache` je auf v6/v7). Transitiv im Backend:
+  `websockets` 17 (kommt mit `yfinance` 1.7 – so gepinnt).
+- **Bekannte npm-audit-Restfunde (5, nur Dev-Tooling):** die Kette
+  `eslint-config-next → @next/eslint-plugin-next → fast-glob → micromatch →
+  braces`. Betrifft nur Lint, nicht den Produktions-Build; `npm audit fix
+  --force` würde auf Next 14 *downgraden* – nicht tun, auf ein späteres
+  `eslint-config-next` warten.
+- **Stress-/Simulation-View:** deren `valuationError`-Zweig hat (noch) kein
+  `onRetry` (Depot/Ampel schon).
+- **Erklärtexte nur deutsch** in der englischen UI (Backend-Templates).
+- **Rate-Limit:** In-Memory pro Prozess, Annahme genau ein Proxy davor
+  (ARCHITECTURE §8). Bei mehreren Workern/anderem Hosting prüfen.
+- **yfinance ist inoffiziell** – das größte Betriebsrisiko. Fällt Yahoo aus
+  oder ändert das Format, liefern alle kursabhängigen Endpunkte
+  `UPSTREAM_UNAVAILABLE`; Abhilfe wäre eine andere Datenquelle hinter
+  `sentinel_core/data/loader.py`.
+- Dependabot ist weiter aktiv (`.github/dependabot.yml`) und wird neue PRs
+  öffnen; bei Bedarf abschalten, wenn niemand sie bearbeitet.
+- Lizenz: MIT (LICENSE). Namensschutz "Sentinel" ungeprüft (ARCH §10).
 
-**API_CONTRACT.md ist die zentrale Referenz für alles Weitere:** alle
-13 Endpunkte mit Request-/Response-/Error-Schemas, einheitlichem
-`{detail, code}`-Fehlerformat samt Mapping-Registry, Querschnitts-
-Konventionen (Zahlen, Zeit, Portfolio-Übergabe) und der Liste, welche
-core-Modelle 1:1 durchgereicht werden vs. Wrapper brauchen. Die
-Implementierung ist **reines mechanisches Verdrahten pro Endpunkt** –
-dort nichts neu entscheiden.
+## 3. Neu starten (nach Monaten)
 
-## 3. Nicht offensichtliche Entscheidungen – nicht versehentlich brechen
+Voraussetzungen: Python ≥ 3.11 (CI 3.11, lokal getestet mit 3.13), Node 22.x.
 
-1. **Event-Sourcing konsequent (paper/):** Positionen UND Cash werden
-   immer aus `start_cash` + Transaktionshistorie berechnet, nie
-   gespeichert; Replay sortiert deterministisch nach `(executed_at,
-   id)`, `executed_at` ist tz-aware Pflicht. `execute()` lehnt Verkäufe
-   ab, deren Erlös die Gebühr nicht deckt – sonst vergiftet ein
-   legitimer Trade die Historie (negatives Cash → jedes Replay wirft).
-2. **Prinzip 3 ist zweistufig absichert:** Interne Templates
-   (Ampel/Stress/Simulation) prüft der Test-Regressionswächter
-   (`FORBIDDEN_ACTION_STEMS`, `test_ampel.py`); LLM-Output läuft
-   zusätzlich durch den **Runtime**-Filter `ai/guardrails.py` (bewusst
-   über-blockend, "sell-off" fliegt mit raus). Reihenfolge: Parsing
-   schneidet auf 5 Bullets, DANN filtert der Guardrail.
-3. **Ticker-Alignment & Renormalisierung überall:** Gewichte/Kovarianz
-   alignen explizit über Namen (`reindex`), nie über Reihenfolge;
-   Gewichte werden an jedem Eintrittspunkt renormalisiert (Aufrufer
-   dürfen €-Beträge schicken – darauf baut der `PortfolioIn`-Vertrag).
-   Die **6 Spalten-Shuffle-Tests** (metrics, portfolio_returns,
-   contribution, optimizer, stress, simulation) dürfen nie entfernt
-   werden (CLAUDE.md Regel 2).
-4. **Quant-Entscheidungen mit Begründung:** Monte-Carlo ist ein
-   **1-D-Bootstrap auf den Portfolio-Tagesrenditen** – bei konstanten
-   Gewichten erhält das die Korrelationen exakt; unabhängiges
-   Resampling pro Asset ist der verbotene Fehler (unrealistisch
-   schmaler Fächer). Der Optimizer ist long-only mit 0.6-Cap pro
-   Position und rf=0 (§11). Das Scoring nutzt den **historischen**
-   CVaR (Anker darauf kalibriert) – nie gegen den parametrischen
-   tauschen. Konstante heutige Gewichte sind DIE eine
-   Portfoliomodell-Annahme in Score, Ampel, Stress UND Simulation.
-5. **Fehler-Konvention = API-Vertrag:** Fachliche Fehler sind
-   durchgängig deutsche, sprechende `ValueError`s; die API reicht die
-   Texte als `detail` durch und mappt den `code` über die
-   Präfix-Registry in API_CONTRACT.md §1.1. **Wer eine core-Meldung
-   umformuliert, prüft die Registry.** `ai/`-Einstiegspunkte
-   (`assess_market`, `fetch_headlines`) werfen NIE – sie degradieren
-   neutral (Prinzip 2). **KI ist zudem standardmäßig AUS**
-   (`SENTINEL_AI_ENABLED`, Default false, geprüft vor dem Key-Check –
-   Kostenschranke fürs öffentliche Repo; bewusst per Env aktivieren,
-   s. `backend/.env.example`). Der Nutzer sieht bei jeder
-   Nicht-Verfügbarkeit denselben freundlichen Text; die technische
-   Ursache steht nur in `AiAssessment.unavailable_reason` (Debugging).
+```bash
+# Backend (exakt gepinnt: requirements*.txt = kompletter Baum)
+cd backend
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements-dev.txt          # Laufzeit allein: requirements.txt
+PYTHONPATH=src uvicorn sentinel_api.main:app --reload     # :8000
+PYTHONPATH=src pytest && ruff check . && black --check .
 
-**Umgebungs-Stolperfallen dieser Maschine:** (a) Ein Hintergrund-Tool
-setzt Hidden-Flags auf Dotfile-Bäume; Python 3.13 ignoriert dann die
-Editable-Install-`.pth` → `ModuleNotFoundError` außerhalb von pytest;
-Lösung `PYTHONPATH=src`. (b) Kein `gh` CLI, GitHub-API unauthentifiziert
-nur 60 req/h – CI-Status über das Workflow-Badge
-(`…/actions/workflows/ci.yml/badge.svg`) prüfen, nie eng pollen.
+# Frontend (package.json exakt gepinnt, .npmrc: save-exact)
+cd frontend
+npm ci                                       # nicht `npm install`
+npm run dev                                  # :3000
+npm run build && npm test && npm run test:e2e
+```
 
-## 4. Nächste Schritte (Priorität)
+`PYTHONPATH=src` statt Editable-Install ist Absicht (macOS-Hidden-Flag-
+Problem mit `.pth` in `.venv`, siehe `pyproject.toml`).
+Pins bewusst ändern: `pyproject.toml` (direkte Deps) UND
+`requirements*.txt` (kompletter Baum) gemeinsam aktualisieren, in einem
+frischen venv neu auflösen, dann alle Tests + E2E laufen lassen.
 
-1. **API-Routen Modul für Modul nach API_CONTRACT.md verdrahten.**
-   Reihenfolge: `paper/*` + `/prices/*` zuerst (meiste Endpunkte, am
-   engsten mit dem Frontend-Kern-Loop verzahnt), dann `risk/*`, dann
-   `portfolio/*` (optimize + upload), `stress/*`, `simulation/*`.
-   Nebenaufgaben aus dem Vertrag: Fehler-Registry, deutsche Übersetzung
-   der pydantic-Validierungstexte, Stress-Cache-Pfad env-konfigurierbar,
-   CORS für localhost:3000.
-2. **Frontend** exakt nach **FRONTEND_DECISIONS.md** (alle 8
-   Architektur-Fragen entschieden: TanStack Query, Depot-Hook +
-   Context, ErrorNotice/Skeleton-Muster, abgeleitetes Portfolio,
-   manuelle types.ts, Recharts-Fächer-Rezept, Seitenstruktur,
-   UI-Limits) — dort steht auch die empfohlene Bau-Reihenfolge in
-   7 Schritten. Nichts neu entscheiden, nur umsetzen.
+### Umgebungsvariablen
 
-**Sicherheits-Audit (erledigt):** Die API ist gegen die kritischen
-DoS-/Injection-Vektoren gehärtet — Schutz-Limits in
-`sentinel_api/limits.py` (50 Ticker, 10 000 Transaktionen, 2 MB Body,
-1 MB CSV streamend), Ticker-Allowlist an jedem Eingang UND im Loader
-vor jedem Yahoo-Request, yfinance-Timeout, `SentinelError`-Basisklasse
-(fremde `ValueError`s → generischer 500 statt Bibliotheks-Leak),
-einheitlicher 500er mit `INTERNAL_ERROR`. Offen als **Deploy-Checkliste
-in ARCHITECTURE §8**: CORS/HTTPS/TrustedHost, Proxy-Limits für
-Chunked-Bodies, Rate-Limiting, CSV-Injection-Hinweis fürs Frontend.
+| Variable | Wo | Zweck |
+|---|---|---|
+| `ALLOWED_ORIGINS` | Backend | CORS, kommagetrennt. Produktion: Vercel-Domain. Default `http://localhost:3000` |
+| `TRUSTED_HOSTS` | Backend | Host-Header-Allowlist. Default `*` |
+| `SENTINEL_RATE_LIMIT_PER_MINUTE` | Backend | Pro-IP-Limit, Default 120, `0` = aus |
+| `SENTINEL_AI_ENABLED` | Backend | KI-Markteinschätzung, Default `false` (Kostenschranke) |
+| `ANTHROPIC_API_KEY` | Backend | nur bei `SENTINEL_AI_ENABLED=true` |
+| `SENTINEL_LLM_MODEL` | Backend | optionales Modell-Override |
+| `STRESS_CACHE_DIR` | Backend | optional, beschreibbarer Cache-Pfad für Stress-Preise |
+| `NEXT_PUBLIC_API_URL` | Frontend (Build-Zeit!) | Backend-URL, Default `http://localhost:8000` |
+| `NEXT_PUBLIC_SITE_URL` | Frontend | Basis-URL für SEO/OG, optional |
 
-Kleinkram, der offen ist: `tests/conftest.py` für die quer-importierten
-Test-Helfer; `daily_returns`-Test für ungleiche Historien.
+Referenzdateien: `backend/.env.example`, `frontend/.env.local.example`.
+`NEXT_PUBLIC_*` wird beim Build eingebacken – Änderung braucht Redeploy.
+
+### Deploy (aktueller Stand)
+
+- **Frontend:** Vercel, Root-Verzeichnis `frontend/`, Env `NEXT_PUBLIC_API_URL`
+  auf die Backend-URL. Live: sentinel-intelligence-delta.vercel.app.
+  `engines.node` = 22.x.
+- **Backend:** Render (Free-Tier), `render.yaml` im Repo-Root: Build
+  `pip install -r requirements.txt`, Start
+  `PYTHONPATH=src uvicorn sentinel_api.main:app --host 0.0.0.0 --port $PORT`.
+  Env-Variablen im Render-Dashboard setzen (`ALLOWED_ORIGINS`,
+  `TRUSTED_HOSTS`). Alternative Railway: `backend/railway.json` + `Procfile`.
+  Free-Tier schläft ein → Cold-Start bis ~60 s (Frontend zeigt Hinweis).
+- Deploy-Checkliste Sicherheit: ARCHITECTURE.md §8.
+
+## 4. Nicht offensichtliche Entscheidungen – nicht versehentlich brechen
+
+1. **Event-Sourcing (paper/):** Positionen und Cash werden immer aus
+   `start_cash` + Transaktionen berechnet, nie gespeichert; Replay sortiert
+   nach `(executed_at, id)`, `executed_at` ist tz-aware. `execute()` lehnt
+   Verkäufe ab, deren Erlös die Gebühr nicht deckt (sonst negatives Cash,
+   jedes Replay würfe).
+2. **Prinzip 3 (keine Anlageempfehlung) ist zweistufig:** Test-Wächter
+   (`FORBIDDEN_ACTION_STEMS`) für Templates + Runtime-Filter
+   `ai/guardrails.py` für LLM-Text. Reihenfolge: auf 5 Bullets schneiden,
+   DANN filtern.
+3. **Ticker-Alignment & Renormalisierung überall:** Gewichte/Kovarianz über
+   Namen (`reindex`), nie über Reihenfolge; Gewichte an jedem Eintritts-
+   punkt renormalisieren. Die 6 Spalten-Shuffle-Tests nie entfernen.
+4. **Quant:** Monte-Carlo = 1-D-Bootstrap auf Portfolio-Tagesrenditen (nie
+   Asset-weises Resampling); Optimizer long-only, 0.6-Cap, rf=0; Scoring
+   nutzt den *historischen* CVaR; konstante heutige Gewichte in Score,
+   Ampel, Stress und Simulation.
+5. **Fehler-Konvention = API-Vertrag:** deutsche, sprechende `ValueError`s
+   aus core; `code` per Präfix-Registry (`errors.py`, API_CONTRACT §1.1).
+   Wer eine core-Meldung umformuliert, prüft die Registry. Ein neuer
+   Backend-Code braucht einen Eintrag in `frontend/lib/i18n/error-messages.en.ts`
+   (Vollständigkeitstest in vitest erzwingt das). `ai/`-Einstiegspunkte
+   werfen nie (Graceful Degradation); KI ist per Default AUS.
+6. **Middleware-Reihenfolge in `main.py`:** CORS muss die äußerste Schicht
+   sein (zuletzt registrieren), sonst fehlen CORS-Header bei 400/413/429
+   und der Browser meldet nur "CORS error".
+
+**Umgebungs-Stolperfallen der Entwicklungsmaschine:** (a) macOS-Hidden-Flag
+auf `.venv`-Dateien → `PYTHONPATH=src` nutzen. (b) Kein `gh`-CLI; GitHub-API
+unauthentifiziert 60 req/h – CI-Status über das Workflow-Badge prüfen, nie
+eng pollen.
 
 ## 5. Referenzen
 
-- **CLAUDE.md** – Arbeitsregeln (harte Regeln, Commits, Sprache).
-- **ARCHITECTURE.md** – Grundsatzentscheidungen; §10 offene Kalibrierungen.
-- **API_CONTRACT.md** – der komplette API-Vertrag (nächste Phase).
+- **CLAUDE.md** – Arbeitsregeln · **ARCHITECTURE.md** – Grundsatzent-
+  scheidungen · **API_CONTRACT.md** – API-Vertrag
 - **STRESS_TEST_DECISIONS.md** / **MONTE_CARLO_DECISIONS.md** /
-  **FRONTEND_DECISIONS.md** – Feature-/Schicht-Entscheidungen inkl.
-  Trade-offs.
-- **KNOWLEDGE_EXTRACTION.md** – Altprojekt-Wissen (read-only); alle
-  Fachteile (§1–§12) sind portiert.
+  **FRONTEND_DECISIONS.md** / **I18N_DECISIONS.md** – Feature-Entscheidungen
+- **KNOWLEDGE_EXTRACTION.md** – Altprojekt-Wissen (read-only, vollständig portiert)
