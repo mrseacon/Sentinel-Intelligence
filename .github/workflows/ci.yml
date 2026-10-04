@@ -18,7 +18,7 @@ jobs:
           python-version: "3.11"
           cache: pip
       - name: Install
-        run: pip install -e ".[dev]"
+        run: pip install -r requirements-dev.txt
       - name: Lint (ruff)
         run: ruff check .
       - name: Format check (black)
@@ -60,7 +60,7 @@ jobs:
           cache: pip
       - name: Install backend
         working-directory: backend
-        run: pip install -e ".[dev]"
+        run: pip install -r requirements-dev.txt
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
