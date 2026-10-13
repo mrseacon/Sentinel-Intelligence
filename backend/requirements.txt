@@ -19,7 +19,7 @@ opentelemetry-api==1.45.0
 pandas==3.0.6
 peewee==4.5.2
 pillow==12.3.0
-platformdirs==4.12.3
+platformdirs==4.12.4
 protobuf==7.36.2
 pycparser==3.0
 pydantic==2.13.5
