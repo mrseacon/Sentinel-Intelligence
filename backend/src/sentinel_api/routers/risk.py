@@ -13,8 +13,9 @@ see the comment on _concentration_or_none).
 from __future__ import annotations
 
 import pandas as pd
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
+from sentinel_api.schemas.common import LANG_DESCRIPTION
 from sentinel_api.schemas.risk import (
     AmpelOut,
     BenchmarkCompareIn,
@@ -39,6 +40,7 @@ from sentinel_core.education.ampel import (
     volatility_ampel,
 )
 from sentinel_core.education.explanations import benchmark_comparison_explanation
+from sentinel_core.i18n import DEFAULT_LANG, Lang, resolve_lang
 from sentinel_core.risk.benchmark import get_benchmark, list_benchmarks
 from sentinel_core.risk.contribution import risk_contribution
 from sentinel_core.risk.correlation import correlation_matrix
@@ -67,14 +69,20 @@ def post_risk_analyze(body: RiskAnalyzeIn) -> RiskAnalyzeOut:
 
 @router.post("/ampel", response_model=RiskAmpelOut)
 def post_risk_ampel(body: RiskAmpelIn) -> RiskAmpelOut:
+    lang = resolve_lang(body.lang)
     weights = body.portfolio.weights
     prices = load_multiple_assets(list(weights), period=body.period)
     returns = daily_returns(prices)
-    return build_risk_ampel_out(weights, returns)
+    return build_risk_ampel_out(weights, returns, lang)
 
 
 @router.get("/benchmarks", response_model=BenchmarksOut)
-def get_risk_benchmarks() -> BenchmarksOut:
+def get_risk_benchmarks(
+    lang: str = Query(default=DEFAULT_LANG, description=LANG_DESCRIPTION),
+) -> BenchmarksOut:
+    # Benchmark titles are proper names (same in every language); lang is
+    # accepted anyway so every text endpoint has the same parameter.
+    resolve_lang(lang)
     return BenchmarksOut(
         benchmarks=[
             BenchmarkOptionOut(id=b.id, title=b.title) for b in list_benchmarks()
@@ -84,6 +92,7 @@ def get_risk_benchmarks() -> BenchmarksOut:
 
 @router.post("/benchmark-compare", response_model=BenchmarkCompareOut)
 def post_risk_benchmark_compare(body: BenchmarkCompareIn) -> BenchmarkCompareOut:
+    lang = resolve_lang(body.lang)
     benchmark = get_benchmark(body.benchmark_id)
     weights = body.portfolio.weights
 
@@ -107,6 +116,7 @@ def post_risk_benchmark_compare(body: BenchmarkCompareIn) -> BenchmarkCompareOut
         benchmark_volatility=benchmark_profile.metrics.volatility,
         portfolio_score=portfolio_profile.score.score,
         benchmark_score=benchmark_profile.score.score,
+        lang=lang,
     )
 
     return BenchmarkCompareOut(
@@ -178,15 +188,15 @@ def build_risk_analyze_out(
 
 
 def build_risk_ampel_out(
-    weights: dict[str, float], returns: pd.DataFrame
+    weights: dict[str, float], returns: pd.DataFrame, lang: Lang = DEFAULT_LANG
 ) -> RiskAmpelOut:
     """Shared with POST /reports/risk-summary, same reasoning as
     build_risk_analyze_out above."""
     # fixed order per contract §2.5: Klumpenrisiko, Diversifikation, Volatilität
     ampeln = [
-        concentration_ampel(weights),
-        diversification_ampel(weights, returns),
-        volatility_ampel(weights, returns),
+        concentration_ampel(weights, lang),
+        diversification_ampel(weights, returns, lang),
+        volatility_ampel(weights, returns, lang),
     ]
     return RiskAmpelOut(
         ampeln=[

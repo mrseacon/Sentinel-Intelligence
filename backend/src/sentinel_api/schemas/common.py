@@ -19,9 +19,16 @@ from pydantic import BaseModel, Field, field_validator
 from sentinel_api.limits import MAX_PORTFOLIO_TICKERS
 from sentinel_core.data.loader import validate_ticker
 
-__all__ = ["Period", "PortfolioIn"]
+__all__ = ["LANG_DESCRIPTION", "Period", "PortfolioIn"]
 
 Period = Literal["6mo", "1y", "2y", "5y"]
+
+# Optional language for generated texts on every text-producing endpoint.
+# Deliberately a plain str (not Literal): like preset_id/benchmark_id it is
+# validated in core (sentinel_core.i18n.resolve_lang), so an unknown value
+# yields its own code LANG_UNSUPPORTED instead of a generic
+# VALIDATION_ERROR. Default "de" keeps every existing client unchanged.
+LANG_DESCRIPTION = "Language of generated texts: 'de' (default) or 'en'."
 
 
 class PortfolioIn(BaseModel):

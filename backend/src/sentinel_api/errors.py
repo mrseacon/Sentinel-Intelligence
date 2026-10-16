@@ -1,15 +1,16 @@
 """Global {detail, code} error mapping (API_CONTRACT.md §1.1).
 
 REFERENCE PATTERN for every router: routes never catch domain errors
-themselves. sentinel_core raises German, user-ready ValueErrors; the
+themselves. sentinel_core raises German, user-ready SentinelErrors; the
 handlers here turn them into the contract shape — the `detail` text is
 passed through UNCHANGED, the stable `code` comes from the ordered
 fragment registry below.
 
-The registry is the documented v1 bridge (API_CONTRACT §1.1): whoever
-rewords a core error message must check this table. Target solution,
-once it itches: a SentinelError base class in core carrying its own
-code — the existing message tests stay valid through that refactor.
+`detail` stays German regardless of the requested `lang`: clients
+localize errors by `code` (API_CONTRACT §1.1/§1.4). The registry is the
+documented bridge: whoever rewords a core error message must check this
+table. Possible later step: a `code` attribute directly on
+SentinelError — the existing message tests stay valid through that.
 """
 
 from __future__ import annotations
@@ -55,6 +56,7 @@ ERROR_CODE_REGISTRY: tuple[tuple[str, str], ...] = (
     ("Ungültiger Gewichtswert", "UPLOAD_INVALID"),
     ("Nur CSV-Dateien", "UPLOAD_INVALID"),
     ("Ungültiges Tickersymbol", "TICKER_INVALID"),
+    ("Nicht unterstützte Sprache", "LANG_UNSUPPORTED"),
     ("Konfidenzniveau", "DOMAIN_ERROR"),
 )
 

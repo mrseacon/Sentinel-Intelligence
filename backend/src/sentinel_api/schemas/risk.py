@@ -10,9 +10,9 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from sentinel_api.schemas.common import Period, PortfolioIn
+from sentinel_api.schemas.common import LANG_DESCRIPTION, Period, PortfolioIn
 
 __all__ = [
     "AmpelOut",
@@ -68,6 +68,7 @@ class RiskAnalyzeOut(BaseModel):
 class RiskAmpelIn(BaseModel):
     portfolio: PortfolioIn
     period: Period = "1y"
+    lang: str = Field(default="de", description=LANG_DESCRIPTION)
 
 
 class AmpelOut(BaseModel):
@@ -110,6 +111,7 @@ class BenchmarkCompareIn(BaseModel):
     portfolio: PortfolioIn
     benchmark_id: str
     period: Period = "1y"
+    lang: str = Field(default="de", description=LANG_DESCRIPTION)
 
 
 class BenchmarkCompareOut(BaseModel):

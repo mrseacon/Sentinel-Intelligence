@@ -1,8 +1,9 @@
 """Risk-summary PDF layout (reportlab — see pyproject.toml comment for
 why reportlab over WeasyPrint). Pure presentation: every value here was
 already computed by sentinel_core via sentinel_api/routers/reports.py;
-this module only lays it out on paper. No dashes in user-facing text
-(project convention, matches the German UI copy elsewhere).
+this module only lays it out on paper. All wording comes from the i18n
+catalog ("pdf.*", "status.*", "score_label.*", "factor.*"), numbers and
+dates from sentinel_core.i18n.format — one report per requested language.
 """
 
 from __future__ import annotations
@@ -22,24 +23,21 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 
 from sentinel_api.schemas.risk import AmpelOut, RiskAnalyzeOut
 from sentinel_api.schemas.stress import StressReplayOut
+from sentinel_core.i18n import DEFAULT_LANG, Lang
+from sentinel_core.i18n.catalog import t
+from sentinel_core.i18n.format import day, num, pct
 
-# Identical wording to components/Disclaimer.tsx (frontend) — one fixed
-# disclaimer, shown wherever the app (web or PDF) states it (Prinzip 3).
-# Base-14 PDF fonts (Helvetica) support German umlauts/eszett natively
-# via WinAnsiEncoding — no special font embedding needed.
-DISCLAIMER_TEXT = (
-    "Sentinel beschreibt Portfolioeigenschaften (z. B. Klumpenrisiko, "
-    "Volatilität) auf Basis vergangener Kurse. Das ist keine "
-    "Anlageberatung und keine Empfehlung für einzelne Wertpapiere. "
-    "Kurse sind bis zu 15 Minuten verzögert."
-)
+# The disclaimer ("pdf.disclaimer") has the identical wording as the
+# frontend Disclaimer component — one fixed disclaimer, shown wherever the
+# app (web or PDF) states it (principle 3). Base-14 PDF fonts (Helvetica)
+# support German umlauts/eszett natively via WinAnsiEncoding — no special
+# font embedding needed.
 
 _STATUS_COLORS = {
     "green": colors.HexColor("#059669"),
     "yellow": colors.HexColor("#d97706"),
     "red": colors.HexColor("#dc2626"),
 }
-_STATUS_LABELS = {"green": "Grün", "yellow": "Gelb", "red": "Rot"}
 
 _PAGE_WIDTH, _PAGE_HEIGHT = A4
 _MARGIN = 2 * cm
@@ -84,8 +82,11 @@ def build_risk_summary_pdf(
     ampeln: list[AmpelOut],
     stress: StressReplayOut | None,
     generated_at: datetime,
+    lang: Lang = DEFAULT_LANG,
 ) -> bytes:
-    """Renders the full risk-summary PDF and returns the raw bytes."""
+    """Renders the full risk-summary PDF and returns the raw bytes.
+
+    `generated_at` is expected in UTC (labelled as such in the PDF)."""
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
         buffer,
@@ -94,34 +95,65 @@ def build_risk_summary_pdf(
         rightMargin=_MARGIN,
         topMargin=1.8 * cm,
         bottomMargin=2.4 * cm,
-        title="Sentinel Risiko-Report",
+        title=t(lang, "pdf.document_title"),
     )
 
-    story: list = [
-        Paragraph("Sentinel: Risiko-Report", _TITLE),
-        Paragraph(f"Erstellt am {generated_at.strftime('%d.%m.%Y, %H:%M')} Uhr", _META),
-        Spacer(1, 8),
-        _disclaimer_box(),
-        Spacer(1, 12),
-        Paragraph("Portfolio-Zusammensetzung", _H2),
-        _weights_table(weights),
-        Paragraph("Risiko-Score", _H2),
-        _score_table(analysis),
-        Paragraph("Risiko-Ampel", _H2),
-    ]
-    for ampel in ampeln:
-        story.extend(_ampel_block(ampel))
+    story = build_story(
+        weights=weights,
+        analysis=analysis,
+        ampeln=ampeln,
+        stress=stress,
+        generated_at=generated_at,
+        lang=lang,
+    )
 
-    if stress is not None:
-        story.append(Paragraph("Historischer Stress-Test", _H2))
-        story.extend(_stress_section(stress))
+    def draw_footer(canvas, doc) -> None:
+        _draw_footer(canvas, doc, lang)
 
-    doc.build(story, onFirstPage=_draw_footer, onLaterPages=_draw_footer)
+    doc.build(story, onFirstPage=draw_footer, onLaterPages=draw_footer)
     return buffer.getvalue()
 
 
-def _disclaimer_box() -> Table:
-    cell = Paragraph(DISCLAIMER_TEXT, _DISCLAIMER_STYLE)
+def build_story(
+    *,
+    weights: dict[str, float],
+    analysis: RiskAnalyzeOut,
+    ampeln: list[AmpelOut],
+    stress: StressReplayOut | None,
+    generated_at: datetime,
+    lang: Lang = DEFAULT_LANG,
+) -> list:
+    """The report's flowables, separate from rendering so tests can inspect
+    the localized text without parsing PDF bytes."""
+    generated = t(
+        lang,
+        "pdf.generated_at",
+        date=day(generated_at.date(), lang),
+        time=generated_at.strftime("%H:%M"),
+    )
+    story: list = [
+        Paragraph(xml_escape(t(lang, "pdf.heading")), _TITLE),
+        Paragraph(xml_escape(generated), _META),
+        Spacer(1, 8),
+        _disclaimer_box(lang),
+        Spacer(1, 12),
+        Paragraph(xml_escape(t(lang, "pdf.section_weights")), _H2),
+        _weights_table(weights, lang),
+        Paragraph(xml_escape(t(lang, "pdf.section_score")), _H2),
+        _score_table(analysis, lang),
+        Paragraph(xml_escape(t(lang, "pdf.section_ampel")), _H2),
+    ]
+    for ampel in ampeln:
+        story.extend(_ampel_block(ampel, lang))
+
+    if stress is not None:
+        story.append(Paragraph(xml_escape(t(lang, "pdf.section_stress")), _H2))
+        story.extend(_stress_section(stress, lang))
+    return story
+
+
+def _disclaimer_box(lang: Lang) -> Table:
+    cell = Paragraph(xml_escape(t(lang, "pdf.disclaimer")), _DISCLAIMER_STYLE)
     table = Table([[cell]], colWidths=[_PAGE_WIDTH - 2 * _MARGIN])
     table.setStyle(
         TableStyle(
@@ -157,63 +189,70 @@ def _base_table_style() -> TableStyle:
     )
 
 
-def _weights_table(weights: dict[str, float]) -> Table:
+def _weights_table(weights: dict[str, float], lang: Lang) -> Table:
     total = sum(weights.values()) or 1.0
-    rows = [["Ticker", "Gewicht"]]
+    rows = [["Ticker", t(lang, "pdf.col_weight")]]
     for ticker, weight in sorted(weights.items(), key=lambda kv: kv[1], reverse=True):
-        rows.append([ticker, f"{weight / total * 100:.1f} %"])
+        rows.append([ticker, pct(weight / total, lang, 1)])
     table = Table(rows, colWidths=[8 * cm, 4 * cm])
     table.setStyle(_base_table_style())
     return table
 
 
-def _score_table(analysis: RiskAnalyzeOut) -> Table:
+def _score_table(analysis: RiskAnalyzeOut, lang: Lang) -> Table:
     score = analysis.score
     rows = [
         ["Score", f"{score.score:.0f} / 100"],
-        ["Einstufung", score.label],
+        [t(lang, "pdf.row_rating"), t(lang, f"score_label.{score.label}")],
     ]
     for driver in score.drivers[:3]:
-        rows.append([driver.factor, f"{driver.contribution * 100:.0f} %"])
+        rows.append(
+            [t(lang, f"factor.{driver.factor}"), pct(driver.contribution, lang)]
+        )
     table = Table(rows, colWidths=[8 * cm, 4 * cm])
     table.setStyle(_base_table_style())
     return table
 
 
-def _ampel_block(ampel: AmpelOut) -> list:
+def _ampel_block(ampel: AmpelOut, lang: Lang) -> list:
     color = _STATUS_COLORS[ampel.status]
-    label = _STATUS_LABELS[ampel.status]
+    label = t(lang, f"status.{ampel.status}")
+    what = xml_escape(t(lang, "pdf.what_does_this_mean"))
     title_style = ParagraphStyle(
         f"AmpelTitle-{ampel.id}", parent=_AMPEL_TITLE_BASE, textColor=color
     )
     return [
         Paragraph(f"<b>{xml_escape(ampel.title)}</b> ({label})", title_style),
         Paragraph(xml_escape(ampel.explanation), _BODY),
-        Paragraph(f"<i>Was heißt das?</i> {xml_escape(ampel.lesson)}", _SMALL),
+        Paragraph(f"<i>{what}</i> {xml_escape(ampel.lesson)}", _SMALL),
         Spacer(1, 4),
     ]
 
 
-def _stress_section(stress: StressReplayOut) -> list:
-    period_text = (
-        f"Zeitraum {stress.start.strftime('%d.%m.%Y')} bis "
-        f"{stress.end.strftime('%d.%m.%Y')}. Maximaler Rückgang "
-        f"{stress.max_drawdown * 100:.0f} %, Gesamtrendite "
-        f"{stress.total_return * 100:.0f} %, Abdeckung "
-        f"{stress.coverage * 100:.0f} % des Depots."
+def _stress_section(stress: StressReplayOut, lang: Lang) -> list:
+    period_text = t(
+        lang,
+        "pdf.stress_period",
+        start=day(stress.start, lang),
+        end=day(stress.end, lang),
+        drawdown=pct(stress.max_drawdown, lang),
+        total_return=pct(stress.total_return, lang),
+        coverage=pct(stress.coverage, lang),
     )
     return [
-        Paragraph(f"Szenario: {xml_escape(stress.title)}", _BODY),
+        Paragraph(xml_escape(t(lang, "pdf.scenario", title=stress.title)), _BODY),
         Paragraph(xml_escape(period_text), _BODY),
         Paragraph(xml_escape(stress.explanation), _BODY),
         Spacer(1, 8),
-        _stress_chart_drawing(stress.dates, stress.value_path),
+        _stress_chart_drawing(stress.dates, stress.value_path, lang),
         Spacer(1, 4),
         Paragraph(xml_escape(stress.disclaimer), _SMALL),
     ]
 
 
-def _stress_chart_drawing(dates: list[date], value_path: list[float]) -> Drawing:
+def _stress_chart_drawing(
+    dates: list[date], value_path: list[float], lang: Lang
+) -> Drawing:
     # Downsample: value_path can hold ~370 daily points, far more than a
     # small paper chart needs (and reportlab's category axis gets
     # unreadable past a few dozen ticks).
@@ -232,7 +271,8 @@ def _stress_chart_drawing(dates: list[date], value_path: list[float]) -> Drawing
     padding = (value_max - value_min) * 0.08 or 0.02
     chart.valueAxis.valueMin = value_min - padding
     chart.valueAxis.valueMax = value_max + padding
-    chart.valueAxis.labelTextFormat = "%0.2f"
+    # reportlab accepts a callable here: locale decimal separator.
+    chart.valueAxis.labelTextFormat = lambda value: num(value, lang)
     chart.valueAxis.labels.fontSize = 7
 
     labels = ["" for _ in sampled]
@@ -247,14 +287,17 @@ def _stress_chart_drawing(dates: list[date], value_path: list[float]) -> Drawing
     return drawing
 
 
-def _draw_footer(canvas, doc) -> None:
+def _draw_footer(canvas, doc, lang: Lang) -> None:
     canvas.saveState()
     canvas.setFont("Helvetica", 7)
     canvas.setFillColor(colors.HexColor("#64748b"))
-    lines = simpleSplit(DISCLAIMER_TEXT, "Helvetica", 7, _PAGE_WIDTH - 2 * _MARGIN)
+    disclaimer = t(lang, "pdf.disclaimer")
+    lines = simpleSplit(disclaimer, "Helvetica", 7, _PAGE_WIDTH - 2 * _MARGIN)
     y = 1.7 * cm
     for line in lines:
         canvas.drawString(_MARGIN, y, line)
         y -= 0.3 * cm
-    canvas.drawRightString(_PAGE_WIDTH - _MARGIN, 1.7 * cm, f"Seite {doc.page}")
+    canvas.drawRightString(
+        _PAGE_WIDTH - _MARGIN, 1.7 * cm, t(lang, "pdf.page", page=str(doc.page))
+    )
     canvas.restoreState()

@@ -7,9 +7,9 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from sentinel_api.schemas.common import PortfolioIn
+from sentinel_api.schemas.common import LANG_DESCRIPTION, PortfolioIn
 from sentinel_core.simulation.monte_carlo import MonteCarloResult as MonteCarloOut
 
 __all__ = ["MonteCarloIn", "MonteCarloOut"]
@@ -18,3 +18,4 @@ __all__ = ["MonteCarloIn", "MonteCarloOut"]
 class MonteCarloIn(BaseModel):
     portfolio: PortfolioIn
     horizon_years: Literal[1, 5, 10]
+    lang: str = Field(default="de", description=LANG_DESCRIPTION)

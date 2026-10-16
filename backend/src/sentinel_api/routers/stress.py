@@ -9,14 +9,16 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
+from sentinel_api.schemas.common import LANG_DESCRIPTION
 from sentinel_api.schemas.stress import (
     StressPresetsOut,
     StressReplayIn,
     StressReplayOut,
 )
 from sentinel_core.constants import STRESS_PRESETS
+from sentinel_core.i18n import DEFAULT_LANG, resolve_lang
 from sentinel_core.stress.replay import DEFAULT_CACHE_DIR, get_preset, replay
 
 router = APIRouter(prefix="/stress", tags=["stress"])
@@ -33,10 +35,16 @@ _CACHE_DIR = (
 
 @router.post("/replay", response_model=StressReplayOut)
 def post_stress_replay(body: StressReplayIn) -> StressReplayOut:
-    return replay(body.portfolio.weights, body.preset_id, cache_dir=_CACHE_DIR)
+    lang = resolve_lang(body.lang)
+    return replay(
+        body.portfolio.weights, body.preset_id, cache_dir=_CACHE_DIR, lang=lang
+    )
 
 
 @router.get("/presets", response_model=StressPresetsOut)
-def get_stress_presets() -> StressPresetsOut:
-    presets = [get_preset(preset_id) for preset_id in STRESS_PRESETS]
+def get_stress_presets(
+    lang: str = Query(default=DEFAULT_LANG, description=LANG_DESCRIPTION),
+) -> StressPresetsOut:
+    resolved = resolve_lang(lang)
+    presets = [get_preset(preset_id, resolved) for preset_id in STRESS_PRESETS]
     return StressPresetsOut(presets=presets)

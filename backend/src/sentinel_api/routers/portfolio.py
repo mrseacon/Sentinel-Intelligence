@@ -13,13 +13,11 @@ from fastapi.concurrency import run_in_threadpool
 
 from sentinel_api.limits import MAX_CSV_BYTES, MAX_PORTFOLIO_TICKERS
 from sentinel_api.schemas.common import PortfolioIn
-from sentinel_api.schemas.portfolio import (
-    OPTIMIZE_DISCLAIMER,
-    OptimizeIn,
-    OptimizeOut,
-)
+from sentinel_api.schemas.portfolio import OptimizeIn, OptimizeOut
 from sentinel_core.data.loader import load_multiple_assets
 from sentinel_core.errors import SentinelError
+from sentinel_core.i18n import resolve_lang
+from sentinel_core.i18n.catalog import t
 from sentinel_core.portfolio.optimization import optimize_max_sharpe
 from sentinel_core.portfolio.upload import parse_portfolio_csv
 from sentinel_core.risk.metrics import daily_returns
@@ -35,6 +33,7 @@ _READ_CHUNK_BYTES = 64 * 1024
 
 @router.post("/optimize", response_model=OptimizeOut)
 def post_optimize(body: OptimizeIn) -> OptimizeOut:
+    lang = resolve_lang(body.lang)
     prices = load_multiple_assets(body.tickers, period=body.period)
     returns = daily_returns(prices)
     result = optimize_max_sharpe(returns)
@@ -43,7 +42,7 @@ def post_optimize(body: OptimizeIn) -> OptimizeOut:
         expected_return=result.expected_return,
         volatility=result.volatility,
         sharpe=result.sharpe,
-        disclaimer=OPTIMIZE_DISCLAIMER,
+        disclaimer=t(lang, "optimize.disclaimer"),
     )
 
 

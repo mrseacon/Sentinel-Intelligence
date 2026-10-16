@@ -26,8 +26,8 @@ schema as every other endpoint); this endpoint does two SEQUENTIAL
 yfinance-loading phases instead of one (analyze+ampel share a load,
 stress needs a separate preset-windowed one), each still bounded by the
 loader's per-request timeout (_REQUEST_TIMEOUT_SECONDS). No dedicated
-rate limiting is added here — F9 (rate limiting) is deliberately
-deferred project-wide (see deploy prep commit), and this endpoint is
+rate limiting is added here — the global per-IP limit (F9,
+rate_limit.py) applies like everywhere else, and this endpoint is
 bounded by the same primitives as everything else, just twice. Revisit
 if this specific endpoint sees abuse.
 """
@@ -45,6 +45,8 @@ from sentinel_api.routers.risk import build_risk_ampel_out, build_risk_analyze_o
 from sentinel_api.schemas.reports import ReportRiskSummaryIn
 from sentinel_core.data.loader import load_multiple_assets
 from sentinel_core.errors import SentinelError
+from sentinel_core.i18n import Lang, resolve_lang
+from sentinel_core.i18n.catalog import t
 from sentinel_core.risk.metrics import daily_returns
 from sentinel_core.stress.replay import DEFAULT_CACHE_DIR
 from sentinel_core.stress.replay import replay as stress_replay
@@ -69,24 +71,27 @@ _STRESS_CACHE_DIR = (
 
 @router.post("/risk-summary")
 def post_report_risk_summary(body: ReportRiskSummaryIn) -> Response:
+    lang = resolve_lang(body.lang)
     weights = body.portfolio.weights
 
     prices = load_multiple_assets(list(weights), period=_REPORT_PERIOD)
     returns = daily_returns(prices)
     analysis = build_risk_analyze_out(weights, returns)
-    ampel_out = build_risk_ampel_out(weights, returns)
+    ampel_out = build_risk_ampel_out(weights, returns, lang)
 
-    stress = _try_stress_replay(weights)
+    stress = _try_stress_replay(weights, lang)
 
+    generated_at = datetime.now(UTC)
     pdf_bytes = build_risk_summary_pdf(
         weights=weights,
         analysis=analysis,
         ampeln=ampel_out.ampeln,
         stress=stress,
-        generated_at=datetime.now(UTC),
+        generated_at=generated_at,
+        lang=lang,
     )
 
-    filename = f"sentinel-risiko-report-{datetime.now(UTC).date().isoformat()}.pdf"
+    filename = t(lang, "pdf.filename", date=generated_at.date().isoformat())
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
@@ -94,10 +99,10 @@ def post_report_risk_summary(body: ReportRiskSummaryIn) -> Response:
     )
 
 
-def _try_stress_replay(weights: dict[str, float]):
+def _try_stress_replay(weights: dict[str, float], lang: Lang):
     try:
         return stress_replay(
-            weights, _DEFAULT_STRESS_PRESET, cache_dir=_STRESS_CACHE_DIR
+            weights, _DEFAULT_STRESS_PRESET, cache_dir=_STRESS_CACHE_DIR, lang=lang
         )
     except SentinelError:
         # e.g. STRESS_INSUFFICIENT_COVERAGE for a young-heavy portfolio —

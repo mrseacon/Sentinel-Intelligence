@@ -19,9 +19,11 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Query
 
+from sentinel_api.schemas.common import LANG_DESCRIPTION
 from sentinel_api.schemas.news import NewsHeadlineOut, NewsHeadlinesOut
 from sentinel_core.ai.news import fetch_ticker_headlines
 from sentinel_core.data.loader import validate_ticker
+from sentinel_core.i18n import DEFAULT_LANG, resolve_lang
 
 router = APIRouter(prefix="/news", tags=["news"])
 
@@ -29,9 +31,12 @@ router = APIRouter(prefix="/news", tags=["news"])
 @router.get("/headlines", response_model=NewsHeadlinesOut)
 def get_news_headlines(
     ticker: str = Query(..., min_length=1, max_length=15),
+    lang: str = Query(default=DEFAULT_LANG, description=LANG_DESCRIPTION),
 ) -> NewsHeadlinesOut:
+    resolved = resolve_lang(lang)
     normalized = validate_ticker(ticker.strip().upper())
-    headlines = fetch_ticker_headlines(normalized)
+    # lang picks the Google News edition (German or English headlines)
+    headlines = fetch_ticker_headlines(normalized, resolved)
     return NewsHeadlinesOut(
         ticker=normalized,
         headlines=[

@@ -3,8 +3,9 @@
 OptimizeOut is the one API schema that ADDS a field beyond its core
 model (OptimizationResult): the optimizer's result is a property of the
 input TICKER SET, not a buy list, so principle 3 is riskiest here.
-core has no text field for this; the disclaimer is deliberately added
-at the API layer (contract §2.6/§3.4), not in sentinel_core.
+core's result model has no text field for this; the disclaimer text
+lives in the i18n catalog ("optimize.disclaimer") and is added by the
+router (contract §2.6/§3.4).
 """
 
 from __future__ import annotations
@@ -12,21 +13,16 @@ from __future__ import annotations
 from pydantic import BaseModel, Field, field_validator
 
 from sentinel_api.limits import MAX_PORTFOLIO_TICKERS
-from sentinel_api.schemas.common import Period
+from sentinel_api.schemas.common import LANG_DESCRIPTION, Period
 from sentinel_core.data.loader import validate_ticker
 
-__all__ = ["OPTIMIZE_DISCLAIMER", "OptimizeIn", "OptimizeOut"]
-
-OPTIMIZE_DISCLAIMER = (
-    "Rechnerische Max-Sharpe-Gewichtung der eingegebenen Titel auf Basis "
-    "vergangener Kurse. Keine Empfehlung, Vergangenheit ist keine "
-    "Garantie für die Zukunft."
-)
+__all__ = ["OptimizeIn", "OptimizeOut"]
 
 
 class OptimizeIn(BaseModel):
     tickers: list[str] = Field(max_length=MAX_PORTFOLIO_TICKERS)
     period: Period = "1y"
+    lang: str = Field(default="de", description=LANG_DESCRIPTION)
 
     @field_validator("tickers")
     @classmethod
