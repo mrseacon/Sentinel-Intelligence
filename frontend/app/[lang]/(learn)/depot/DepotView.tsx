@@ -21,7 +21,11 @@ import type { AccountValuationOut, PositionValueOut } from "@/lib/types";
 import { TradeForm } from "./TradeForm";
 
 const SERIES_COLORS = 6;
-const POSITION_GRID = "grid-cols-[1.7fr_.7fr_.9fr_1fr_1.2fr_.9fr]";
+// Mobil nur 4 Spalten (Ticker, Stück, Wert, G/V) — Kurs und Gewicht
+// stecken dort im Donut bzw. in der Kaufkurs-Zeile; sechs Spalten auf
+// 390 px quetschten die Ticker-Spalte auf null Breite.
+const POSITION_GRID =
+  "grid-cols-[1.5fr_.6fr_1fr_1fr] sm:grid-cols-[1.7fr_.7fr_.9fr_1fr_1.2fr_.9fr]";
 
 function seriesColor(index: number): string {
   return `var(--ser-${(index % SERIES_COLORS) + 1})`;
@@ -396,9 +400,9 @@ function PositionsTable({ positions }: { positions: PositionValueOut[] }) {
       >
         <span>{dict.depot.table.ticker}</span>
         <span className="text-right">{dict.depot.table.quantity}</span>
-        <span className="text-right">{dict.depot.table.price}</span>
+        <span className="hidden text-right sm:block">{dict.depot.table.price}</span>
         <span className="text-right">{dict.depot.table.value}</span>
-        <span>{dict.depot.table.weight}</span>
+        <span className="hidden sm:block">{dict.depot.table.weight}</span>
         <span className="text-right">{dict.depot.table.pnl}</span>
       </div>
       {positions.map((p, index) => {
@@ -426,13 +430,13 @@ function PositionsTable({ positions }: { positions: PositionValueOut[] }) {
               <span className="text-right font-mono text-[13px]">
                 {p.quantity}
               </span>
-              <span className="text-right font-mono text-[13px] text-soft">
+              <span className="hidden text-right font-mono text-[13px] text-soft sm:block">
                 {formatCurrency(p.current_price, locale)}
               </span>
               <span className="text-right font-mono text-[13px]">
                 {formatCurrency(p.market_value, locale)}
               </span>
-              <div className="flex items-center gap-2.5">
+              <div className="hidden items-center gap-2.5 sm:flex">
                 <div className="h-[5px] flex-1 overflow-hidden rounded-full bg-sunken">
                   <div
                     className="h-full rounded-full"
@@ -444,7 +448,7 @@ function PositionsTable({ positions }: { positions: PositionValueOut[] }) {
                 </span>
               </div>
               <span
-                className={`text-right font-mono text-[13px] ${
+                className={`text-right font-mono text-[13px] whitespace-nowrap ${
                   p.unrealized_pnl >= 0 ? "text-ok" : "text-alert"
                 }`}
               >

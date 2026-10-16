@@ -22,15 +22,21 @@ export default function LearnLayout({
             (DemoModeBanner liest isDemoMode aus demselben Context). */}
         <DemoModeBanner />
         <header className="border-b border-border">
-          <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-4 py-3">
+          {/* Mobil: Logo + Sprachumschalter in Zeile 1, Navigation volle
+              Breite in Zeile 2 (sonst ist der Header breiter als der
+              Viewport und die ganze Seite scrollt seitlich). Ab sm wie
+              gehabt alles in einer Zeile; `order` sortiert nur visuell um. */}
+          <div className="mx-auto flex max-w-4xl flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
             <LocaleLink
               href="/"
               className="font-serif text-xl tracking-[0.1em] uppercase"
             >
               Sentinel<span className="text-accent">.</span>
             </LocaleLink>
-            <div className="flex items-center gap-3">
+            <div className="order-3 w-full min-w-0 sm:order-2 sm:ml-auto sm:w-auto">
               <Nav />
+            </div>
+            <div className="ml-auto sm:order-3 sm:ml-0">
               <LanguageSwitcher />
             </div>
           </div>
