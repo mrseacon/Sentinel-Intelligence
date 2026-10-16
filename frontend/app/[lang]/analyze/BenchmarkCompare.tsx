@@ -13,8 +13,8 @@ import { useState } from "react";
 import { ErrorNotice } from "@/components/ErrorNotice";
 import { Skeleton } from "@/components/Skeleton";
 import { ApiError, getRiskBenchmarks, postRiskBenchmarkCompare } from "@/lib/api";
+import { formatPercent } from "@/lib/i18n/format";
 import { useI18n } from "@/lib/i18n/I18nProvider";
-import { benchmarkTitle } from "@/lib/i18n/labels";
 import { canonicalWeights } from "@/lib/portfolio";
 import type { BenchmarkCompareOut, PortfolioIn } from "@/lib/types";
 
@@ -23,19 +23,24 @@ export function BenchmarkCompare({ portfolio }: { portfolio: PortfolioIn }) {
   const [benchmarkId, setBenchmarkId] = useState<string | null>(null);
 
   const listQuery = useQuery({
-    queryKey: ["risk", "benchmarks"],
-    queryFn: getRiskBenchmarks,
+    queryKey: ["risk", "benchmarks", locale],
+    queryFn: () => getRiskBenchmarks(locale),
   });
 
   const compareQuery = useQuery({
     queryKey: [
       "risk",
       "benchmark-compare",
+      locale,
       canonicalWeights(portfolio.weights),
       benchmarkId,
     ],
     queryFn: () =>
-      postRiskBenchmarkCompare({ portfolio, benchmark_id: benchmarkId! }),
+      postRiskBenchmarkCompare({
+        portfolio,
+        benchmark_id: benchmarkId!,
+        lang: locale,
+      }),
     enabled: benchmarkId !== null,
   });
 
@@ -71,7 +76,7 @@ export function BenchmarkCompare({ portfolio }: { portfolio: PortfolioIn }) {
                   color: isSelected ? "var(--ink)" : "var(--soft)",
                 }}
               >
-                {benchmarkTitle(benchmark.id, benchmark.title, locale)}
+                {benchmark.title}
               </button>
             );
           })}
@@ -110,15 +115,10 @@ function CompareResult({
     );
   }
 
-  const { portfolio, benchmark, benchmark_id, benchmark_title, comparison } = query.data;
+  const { portfolio, benchmark, benchmark_title, comparison } = query.data;
 
   return (
     <div className="flex flex-col gap-4">
-      {/* I18N_DECISIONS.md §5: comparison bleibt unübersetzt vom Backend
-          (Phase-2-Frage). */}
-      {locale !== "de" && (
-        <p className="text-xs text-faint italic">{dict.analyze.benchmark.germanOnlyNotice}</p>
-      )}
 
       <p className="text-sm text-soft">{comparison}</p>
 
@@ -126,19 +126,19 @@ function CompareResult({
         label={dict.analyze.result.volatility}
         a={portfolio.metrics.volatility}
         b={benchmark.metrics.volatility}
-        format={(v) => `${Math.round(v * 100)} %`}
+        format={(v) => formatPercent(v, locale)}
         aLabel={dict.analyze.benchmark.yourPortfolio}
-        bLabel={benchmarkTitle(benchmark_id, benchmark_title, locale)}
+        bLabel={benchmark_title}
       />
       <CompareMetric
         label={dict.analyze.result.maxDrawdown}
         a={Math.abs(portfolio.metrics.max_drawdown)}
         b={Math.abs(benchmark.metrics.max_drawdown)}
         format={() => ""}
-        rawA={`${Math.round(portfolio.metrics.max_drawdown * 100)} %`}
-        rawB={`${Math.round(benchmark.metrics.max_drawdown * 100)} %`}
+        rawA={formatPercent(portfolio.metrics.max_drawdown, locale)}
+        rawB={formatPercent(benchmark.metrics.max_drawdown, locale)}
         aLabel={dict.analyze.benchmark.yourPortfolio}
-        bLabel={benchmarkTitle(benchmark_id, benchmark_title, locale)}
+        bLabel={benchmark_title}
       />
       <CompareMetric
         label={dict.analyze.benchmark.riskScore}
@@ -146,7 +146,7 @@ function CompareResult({
         b={benchmark.score.score}
         format={(v) => `${Math.round(v)} / 100`}
         aLabel={dict.analyze.benchmark.yourPortfolio}
-        bLabel={benchmarkTitle(benchmark_id, benchmark_title, locale)}
+        bLabel={benchmark_title}
       />
     </div>
   );

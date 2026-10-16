@@ -5,7 +5,8 @@
  * `code` die UI-Behandlung steuert (FRONTEND_DECISIONS.md §3).
  *
  * Nur Endpunkte, die sentinel_api tatsächlich implementiert (siehe
- * lib/types.ts). `/prices/*` fehlt noch serverseitig.
+ * lib/types.ts). Text-erzeugende Endpunkte bekommen immer `lang` — bei
+ * POST im Body (Pflichtfeld in den *In-Typen), bei GET als Query-Param.
  */
 
 import type {
@@ -14,6 +15,7 @@ import type {
   BenchmarkCompareOut,
   BenchmarksOut,
   CorrelationIn,
+  Lang,
   CorrelationOut,
   OptimizeIn,
   OptimizeOut,
@@ -22,6 +24,7 @@ import type {
   PaperValuationIn,
   PortfolioIn,
   QuoteOut,
+  ReportRiskSummaryIn,
   RiskAmpelIn,
   RiskAmpelOut,
   RiskAnalyzeIn,
@@ -42,8 +45,8 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 /** Typisierter Fehler für jede nicht-2xx-Antwort. `code` steuert das
- * UI-Verhalten (Banner vs. inline, Retry ja/nein) — `detail` wird immer
- * unverändert angezeigt (§1.4, bereits deutsch & nutzerfertig). */
+ * UI-Verhalten (Banner vs. inline, Retry ja/nein) und auf /en auch den
+ * Text; `detail` ist immer deutsch und wird nur auf /de angezeigt (§1.1). */
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
@@ -106,8 +109,8 @@ export function postRiskAmpel(body: RiskAmpelIn): Promise<RiskAmpelOut> {
   return postJson("/risk/ampel", body);
 }
 
-export function getRiskBenchmarks(): Promise<BenchmarksOut> {
-  return request("/risk/benchmarks");
+export function getRiskBenchmarks(lang: Lang): Promise<BenchmarksOut> {
+  return request(`/risk/benchmarks?lang=${lang}`);
 }
 
 export function postRiskBenchmarkCompare(
@@ -160,8 +163,8 @@ export function postStressReplay(
   return postJson("/stress/replay", body);
 }
 
-export function getStressPresets(): Promise<StressPresetsOut> {
-  return request("/stress/presets");
+export function getStressPresets(lang: Lang): Promise<StressPresetsOut> {
+  return request(`/stress/presets?lang=${lang}`);
 }
 
 // --- simulation/* ------------------------------------------------------------------
@@ -175,8 +178,13 @@ export function postSimulationMonteCarlo(
 // --- news/* -------------------------------------------------------------------
 
 // Kein LLM/AI-Gate: reiner RSS-Fetch, immer verfügbar (s. lib/types.ts).
-export function getNewsHeadlines(ticker: string): Promise<NewsHeadlinesOut> {
-  return request(`/news/headlines?ticker=${encodeURIComponent(ticker)}`);
+export function getNewsHeadlines(
+  ticker: string,
+  lang: Lang,
+): Promise<NewsHeadlinesOut> {
+  return request(
+    `/news/headlines?ticker=${encodeURIComponent(ticker)}&lang=${lang}`,
+  );
 }
 
 // --- reports/* --------------------------------------------------------------------
@@ -185,14 +193,14 @@ export function getNewsHeadlines(ticker: string): Promise<NewsHeadlinesOut> {
  * laufen (das ruft immer .json()). Fehlerbehandlung bleibt identisch:
  * ein Nicht-2xx liefert weiterhin {detail, code}. */
 export async function postReportRiskSummary(
-  portfolio: PortfolioIn,
+  body: ReportRiskSummaryIn,
 ): Promise<Blob> {
   let response: Response;
   try {
     response = await fetch(`${API_BASE_URL}/reports/risk-summary`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ portfolio }),
+      body: JSON.stringify(body),
     });
   } catch {
     throw new ApiError(503, {

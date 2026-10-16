@@ -24,9 +24,8 @@ import { ErrorNotice } from "@/components/ErrorNotice";
 import { Skeleton } from "@/components/Skeleton";
 import { ApiError, getStressPresets, postStressReplay } from "@/lib/api";
 import { useDepot } from "@/lib/DepotProvider";
-import { formatIsoDate } from "@/lib/i18n/format";
+import { formatIsoDate, formatPercent } from "@/lib/i18n/format";
 import { useI18n } from "@/lib/i18n/I18nProvider";
-import { stressPresetTitle } from "@/lib/i18n/labels";
 import { LocaleLink } from "@/lib/i18n/link";
 import { canonicalWeights, derivePortfolioWeights } from "@/lib/portfolio";
 import type {
@@ -123,21 +122,22 @@ function EmptyHint() {
 }
 
 function StressResult({ positions }: { positions: PositionValueOut[] }) {
-  const { dict } = useI18n();
+  const { dict, locale } = useI18n();
   const weights = derivePortfolioWeights(positions);
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(
     null,
   );
 
   const presetsQuery = useQuery({
-    queryKey: ["stress", "presets"],
-    queryFn: getStressPresets,
+    queryKey: ["stress", "presets", locale],
+    queryFn: () => getStressPresets(locale),
   });
 
   const replayQuery = useQuery({
     queryKey: [
       "stress",
       "replay",
+      locale,
       canonicalWeights(weights),
       selectedPresetId,
     ],
@@ -145,6 +145,7 @@ function StressResult({ positions }: { positions: PositionValueOut[] }) {
       postStressReplay({
         portfolio: { weights },
         preset_id: selectedPresetId!,
+        lang: locale,
       }),
     enabled: selectedPresetId !== null,
   });
@@ -226,7 +227,7 @@ function PresetPicker({
           >
             <span className="flex items-center justify-between gap-2.5">
               <span className="font-semibold text-ink">
-                {stressPresetTitle(preset.id, preset.title, locale)}
+                {preset.title}
               </span>
               <span
                 className="h-2 w-2 flex-none rounded-full transition-colors"
@@ -278,11 +279,6 @@ function ReplayResult({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* I18N_DECISIONS.md §5: explanation/lesson/disclaimer bleiben
-          unübersetzt vom Backend (Phase-2-Frage). */}
-      {locale !== "de" && (
-        <p className="text-xs text-faint italic">{dict.stress.germanOnlyNotice}</p>
-      )}
 
       <p className="text-sm text-soft">{result.explanation}</p>
 
@@ -321,14 +317,14 @@ function ReplayResult({
                 tickLine={{ stroke: "var(--border-strong)" }}
               />
               <YAxis
-                tickFormatter={(v: number) => `${Math.round((v - 1) * 100)} %`}
+                tickFormatter={(v: number) => formatPercent(v - 1, locale)}
                 tick={{ fill: "var(--faint)", fontSize: 11 }}
                 axisLine={{ stroke: "var(--border-strong)" }}
                 tickLine={{ stroke: "var(--border-strong)" }}
               />
               <Tooltip
                 formatter={(value) => [
-                  `${Math.round((Number(value) - 1) * 100)} %`,
+                  formatPercent(Number(value) - 1, locale),
                   dict.stress.chartValueTooltip,
                 ]}
                 labelFormatter={(label) => formatIsoDate(String(label), locale)}
@@ -371,19 +367,20 @@ function ReplayResult({
       <div className="grid gap-3 sm:grid-cols-3">
         <StatCard
           label={dict.stress.stats.maxDrawdown}
-          value={`${Math.round(result.max_drawdown * 100)} %`}
+          value={formatPercent(result.max_drawdown, locale)}
           tone="negative"
         />
         <StatCard
           label={dict.stress.stats.totalReturn}
-          value={`${result.total_return >= 0 ? "+" : ""}${Math.round(
-            result.total_return * 100,
-          )} %`}
+          value={`${result.total_return >= 0 ? "+" : ""}${formatPercent(
+            result.total_return,
+            locale,
+          )}`}
           tone={result.total_return >= 0 ? "positive" : "negative"}
         />
         <StatCard
           label={dict.stress.stats.volatility}
-          value={`${Math.round(result.volatility * 100)} %`}
+          value={formatPercent(result.volatility, locale)}
         />
       </div>
 

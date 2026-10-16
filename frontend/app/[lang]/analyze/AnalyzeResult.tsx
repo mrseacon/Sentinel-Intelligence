@@ -9,6 +9,7 @@ import { ErrorNotice } from "@/components/ErrorNotice";
 import { ReportDownloadButton } from "@/components/ReportDownloadButton";
 import { Skeleton } from "@/components/Skeleton";
 import { ApiError, postRiskAnalyze } from "@/lib/api";
+import { formatDecimal, formatPercent } from "@/lib/i18n/format";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { canonicalWeights } from "@/lib/portfolio";
 import type { PortfolioIn, RiskScoreOut } from "@/lib/types";
@@ -35,7 +36,7 @@ const LABEL_ICON: Record<RiskScoreOut["label"], string> = {
 };
 
 export function AnalyzeResult({ portfolio }: { portfolio: PortfolioIn }) {
-  const { dict } = useI18n();
+  const { dict, locale } = useI18n();
   const query = useQuery({
     queryKey: ["risk", "analyze", canonicalWeights(portfolio.weights)],
     queryFn: () => postRiskAnalyze({ portfolio }),
@@ -106,7 +107,9 @@ export function AnalyzeResult({ portfolio }: { portfolio: PortfolioIn }) {
                 key={driver.factor}
                 className="grid grid-cols-[minmax(0,150px)_1fr_44px] items-center gap-3"
               >
-                <span className="truncate text-[13px]">{driver.factor}</span>
+                <span className="truncate text-[13px]">
+                  {dict.analyze.score.factorLabels[driver.factor] ?? driver.factor}
+                </span>
                 <div className="h-1.5 rounded-full bg-sunken">
                   <div
                     className="h-full rounded-full bg-accent transition-[width] duration-500"
@@ -114,7 +117,7 @@ export function AnalyzeResult({ portfolio }: { portfolio: PortfolioIn }) {
                   />
                 </div>
                 <span className="text-right font-mono text-xs text-soft">
-                  {Math.round(driver.contribution * 100)} %
+                  {formatPercent(driver.contribution, locale)}
                 </span>
               </div>
             ))}
@@ -126,30 +129,30 @@ export function AnalyzeResult({ portfolio }: { portfolio: PortfolioIn }) {
       <div className="grid gap-3 border-t border-border pt-5 sm:grid-cols-3">
         <StatTile
           label={dict.analyze.result.volatility}
-          value={`${Math.round(metrics.volatility * 100)} %`}
+          value={formatPercent(metrics.volatility, locale)}
         />
         <StatTile
           label={dict.analyze.result.maxDrawdown}
-          value={`${Math.round(metrics.max_drawdown * 100)} %`}
+          value={formatPercent(metrics.max_drawdown, locale)}
           tone="negative"
         />
         <StatTile
           label={dict.analyze.result.diversificationRatio}
-          value={metrics.diversification_ratio.toFixed(2)}
+          value={formatDecimal(metrics.diversification_ratio, locale)}
         />
         <StatTile
           label={dict.analyze.result.var95}
-          value={`${(metrics.var_95 * 100).toFixed(2)} %`}
+          value={formatPercent(metrics.var_95, locale, 2)}
           tone="negative"
         />
         <StatTile
           label={dict.analyze.result.cvar95}
-          value={`${(metrics.cvar_95 * 100).toFixed(2)} %`}
+          value={formatPercent(metrics.cvar_95, locale, 2)}
           tone="negative"
         />
         <StatTile
           label={dict.analyze.result.hhi}
-          value={metrics.hhi === null ? dict.common.notAvailable : metrics.hhi.toFixed(2)}
+          value={metrics.hhi === null ? dict.common.notAvailable : formatDecimal(metrics.hhi, locale)}
         />
       </div>
 
@@ -170,7 +173,7 @@ export function AnalyzeResult({ portfolio }: { portfolio: PortfolioIn }) {
                   />
                 </div>
                 <span className="text-right font-mono text-xs text-soft">
-                  {Math.round(share * 100)} %
+                  {formatPercent(share, locale)}
                 </span>
               </div>
             ))}

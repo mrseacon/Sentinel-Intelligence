@@ -337,8 +337,6 @@ const de = {
         { glyph: "▽", label: "negativ", range: "< -0,15" },
       ],
     },
-    germanOnlyNotice:
-      "Die ausführlichen Erklärungen unten liegen aktuell nur auf Deutsch vor; eine englische Version ist für ein späteres Update geplant.",
   },
   stress: {
     kicker: "Historische Krisen",
@@ -363,8 +361,6 @@ const de = {
     },
     simulationLinkText: "Wohin könnte sich dein Depot in Zukunft entwickeln?",
     simulationLinkCta: "Zur Simulation",
-    germanOnlyNotice:
-      "Die ausführliche Erklärung, Lernkarte und der Disclaimer unten liegen aktuell nur auf Deutsch vor; eine englische Version ist für ein späteres Update geplant.",
     monthsShort: [
       "Jan",
       "Feb",
@@ -419,8 +415,6 @@ const de = {
       p50: "Mittlerer Verlauf (50 %)",
       p90: "Oberes Perzentil (90 %)",
     },
-    germanOnlyNotice:
-      "Die ausführliche Erklärung, Lernkarte und der Disclaimer unten liegen aktuell nur auf Deutsch vor; eine englische Version ist für ein späteres Update geplant.",
     axisMonths: "Mon.",
     axisYears: "J.",
     afterMonth: (n: number) => `nach ${n} ${n === 1 ? "Monat" : "Monaten"}`,
@@ -444,6 +438,13 @@ const de = {
       gaugeLow: "Niedrig",
       gaugeHigh: "Sehr hoch",
       note: "Score von 0 bis 100, höher bedeutet höheres Risiko.",
+      factorLabels: {
+        volatility: "Volatilität",
+        max_drawdown: "Maximaler Rückgang",
+        var_95: "Value at Risk (95 %)",
+        cvar_95: "Conditional VaR (95 %)",
+        concentration: "Konzentration",
+      } as Record<string, string>,
     },
     csvUpload: {
       title: "CSV-Upload",
@@ -490,8 +491,6 @@ const de = {
     benchmark: {
       yourPortfolio: "Dein Portfolio",
       riskScore: "Risiko-Score",
-      germanOnlyNotice:
-        "Der Vergleichstext unten liegt aktuell nur auf Deutsch vor; eine englische Version ist für ein späteres Update geplant.",
     },
     optimize: {
       needsTwoPositions: "Die Optimierung braucht mindestens 2 Positionen.",
@@ -503,8 +502,6 @@ const de = {
       positionCol: "Position",
       currentCol: "Aktuell",
       modelCol: "Modell",
-      germanOnlyNotice:
-        "Der Disclaimer unten liegt aktuell nur auf Deutsch vor; eine englische Version ist für ein späteres Update geplant.",
     },
   },
   positionNews: {
@@ -515,6 +512,7 @@ const de = {
   reportDownload: {
     creating: "Report wird erstellt…",
     download: "Als PDF-Report herunterladen",
+    filename: "sentinel-risiko-report.pdf",
   },
 };
 

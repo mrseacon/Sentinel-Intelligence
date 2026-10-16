@@ -17,7 +17,6 @@ import type { Locale } from "@/lib/i18n/config";
 import type { Dictionary } from "@/lib/i18n/dictionaries/de";
 import { formatDecimal, formatPercent } from "@/lib/i18n/format";
 import { useI18n } from "@/lib/i18n/I18nProvider";
-import { ampelTitle } from "@/lib/i18n/labels";
 import { LocaleLink } from "@/lib/i18n/link";
 import { canonicalWeights, derivePortfolioWeights } from "@/lib/portfolio";
 import type { AmpelOut, AmpelStatus, PositionValueOut } from "@/lib/types";
@@ -121,8 +120,11 @@ function AmpelResult({ positions }: { positions: PositionValueOut[] }) {
   const weights = derivePortfolioWeights(positions);
 
   const ampelQuery = useQuery({
-    queryKey: ["risk", "ampel", canonicalWeights(weights)],
-    queryFn: () => postRiskAmpel({ portfolio: { weights } }),
+    // locale im Key: die Texte kommen sprachabhängig vom Backend, ein
+    // Sprachwechsel darf nie die Antwort der anderen Sprache aus dem
+    // Cache zeigen.
+    queryKey: ["risk", "ampel", locale, canonicalWeights(weights)],
+    queryFn: () => postRiskAmpel({ portfolio: { weights }, lang: locale }),
   });
 
   if (ampelQuery.error instanceof ApiError) {
@@ -140,12 +142,6 @@ function AmpelResult({ positions }: { positions: PositionValueOut[] }) {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* I18N_DECISIONS.md §5: explanation/lesson kommen unübersetzt vom
-          Backend (Phase-2-Frage) — dieser Hinweis macht das im
-          englischen UI ehrlich statt wie ein Bug wirken zu lassen. */}
-      {locale !== "de" && (
-        <p className="text-xs text-faint italic">{dict.ampel.germanOnlyNotice}</p>
-      )}
 
       <div className="grid gap-4 sm:grid-cols-3">
         {ampelQuery.data.ampeln.map((ampel) => (
@@ -303,7 +299,7 @@ function AmpelCard({ ampel, locale }: { ampel: AmpelOut; locale: Locale }) {
   const { dict } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
   const statusLabel = dict.ampel.statusLabels[ampel.status];
-  const title = ampelTitle(ampel.id, ampel.title, locale);
+  const title = ampel.title;
 
   return (
     <div className="flex flex-col rounded-xl border border-border bg-surface shadow-elevated">

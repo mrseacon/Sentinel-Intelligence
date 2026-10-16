@@ -50,8 +50,8 @@ export function PositionNews({ ticker }: { ticker: string }) {
 function NewsList({ ticker }: { ticker: string }) {
   const { dict, locale } = useI18n();
   const newsQuery = useQuery({
-    queryKey: ["news", "headlines", ticker],
-    queryFn: () => getNewsHeadlines(ticker),
+    queryKey: ["news", "headlines", locale, ticker],
+    queryFn: () => getNewsHeadlines(ticker, locale),
   });
 
   if (newsQuery.error instanceof ApiError) {

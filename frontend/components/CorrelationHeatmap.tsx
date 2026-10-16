@@ -6,6 +6,7 @@
 // garantiert, ohne eigenen Farb-Interpolationscode zu schreiben (anders
 // als die hartkodierte Recharts-Stroke-Farbe im Stress-Chart, die im
 // Dark Mode unsichtbar wird).
+import { formatDecimal } from "@/lib/i18n/format";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import type { CorrelationOut } from "@/lib/types";
 
@@ -29,7 +30,7 @@ function bucketForValue(value: number): Bucket {
 }
 
 export function CorrelationHeatmap({ tickers, matrix }: CorrelationOut) {
-  const { dict } = useI18n();
+  const { dict, locale } = useI18n();
 
   return (
     <div className="flex flex-col gap-4">
@@ -73,7 +74,7 @@ export function CorrelationHeatmap({ tickers, matrix }: CorrelationOut) {
                       style={{ background: bucket.bg, color: bucket.ink }}
                     >
                       <div className="font-mono text-[13px] tracking-[-0.01em] tabular-nums">
-                        {value.toFixed(2)}
+                        {formatDecimal(value, locale)}
                       </div>
                       <div className="text-[10px] opacity-90" aria-hidden="true">
                         {bucket.glyph}

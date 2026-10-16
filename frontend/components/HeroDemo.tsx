@@ -16,6 +16,7 @@
 // Position, nicht für den rohen HHI von genau drei Buckets.
 import { useState } from "react";
 
+import { formatPercent } from "@/lib/i18n/format";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 
 const SECTOR_KEYS = ["tech", "energie", "anleihen"] as const;
@@ -44,7 +45,7 @@ function levelFor(topShare: number): Level {
 }
 
 export function HeroDemo() {
-  const { dict } = useI18n();
+  const { dict, locale } = useI18n();
   const t = dict.landing.heroDemo;
   const [mix, setMix] = useState<[number, number, number]>(DEFAULT_MIX);
 
@@ -96,7 +97,7 @@ export function HeroDemo() {
                   {t.sectors[key]}
                 </label>
                 <span className="font-mono text-xs text-muted">
-                  {mix[index]}&nbsp;%
+                  {formatPercent(mix[index] / 100, locale)}
                 </span>
               </div>
               <input

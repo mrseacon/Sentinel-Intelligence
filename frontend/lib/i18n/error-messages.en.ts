@@ -1,7 +1,7 @@
 /**
  * Core-Fehlermeldungen auf Englisch, gemappt über den stabilen `code`
  * (I18N_DECISIONS.md §3) — nicht über das deutsche `detail`, das bleibt
- * backend-seitig unangetastet (Phase-2-Frage). Jeder Code aus
+ * backend-seitig bewusst deutsch (API_CONTRACT §1.1). Jeder Code aus
  * `backend/src/sentinel_api/errors.py` (ERROR_CODE_REGISTRY, FALLBACK_CODE,
  * die drei Handler-Literale) plus `PAYLOAD_TOO_LARGE` aus `main.py` und `RATE_LIMITED` aus `rate_limit.py` MUSS
  * hier einen Eintrag haben — durchgesetzt vom Vollständigkeitstest in
@@ -28,6 +28,7 @@ export const ERROR_MESSAGES_EN: Record<string, string> = {
   UPLOAD_INVALID: "This file could not be read as a valid portfolio.",
   TICKER_INVALID: "Invalid ticker symbol.",
   BENCHMARK_UNKNOWN: "Unknown benchmark index.",
+  LANG_UNSUPPORTED: "This language is not supported.",
   VALIDATION_ERROR: "Invalid input.",
   UPSTREAM_UNAVAILABLE: "Price data source is currently unavailable. Please try again later.",
   INTERNAL_ERROR: "Internal server error. Please try again later.",

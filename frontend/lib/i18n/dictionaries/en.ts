@@ -45,7 +45,7 @@ const en: Dictionary = {
   demo: {
     cta: "View sample portfolio",
     ctaHint: "A pre-filled portfolio to explore, no trades of your own needed.",
-    bannerText: "Sample data – not your real portfolio.",
+    bannerText: "Sample data, not your real portfolio.",
     exit: "Go to my portfolio",
   },
   disclaimer: {
@@ -337,8 +337,6 @@ const en: Dictionary = {
         { glyph: "▽", label: "negative", range: "below -0.15" },
       ],
     },
-    germanOnlyNotice:
-      "The detailed explanations below are currently German only. An English version is planned for a later update.",
   },
   stress: {
     kicker: "Historical crises",
@@ -363,8 +361,6 @@ const en: Dictionary = {
     },
     simulationLinkText: "Where could your portfolio go in the future?",
     simulationLinkCta: "Go to simulation",
-    germanOnlyNotice:
-      "The detailed explanation, lesson card and disclaimer below are currently German only. An English version is planned for a later update.",
     monthsShort: [
       "Jan",
       "Feb",
@@ -419,8 +415,6 @@ const en: Dictionary = {
       p50: "Median path (50%)",
       p90: "Upper percentile (90%)",
     },
-    germanOnlyNotice:
-      "The detailed explanation, lesson card and disclaimer below are currently German only. An English version is planned for a later update.",
     axisMonths: "mo.",
     axisYears: "yr.",
     afterMonth: (n: number) => `after ${n} ${n === 1 ? "month" : "months"}`,
@@ -444,6 +438,13 @@ const en: Dictionary = {
       gaugeLow: "Low",
       gaugeHigh: "Severe",
       note: "Score from 0 to 100, higher means higher risk.",
+      factorLabels: {
+        volatility: "Volatility",
+        max_drawdown: "Maximum drawdown",
+        var_95: "Value at Risk (95%)",
+        cvar_95: "Conditional VaR (95%)",
+        concentration: "Concentration",
+      } as Record<string, string>,
     },
     csvUpload: {
       title: "CSV upload",
@@ -490,8 +491,6 @@ const en: Dictionary = {
     benchmark: {
       yourPortfolio: "Your portfolio",
       riskScore: "Risk score",
-      germanOnlyNotice:
-        "The comparison text below is currently German only. An English version is planned for a later update.",
     },
     optimize: {
       needsTwoPositions: "Optimization needs at least 2 positions.",
@@ -503,8 +502,6 @@ const en: Dictionary = {
       positionCol: "Position",
       currentCol: "Current",
       modelCol: "Model",
-      germanOnlyNotice:
-        "The disclaimer below is currently German only. An English version is planned for a later update.",
     },
   },
   positionNews: {
@@ -515,6 +512,7 @@ const en: Dictionary = {
   reportDownload: {
     creating: "Generating report…",
     download: "Download as PDF report",
+    filename: "sentinel-risk-report.pdf",
   },
 };
 

@@ -11,6 +11,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ErrorNotice } from "@/components/ErrorNotice";
 import { Skeleton } from "@/components/Skeleton";
 import { ApiError, postPortfolioOptimize } from "@/lib/api";
+import { formatDecimal, formatPercent } from "@/lib/i18n/format";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import type { PortfolioIn } from "@/lib/types";
 
@@ -31,8 +32,8 @@ export function OptimizeSection({ portfolio }: { portfolio: PortfolioIn }) {
   const [requested, setRequested] = useState(false);
 
   const query = useQuery({
-    queryKey: ["portfolio", "optimize", [...tickers].sort()],
-    queryFn: () => postPortfolioOptimize({ tickers }),
+    queryKey: ["portfolio", "optimize", locale, [...tickers].sort()],
+    queryFn: () => postPortfolioOptimize({ tickers, lang: locale }),
     enabled: requested,
   });
 
@@ -65,15 +66,15 @@ export function OptimizeSection({ portfolio }: { portfolio: PortfolioIn }) {
           <div className="grid gap-3 sm:grid-cols-3">
             <StatTile
               label={dict.analyze.optimize.expectedReturn}
-              value={`${(query.data.expected_return * 100).toFixed(1)} %`}
+              value={formatPercent(query.data.expected_return, locale, 1)}
             />
             <StatTile
               label={dict.analyze.optimize.volatility}
-              value={`${(query.data.volatility * 100).toFixed(1)} %`}
+              value={formatPercent(query.data.volatility, locale, 1)}
             />
             <StatTile
               label={dict.analyze.optimize.sharpeRatio}
-              value={query.data.sharpe.toFixed(2)}
+              value={formatDecimal(query.data.sharpe, locale)}
             />
           </div>
 
@@ -82,12 +83,6 @@ export function OptimizeSection({ portfolio }: { portfolio: PortfolioIn }) {
             modelWeights={query.data.weights}
           />
 
-          {/* I18N_DECISIONS.md §5: disclaimer bleibt unübersetzt vom
-              Backend (Phase-2-Frage), Prinzip 3 verlangt trotzdem
-              IMMER sichtbar, nicht aufklappbar. */}
-          {locale !== "de" && (
-            <p className="text-xs text-faint italic">{dict.analyze.optimize.germanOnlyNotice}</p>
-          )}
           <p className="text-xs text-faint">{query.data.disclaimer}</p>
         </div>
       )}
@@ -102,7 +97,7 @@ function WeightsTable({
   currentWeights: Record<string, number>;
   modelWeights: Record<string, number>;
 }) {
-  const { dict } = useI18n();
+  const { dict, locale } = useI18n();
   const tickers = Object.keys(modelWeights).sort(
     (a, b) => modelWeights[b] - modelWeights[a],
   );
@@ -125,11 +120,11 @@ function WeightsTable({
           <span className="font-mono text-xs tracking-[0.04em]">{ticker}</span>
           <span className="text-right font-mono text-xs text-soft">
             {currentWeights[ticker] !== undefined
-              ? `${Math.round(currentWeights[ticker] * 100)} %`
+              ? formatPercent(currentWeights[ticker], locale)
               : "–"}
           </span>
           <span className="text-right font-mono text-xs">
-            {Math.round(modelWeights[ticker] * 100)} %
+            {formatPercent(modelWeights[ticker], locale)}
           </span>
         </div>
       ))}

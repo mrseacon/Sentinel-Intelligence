@@ -4,11 +4,13 @@
  * Contract-Abschnitt. Wechsel-Trigger für Codegen: Phase-2-Schemaänderung
  * oder ein zweiter API-Konsument.
  *
- * Nur Endpunkte, die sentinel_api tatsächlich implementiert (11 Routen:
- * paper/*, risk/*, stress/*, simulation/*, portfolio/*). `/prices/*` ist
- * in API_CONTRACT §2.2/§2.3 spezifiziert, aber noch nicht gebaut — daher
- * hier bewusst ausgelassen, um keine Typen für nicht existierende Routen
- * zu pflegen.
+ * Spiegelt alle Routen, die sentinel_api implementiert (paper/*, risk/*,
+ * stress/*, simulation/*, portfolio/*, news/*, reports/*).
+ *
+ * Sprache (§1.4): Jeder Endpunkt, der Text erzeugt, bekommt `lang`. Hier
+ * bewusst als PFLICHTfeld (im Backend optional, Default "de"), damit der
+ * TypeScript-Compiler jede Aufrufstelle zwingt, die aktuelle UI-Sprache
+ * mitzugeben.
  *
  * Zahlen-Konventionen (§1.2), gelten für ALLE Felder unten:
  * - Anteile/Renditen: Dezimalbruch (0.42 = 42 %), auch bei "_pct"-Suffix.
@@ -17,17 +19,21 @@
  * - Geldbeträge: float in Euro. Stückzahlen: int (keine Bruchstücke, v1).
  */
 
+import type { Locale } from "./i18n/config";
+
 // --- §1.1 Fehlerformat --------------------------------------------------
 
 /** Response-Body jeder Fehlerantwort — IMMER dieses Schema. */
 export interface ApiErrorBody {
-  detail: string; // deutsch, direkt anzeigbar (§1.4)
-  code: string; // stabil, z.B. "TICKER_NOT_FOUND" — steuert nur UI-Verhalten
+  detail: string; // immer deutsch; auf /en wird über `code` übersetzt (§1.1)
+  code: string; // stabil, z.B. "TICKER_NOT_FOUND" — steuert UI-Verhalten + Text
 }
 
 // --- §1.5 Gemeinsame Bausteine -------------------------------------------
 
 export type Period = "6mo" | "1y" | "2y" | "5y";
+/** Sprache der generierten Texte (§1.4) — identisch mit dem UI-Locale. */
+export type Lang = Locale;
 export type Side = "BUY" | "SELL";
 
 /** DER einzige Weg, ein Portfolio zu übergeben. Beliebige positive Skala
@@ -97,13 +103,14 @@ export interface RiskAnalyzeOut {
 export interface RiskAmpelIn {
   portfolio: PortfolioIn;
   period?: Period;
+  lang: Lang;
 }
 
 export type AmpelStatus = "green" | "yellow" | "red";
 
 export interface AmpelOut {
   id: "concentration" | "diversification" | "volatility";
-  title: string; // deutsch, z.B. "Klumpenrisiko"
+  title: string; // in `lang`, z.B. "Klumpenrisiko" / "Concentration risk"
   status: AmpelStatus;
   value: number;
   explanation: string; // depot-spezifisch, fertig formatiert
@@ -114,9 +121,7 @@ export interface RiskAmpelOut {
   ampeln: AmpelOut[]; // immer genau 3, feste Reihenfolge
 }
 
-// --- GET /risk/benchmarks, POST /risk/benchmark-compare ---------------------
-// Noch nicht Teil von API_CONTRACT.md (neu), Schemas siehe
-// backend/src/sentinel_api/schemas/risk.py.
+// --- §2.13 GET /risk/benchmarks, POST /risk/benchmark-compare ---------------
 
 export interface RiskProfileOut {
   metrics: RiskMetricsOut;
@@ -127,7 +132,7 @@ export interface RiskProfileOut {
 
 export interface BenchmarkOptionOut {
   id: string; // "msci_world" | "sp500", feste Liste
-  title: string; // deutsch, z.B. "MSCI World (URTH)"
+  title: string; // Eigenname, sprachunabhängig, z.B. "MSCI World (URTH)"
 }
 
 export interface BenchmarksOut {
@@ -138,6 +143,7 @@ export interface BenchmarkCompareIn {
   portfolio: PortfolioIn;
   benchmark_id: string;
   period?: Period;
+  lang: Lang;
 }
 
 export interface BenchmarkCompareOut {
@@ -148,9 +154,7 @@ export interface BenchmarkCompareOut {
   comparison: string; // titel-frei, beschreibend, keine Kaufempfehlung (Prinzip 3)
 }
 
-// --- POST /risk/correlation --------------------------------------------------
-// Noch nicht Teil von API_CONTRACT.md (neu), Schema siehe
-// backend/src/sentinel_api/schemas/risk.py.
+// --- §2.14 POST /risk/correlation --------------------------------------------
 
 export interface CorrelationIn {
   portfolio: PortfolioIn;
@@ -167,6 +171,7 @@ export interface CorrelationOut {
 export interface OptimizeIn {
   tickers: string[]; // bewusst keine Gewichte — der Optimizer bestimmt sie
   period?: Period;
+  lang: Lang;
 }
 
 export interface OptimizeOut {
@@ -238,6 +243,7 @@ export interface AccountValuationOut {
 export interface StressReplayIn {
   portfolio: PortfolioIn;
   preset_id: string; // "gfc_2008" | "covid_2020" | "rates_2022"
+  lang: Lang;
 }
 
 export interface StressReplayOut {
@@ -274,6 +280,7 @@ export interface StressPresetsOut {
 export interface MonteCarloIn {
   portfolio: PortfolioIn;
   horizon_years: 1 | 5 | 10;
+  lang: Lang;
 }
 
 export interface MonteCarloOut {
@@ -300,10 +307,9 @@ export interface MonteCarloOut {
 // --- §2.12a POST /portfolio/upload --------------------------------------------
 // Request: multipart/form-data (Feld "file"). Response: PortfolioIn.
 
-// --- GET /news/headlines --------------------------------------------------
-// Noch nicht Teil von API_CONTRACT.md (neu), Schema siehe
-// backend/src/sentinel_api/schemas/news.py. Bewusst OHNE LLM/AI-Gate
-// (SENTINEL_AI_ENABLED) — reiner RSS-Fetch, immer verfügbar.
+// --- §2.15 GET /news/headlines?ticker=&lang= ----------------------------------
+// Bewusst OHNE LLM/AI-Gate (SENTINEL_AI_ENABLED) — reiner RSS-Fetch, immer
+// verfügbar. `lang` wählt die Google-News-Ausgabe (deutsch/englisch).
 
 export interface NewsHeadlineOut {
   title: string;
@@ -315,4 +321,12 @@ export interface NewsHeadlineOut {
 export interface NewsHeadlinesOut {
   ticker: string;
   headlines: NewsHeadlineOut[];
+}
+
+// --- §2.16 POST /reports/risk-summary -----------------------------------------
+// Response: application/pdf (Blob), komplett in `lang`.
+
+export interface ReportRiskSummaryIn {
+  portfolio: PortfolioIn;
+  lang: Lang;
 }

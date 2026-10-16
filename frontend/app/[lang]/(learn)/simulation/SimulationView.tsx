@@ -125,7 +125,7 @@ function EmptyHint() {
 }
 
 function SimulationResult({ positions }: { positions: PositionValueOut[] }) {
-  const { dict } = useI18n();
+  const { dict, locale } = useI18n();
   const weights = derivePortfolioWeights(positions);
   const [selectedHorizon, setSelectedHorizon] = useState<Horizon | null>(
     null,
@@ -135,6 +135,7 @@ function SimulationResult({ positions }: { positions: PositionValueOut[] }) {
     queryKey: [
       "simulation",
       "monte-carlo",
+      locale,
       canonicalWeights(weights),
       selectedHorizon,
     ],
@@ -142,6 +143,7 @@ function SimulationResult({ positions }: { positions: PositionValueOut[] }) {
       postSimulationMonteCarlo({
         portfolio: { weights },
         horizon_years: selectedHorizon!,
+        lang: locale,
       }),
     enabled: selectedHorizon !== null,
   });
@@ -217,11 +219,6 @@ function SimulationChart({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* I18N_DECISIONS.md §5: explanation/lesson/disclaimer bleiben
-          unübersetzt vom Backend (Phase-2-Frage). */}
-      {locale !== "de" && (
-        <p className="text-xs text-faint italic">{dict.simulation.germanOnlyNotice}</p>
-      )}
 
       {/* Frequenz-Formulierung 1:1 vom Backend übernommen (MONTE_CARLO_
           DECISIONS §5): das Frontend formuliert keine eigene

@@ -17,9 +17,10 @@ export function ReportDownloadButton({
 }: {
   portfolio: PortfolioIn;
 }) {
-  const { dict } = useI18n();
+  const { dict, locale } = useI18n();
   const mutation = useMutation({
-    mutationFn: () => postReportRiskSummary(portfolio),
+    // Report komplett in der UI-Sprache (Texte, Zahlen, Datumsformat).
+    mutationFn: () => postReportRiskSummary({ portfolio, lang: locale }),
     onSuccess: (blob) => {
       // Kein <a href> auf eine URL — der Blob existiert nur im Speicher,
       // daher der klassische createObjectURL-Trick für einen sofortigen
@@ -27,7 +28,7 @@ export function ReportDownloadButton({
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "sentinel-risiko-report.pdf";
+      link.download = dict.reportDownload.filename;
       document.body.appendChild(link);
       link.click();
       link.remove();
