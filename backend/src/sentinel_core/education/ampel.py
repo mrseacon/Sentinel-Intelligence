@@ -21,14 +21,14 @@ from sentinel_core.constants import (
     AMPEL_VOL_YELLOW_MAX,
 )
 from sentinel_core.education.explanations import (
-    LESSON_CONCENTRATION,
-    LESSON_DIVERSIFICATION,
-    LESSON_VOLATILITY,
     AmpelStatus,
+    ampel_lesson,
+    ampel_title,
     concentration_explanation,
     diversification_explanation,
     volatility_explanation,
 )
+from sentinel_core.i18n import DEFAULT_LANG, Lang
 from sentinel_core.risk.metrics import (
     diversification_ratio,
     herfindahl_index,
@@ -38,7 +38,7 @@ from sentinel_core.risk.metrics import (
 
 
 class Ampel(BaseModel):
-    """One traffic light: machine-readable id plus German user-facing texts."""
+    """One traffic light: machine-readable id plus localized user-facing texts."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -74,43 +74,47 @@ def volatility_status(annualized_vol: float) -> AmpelStatus:
     return "red"
 
 
-def concentration_ampel(weights: dict[str, float]) -> Ampel:
+def concentration_ampel(weights: dict[str, float], lang: Lang = DEFAULT_LANG) -> Ampel:
     normalized = normalize_weights(weights)
     hhi = herfindahl_index(weights)
     status = concentration_status(hhi)
     return Ampel(
         name="concentration",
-        title="Klumpenrisiko",
+        title=ampel_title("concentration", lang),
         status=status,
         value=hhi,
-        explanation=concentration_explanation(status, hhi, normalized),
-        lesson=LESSON_CONCENTRATION,
+        explanation=concentration_explanation(status, hhi, normalized, lang),
+        lesson=ampel_lesson("concentration", lang),
     )
 
 
-def diversification_ampel(weights: dict[str, float], returns: pd.DataFrame) -> Ampel:
+def diversification_ampel(
+    weights: dict[str, float], returns: pd.DataFrame, lang: Lang = DEFAULT_LANG
+) -> Ampel:
     normalized = normalize_weights(weights)
     n_positions = int((normalized > 0).sum())
     ratio = diversification_ratio(weights, returns)
     status = diversification_status(ratio, n_positions)
     return Ampel(
         name="diversification",
-        title="Diversifikation",
+        title=ampel_title("diversification", lang),
         status=status,
         value=ratio,
-        explanation=diversification_explanation(status, ratio, n_positions),
-        lesson=LESSON_DIVERSIFICATION,
+        explanation=diversification_explanation(status, ratio, n_positions, lang),
+        lesson=ampel_lesson("diversification", lang),
     )
 
 
-def volatility_ampel(weights: dict[str, float], returns: pd.DataFrame) -> Ampel:
+def volatility_ampel(
+    weights: dict[str, float], returns: pd.DataFrame, lang: Lang = DEFAULT_LANG
+) -> Ampel:
     annualized_vol = portfolio_volatility(weights, returns)
     status = volatility_status(annualized_vol)
     return Ampel(
         name="volatility",
-        title="Volatilität",
+        title=ampel_title("volatility", lang),
         status=status,
         value=annualized_vol,
-        explanation=volatility_explanation(status, annualized_vol),
-        lesson=LESSON_VOLATILITY,
+        explanation=volatility_explanation(status, annualized_vol, lang),
+        lesson=ampel_lesson("volatility", lang),
     )

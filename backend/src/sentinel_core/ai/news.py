@@ -25,12 +25,19 @@ from sentinel_core.constants import (
     NEWS_MAX_HEADLINES,
     NEWS_THROTTLE_SECONDS,
 )
+from sentinel_core.i18n import Lang
 
 # Google throttles/blocks default Python user agents (§9).
 _HEADERS = {"User-Agent": "Mozilla/5.0 (Sentinel education app)"}
 _TIMEOUT_SECONDS = 10.0
-# hl/gl/ceid force the English US edition — the LLM prompt expects it.
-_FEED_URL = "https://news.google.com/rss/search?q={query}&hl=en-US&gl=US&ceid=US:en"
+_FEED_URL = "https://news.google.com/rss/search?q={query}&{edition}"
+# Google News edition (hl/gl/ceid) and the ticker query word per UI
+# language. The AI pipeline (fetch_headlines) always uses the English US
+# edition — its LLM prompt expects it.
+_EDITIONS: dict[Lang, tuple[str, str]] = {
+    "en": ("hl=en-US&gl=US&ceid=US:en", "stock"),
+    "de": ("hl=de&gl=DE&ceid=DE:de", "Aktie"),
+}
 
 
 class Headline(BaseModel):
@@ -94,7 +101,7 @@ def fetch_headlines(tickers: list[str]) -> list[Headline]:
     return headlines
 
 
-def fetch_ticker_headlines(ticker: str) -> list[Headline]:
+def fetch_ticker_headlines(ticker: str, lang: Lang = "en") -> list[Headline]:
     """Company headlines for ONE ticker, no macro queries.
 
     Deliberately separate from fetch_headlines(), not a thin wrapper
@@ -109,12 +116,15 @@ def fetch_ticker_headlines(ticker: str) -> list[Headline]:
     untouched for the (unwired) AI sentiment pipeline, which relies on
     its macro-first mix and cap.
 
+    `lang` picks the Google News edition (German or English headlines).
+
     Never raises: an unreachable feed simply yields [] (§9/§14).
     """
     headlines: list[Headline] = []
     seen_titles: set[str] = set()
+    edition, query_word = _EDITIONS[lang]
 
-    for raw_item in _fetch_feed(f'"{ticker}" stock'):
+    for raw_item in _fetch_feed(f'"{ticker}" {query_word}', edition):
         if len(headlines) >= NEWS_LIMIT_PER_TICKER:
             break
         title, source = _split_title(raw_item["title"])
@@ -137,10 +147,10 @@ def fetch_ticker_headlines(ticker: str) -> list[Headline]:
     return headlines
 
 
-def _fetch_feed(query: str) -> list[dict[str, str]]:
+def _fetch_feed(query: str, edition: str = _EDITIONS["en"][0]) -> list[dict[str, str]]:
     """Raw title/link/pubDate of one RSS query; any failure yields []
     (warning-level semantics: news must never break the caller, §9/§14)."""
-    url = _FEED_URL.format(query=quote(query))
+    url = _FEED_URL.format(query=quote(query), edition=edition)
     try:
         response = requests.get(url, headers=_HEADERS, timeout=_TIMEOUT_SECONDS)
         response.raise_for_status()

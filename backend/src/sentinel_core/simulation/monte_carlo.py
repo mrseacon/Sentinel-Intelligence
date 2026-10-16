@@ -30,11 +30,12 @@ from sentinel_core.constants import (
 )
 from sentinel_core.data.loader import load_multiple_assets
 from sentinel_core.education.explanations import (
-    SIM_DISCLAIMER,
-    SIM_LESSON,
+    simulation_disclaimer,
     simulation_explanation,
+    simulation_lesson,
 )
 from sentinel_core.errors import SentinelError
+from sentinel_core.i18n import DEFAULT_LANG, Lang
 from sentinel_core.risk.metrics import portfolio_returns
 
 # History window for the internally loaded price basis (~5 trading years).
@@ -77,6 +78,7 @@ def simulate(
     weights: dict[str, float],
     horizon_years: int,
     returns: pd.DataFrame | None = None,
+    lang: Lang = DEFAULT_LANG,
 ) -> MonteCarloResult:
     """Bootstrap fan for today's allocation over a fixed horizon.
 
@@ -140,6 +142,7 @@ def simulate(
         limiting_ticker=limiting_ticker,
         recycling_factor=recycling_factor,
         thin_history=thin_history,
+        lang=lang,
     )
 
     return MonteCarloResult(
@@ -159,8 +162,8 @@ def simulate(
         recycling_factor=recycling_factor,
         thin_history=thin_history,
         explanation=explanation,
-        lesson=SIM_LESSON,
-        disclaimer=SIM_DISCLAIMER,
+        lesson=simulation_lesson(lang),
+        disclaimer=simulation_disclaimer(lang),
     )
 
 

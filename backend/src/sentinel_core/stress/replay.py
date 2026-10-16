@@ -31,11 +31,13 @@ from sentinel_core.constants import (
 )
 from sentinel_core.data.loader import load_multiple_assets
 from sentinel_core.education.explanations import (
-    STRESS_DISCLAIMER,
-    STRESS_LESSONS,
+    stress_disclaimer,
     stress_explanation,
+    stress_lesson,
+    stress_title,
 )
 from sentinel_core.errors import SentinelError
+from sentinel_core.i18n import DEFAULT_LANG, Lang
 from sentinel_core.risk.metrics import (
     daily_returns,
     max_drawdown,
@@ -65,7 +67,7 @@ class ScenarioPreset(BaseModel):
 
 
 class StressReplayResult(BaseModel):
-    """Replay outcome: path, metrics, coverage and German texts."""
+    """Replay outcome: path, metrics, coverage and localized texts."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -87,7 +89,7 @@ class StressReplayResult(BaseModel):
     disclaimer: str
 
 
-def get_preset(preset_id: str) -> ScenarioPreset:
+def get_preset(preset_id: str, lang: Lang = DEFAULT_LANG) -> ScenarioPreset:
     if preset_id not in STRESS_PRESETS:
         known = ", ".join(sorted(STRESS_PRESETS))
         raise SentinelError(
@@ -96,7 +98,7 @@ def get_preset(preset_id: str) -> ScenarioPreset:
     raw = STRESS_PRESETS[preset_id]
     return ScenarioPreset(
         id=preset_id,
-        title=raw["title"],
+        title=stress_title(preset_id, lang),
         start=date.fromisoformat(raw["start"]),
         end=date.fromisoformat(raw["end"]),
     )
@@ -137,13 +139,14 @@ def replay(
     weights: dict[str, float],
     preset_id: str,
     cache_dir: Path = DEFAULT_CACHE_DIR,
+    lang: Lang = DEFAULT_LANG,
 ) -> StressReplayResult:
     """Replay today's allocation through a historical crisis window.
 
     Constant weights over the whole window (same assumption as score and
     Ampel — see STRESS_TEST_DECISIONS.md §4).
     """
-    preset = get_preset(preset_id)
+    preset = get_preset(preset_id, lang)
     normalized = normalize_weights(weights)
 
     # Exclusion BEFORE return computation (rule 1 in the module docstring).
@@ -164,7 +167,7 @@ def replay(
     coverage = float(normalized[list(included)].sum()) if included else 0.0
     if coverage < STRESS_MIN_COVERAGE:
         raise SentinelError(
-            f"Szenario '{preset.title}' ist für dieses Depot nicht "
+            f"Szenario '{stress_title(preset.id)}' ist für dieses Depot nicht "
             f"aussagekräftig: Nur {coverage * 100:.0f} % des Depotgewichts "
             f"waren im Zeitraum bereits handelbar (Minimum: "
             f"{STRESS_MIN_COVERAGE * 100:.0f} %). Nicht verfügbar: "
@@ -190,6 +193,7 @@ def replay(
         total_return=total_return,
         coverage=coverage,
         excluded=sorted(excluded),
+        lang=lang,
     )
 
     return StressReplayResult(
@@ -206,6 +210,6 @@ def replay(
         included_tickers=sorted(included),
         excluded_tickers=sorted(excluded),
         explanation=explanation,
-        lesson=STRESS_LESSONS[preset.id],
-        disclaimer=STRESS_DISCLAIMER,
+        lesson=stress_lesson(preset.id, lang),
+        disclaimer=stress_disclaimer(lang),
     )

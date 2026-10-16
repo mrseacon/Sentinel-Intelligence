@@ -3,6 +3,8 @@ three lights, plus the regression guard for design principle 3 (never an
 action recommendation for a specific security — legally relevant).
 """
 
+import re
+
 import pandas as pd
 import pytest
 
@@ -139,48 +141,98 @@ FORBIDDEN_ACTION_STEMS = [
     "trenn dich",
 ]
 
+# English counterpart, as word-boundary regexes instead of substrings so
+# descriptive phrases like "sell-off" or "short history" don't trip it.
+FORBIDDEN_ACTION_PATTERNS_EN = [
+    r"\bbuy\w*",
+    r"\bsell(?!-off)\w*",
+    r"\bpurchas\w*",
+    r"\bdump\w*",
+    r"\btrim\w*",
+    r"\boverweight\w*",
+    r"\bunderweight\w*",
+    r"\baccumulat\w*",
+    r"\bshort[- ]sell\w*",
+    r"\bgo short\b",
+    r"\byou should\b",
+    r"\bwe recommend\b",
+    r"\bconsider (?:buying|selling|adding|reducing|increasing)\b",
+    r"\b(?:increase|reduce|cut|add to) your (?:position|holding|stake)\w*",
+    r"\btake profits?\b",
+    r"\bget rid of\b",
+]
+
+
+def find_action_language(text: str, lang: str) -> str | None:
+    """Return the first forbidden action term in `text`, or None."""
+    lowered = text.lower()
+    if lang == "de":
+        return next((s for s in FORBIDDEN_ACTION_STEMS if s in lowered), None)
+    for pattern in FORBIDDEN_ACTION_PATTERNS_EN:
+        match = re.search(pattern, lowered)
+        if match:
+            return match.group(0)
+    return None
+
+
 SAMPLE_TICKERS = ["AAPL", "MSFT", "NVDA", "SAP.DE", "ALV.DE"]
 
 
-def all_sample_ampeln() -> list[ampel.Ampel]:
+def all_sample_ampeln(lang: str = "de") -> list[ampel.Ampel]:
     """One Ampel per (light, status) combination — texts of every branch."""
     five = SAMPLE_TICKERS
     return [
-        ampel.concentration_ampel({"NVDA": 0.5, "AAPL": 0.3, "MSFT": 0.2}),
+        ampel.concentration_ampel({"NVDA": 0.5, "AAPL": 0.3, "MSFT": 0.2}, lang),
         ampel.concentration_ampel(
-            {"AAPL": 0.3, "MSFT": 0.3, "NVDA": 0.2, "SAP.DE": 0.2}
+            {"AAPL": 0.3, "MSFT": 0.3, "NVDA": 0.2, "SAP.DE": 0.2}, lang
         ),
-        ampel.concentration_ampel({t: 1.0 for t in five + ["MBG.DE", "SIE.DE"]}),
-        ampel.diversification_ampel({t: 1.0 for t in five}, sample_returns(five)),
+        ampel.concentration_ampel({t: 1.0 for t in five + ["MBG.DE", "SIE.DE"]}, lang),
+        # red with more than three positions: covers the top-3 clause
+        ampel.concentration_ampel(
+            {"NVDA": 0.7, "AAPL": 0.1, "MSFT": 0.1, "SAP.DE": 0.1}, lang
+        ),
+        ampel.diversification_ampel({t: 1.0 for t in five}, sample_returns(five), lang),
         ampel.diversification_ampel(
-            {t: 1.0 for t in five[:4]}, sample_returns(five[:4])
+            {t: 1.0 for t in five[:4]}, sample_returns(five[:4]), lang
         ),
         ampel.diversification_ampel(
-            {"AAPL": 0.5, "MSFT": 0.5}, alternating_returns(0.01, ["AAPL", "MSFT"])
+            {"AAPL": 0.5, "MSFT": 0.5},
+            alternating_returns(0.01, ["AAPL", "MSFT"]),
+            lang,
         ),
-        ampel.diversification_ampel({"AAPL": 1.0}, alternating_returns(0.01, ["AAPL"])),
-        ampel.volatility_ampel({"AAPL": 1.0}, alternating_returns(0.005, ["AAPL"])),
-        ampel.volatility_ampel({"AAPL": 1.0}, alternating_returns(0.012, ["AAPL"])),
-        ampel.volatility_ampel({"AAPL": 1.0}, alternating_returns(0.02, ["AAPL"])),
+        ampel.diversification_ampel(
+            {"AAPL": 1.0}, alternating_returns(0.01, ["AAPL"]), lang
+        ),
+        ampel.volatility_ampel(
+            {"AAPL": 1.0}, alternating_returns(0.005, ["AAPL"]), lang
+        ),
+        ampel.volatility_ampel(
+            {"AAPL": 1.0}, alternating_returns(0.012, ["AAPL"]), lang
+        ),
+        ampel.volatility_ampel(
+            {"AAPL": 1.0}, alternating_returns(0.02, ["AAPL"]), lang
+        ),
     ]
 
 
-def test_texts_never_recommend_actions_for_securities():
-    ampeln = all_sample_ampeln()
+@pytest.mark.parametrize("lang", ["de", "en"])
+def test_texts_never_recommend_actions_for_securities(lang):
+    ampeln = all_sample_ampeln(lang)
     # sanity: the samples must actually cover all three statuses
     assert {a.status for a in ampeln} == {"green", "yellow", "red"}
 
     for result in ampeln:
-        text = f"{result.explanation} {result.lesson}".lower()
-        for stem in FORBIDDEN_ACTION_STEMS:
-            assert stem not in text, (
-                f"Ampel '{result.name}' ({result.status}) enthält "
-                f"Handlungsverb-Stamm '{stem}': {text[:200]}"
-            )
+        text = f"{result.title} {result.explanation} {result.lesson}"
+        found = find_action_language(text, lang)
+        assert found is None, (
+            f"Ampel '{result.name}' ({result.status}, {lang}) enthält "
+            f"Handlungsformulierung '{found}': {text[:200]}"
+        )
 
 
-def test_lessons_are_static_and_ticker_free():
-    for result in all_sample_ampeln():
+@pytest.mark.parametrize("lang", ["de", "en"])
+def test_lessons_are_static_and_ticker_free(lang):
+    for result in all_sample_ampeln(lang):
         for ticker in SAMPLE_TICKERS:
             assert ticker.lower() not in result.lesson.lower(), (
                 f"Lernkarte der Ampel '{result.name}' nennt Wertpapier "

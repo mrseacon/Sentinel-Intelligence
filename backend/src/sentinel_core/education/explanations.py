@@ -1,11 +1,15 @@
-"""Static German explanation templates and lessons (ARCHITECTURE.md §5).
+"""Explanation texts and lessons (ARCHITECTURE.md §5), German and English.
 
 All texts are static templates with interpolated numbers — no LLM in the
 core path (principle 2, graceful degradation). Wording is strictly
 descriptive: NEVER an action recommendation for a specific security
 (principle 3 — legally relevant for operation from Germany). Imperatives
-are allowed only about concepts, never about securities. A regression
-test (test_ampel.py) enforces this — keep it in mind for every edit here.
+are allowed only about concepts, never about securities. Regression
+tests (test_ampel.py, test_i18n.py) enforce this for BOTH languages —
+keep it in mind for every edit here and in sentinel_core/i18n/catalog.py.
+
+This module holds the branching logic (status, optional clauses, plural)
+exactly once; the wording per language lives in the i18n catalog.
 
 Lessons are general concept cards: static, identical for every status,
 and free of any ticker names.
@@ -20,76 +24,54 @@ import pandas as pd
 from sentinel_core.constants import (
     BENCHMARK_SCORE_SIMILAR_BAND,
     BENCHMARK_VOL_SIMILAR_BAND,
+    STRESS_PRESETS,
 )
+from sentinel_core.i18n import DEFAULT_LANG, Lang
+from sentinel_core.i18n.catalog import TEXTS, t
+from sentinel_core.i18n.format import num, pct
 
 AmpelStatus = Literal["green", "yellow", "red"]
 
-LESSON_CONCENTRATION = (
-    "Klumpenrisiko entsteht, wenn einzelne Werte einen großen Teil des "
-    "Depots ausmachen. Der Herfindahl-Index (HHI) misst das: Er steigt, je "
-    "ungleicher das Kapital verteilt ist. Bei völliger Gleichverteilung "
-    "liegt er bei 1 geteilt durch die Anzahl der Positionen. Streuung über "
-    "mehrere Titel, Branchen und Regionen senkt die Abhängigkeit vom "
-    "Kursverlauf einzelner Werte: Diversifikation gilt als eines der "
-    "wenigen ‚kostenlosen' Mittel zur Risikosenkung."
-)
 
-LESSON_DIVERSIFICATION = (
-    "Diversifikation heißt, Kapital auf Werte zu verteilen, die sich nicht "
-    "im Gleichschritt bewegen. Die Diversification Ratio vergleicht die "
-    "durchschnittliche Schwankung der Einzelwerte mit der Schwankung des "
-    "Gesamtdepots: Werte deutlich über 1 zeigen, dass sich Schwankungen "
-    "teilweise gegenseitig ausgleichen. Der Effekt wächst mit der Zahl der "
-    "Positionen und sinkt, wenn sich die Werte sehr ähnlich verhalten, "
-    "etwa bei Titeln aus derselben Branche."
-)
+def ampel_title(ampel_id: str, lang: Lang = DEFAULT_LANG) -> str:
+    return t(lang, f"ampel.title.{ampel_id}")
 
-LESSON_VOLATILITY = (
-    "Volatilität misst, wie stark der Wert eines Depots um seinen "
-    "Durchschnitt schwankt (hier annualisiert, also auf ein Jahr "
-    "hochgerechnet). Sie ist das gängigste Risikomaß: Höhere Volatilität "
-    "bedeutet größere mögliche Ausschläge nach oben wie nach unten. "
-    "Volatilität ist keine Verlustprognose, aber ein Maß für die "
-    "Unsicherheit, mit der bei einem Depot zu rechnen ist."
-)
+
+def ampel_lesson(ampel_id: str, lang: Lang = DEFAULT_LANG) -> str:
+    return t(lang, f"ampel.lesson.{ampel_id}")
+
+
+def stress_title(preset_id: str, lang: Lang = DEFAULT_LANG) -> str:
+    return t(lang, f"stress.title.{preset_id}")
+
+
+def stress_lesson(preset_id: str, lang: Lang = DEFAULT_LANG) -> str:
+    return t(lang, f"stress.lesson.{preset_id}")
+
+
+def stress_disclaimer(lang: Lang = DEFAULT_LANG) -> str:
+    return t(lang, "stress.disclaimer")
+
+
+def simulation_lesson(lang: Lang = DEFAULT_LANG) -> str:
+    return t(lang, "simulation.lesson")
+
+
+def simulation_disclaimer(lang: Lang = DEFAULT_LANG) -> str:
+    return t(lang, "simulation.disclaimer")
+
+
+# German constants kept for existing imports (tests, callers without lang).
+LESSON_CONCENTRATION = TEXTS["de"]["ampel.lesson.concentration"]
+LESSON_DIVERSIFICATION = TEXTS["de"]["ampel.lesson.diversification"]
+LESSON_VOLATILITY = TEXTS["de"]["ampel.lesson.volatility"]
+STRESS_LESSONS = {pid: stress_lesson(pid) for pid in STRESS_PRESETS}
+STRESS_DISCLAIMER = stress_disclaimer()
+SIM_LESSON = simulation_lesson()
+SIM_DISCLAIMER = simulation_disclaimer()
 
 
 # --- stress test replay (STRESS_TEST_DECISIONS.md) ---------------------------
-# One static concept card per crisis preset, keyed by preset id. Like the
-# Ampel lessons: ticker-free, purely descriptive, past tense for history.
-
-STRESS_LESSONS = {
-    "gfc_2008": (
-        "Die Finanzkrise 2008/09 war eine systemische Krise: Fast alle "
-        "Aktien fielen gemeinsam, Korrelationen stiegen sprunghaft an. "
-        "Diversifikation innerhalb einer einzigen Anlageklasse bot nur "
-        "begrenzten Schutz. Deshalb betrachtet man Streuung über "
-        "Anlageklassen, Regionen und Branchen zusammen. Der breite Markt "
-        "brauchte Jahre, um das Vorkrisenniveau wieder zu erreichen."
-    ),
-    "covid_2020": (
-        "Der Corona-Crash 2020 war der schnellste Einbruch der "
-        "Börsengeschichte: rund ein Drittel Verlust in fünf Wochen. Ebenso "
-        "ungewöhnlich war die anschließende Erholung. Wer im Tief ausstieg, "
-        "verpasste die stärksten Erholungstage, denn den richtigen "
-        "Zeitpunkt zu erraten gelingt selten. Volatilität bedeutet "
-        "Ausschläge in beide Richtungen."
-    ),
-    "rates_2022": (
-        "Die Zinswende 2022 zeigte einen langsamen, monatelangen Bärenmarkt "
-        "statt eines schnellen Crashs. Besonders stark fielen Wachstums- "
-        "und Technologiewerte, deren Bewertungen empfindlich auf steigende "
-        "Zinsen reagieren. Depots mit ausgeprägtem Branchen-Klumpen traf es "
-        "überdurchschnittlich. Konzentration zeigt ihre Wirkung oft erst "
-        "im Abschwung."
-    ),
-}
-
-STRESS_DISCLAIMER = (
-    "Historische Szenarien beschreiben die Vergangenheit und sind keine "
-    "Prognose. Annahme: Deine heutigen Gewichte bleiben im gesamten "
-    "Zeitraum konstant."
-)
 
 
 def stress_explanation(
@@ -98,21 +80,26 @@ def stress_explanation(
     total_return: float,
     coverage: float,
     excluded: list[str],
+    lang: Lang = DEFAULT_LANG,
 ) -> str:
     """Depot-specific replay text: past tense, descriptive, with numbers."""
-    direction = "verloren" if total_return < 0 else "gewonnen"
-    # "Im Szenario „X““ instead of "In der/dem X" — preset titles have
-    # different grammatical genders (die Finanzkrise, der Corona-Crash).
-    text = (
-        f"Im Szenario „{title}“ wäre dein Depot zeitweise um "
-        f"{_pct(abs(max_dd))} eingebrochen (maximaler Drawdown). Über den "
-        f"gesamten Zeitraum hätte es {_pct(abs(total_return))} {direction}."
+    direction = (
+        "stress.direction_lost" if total_return < 0 else "stress.direction_gained"
+    )
+    text = t(
+        lang,
+        "stress.explanation",
+        title=title,
+        drawdown=pct(abs(max_dd), lang),
+        total_return=pct(abs(total_return), lang),
+        direction=t(lang, direction),
     )
     if excluded:
-        text += (
-            f" Simuliert wurden {_pct(coverage)} deines Depots. Nicht "
-            f"enthalten: {', '.join(excluded)} (im Zeitraum noch nicht "
-            f"handelbar)."
+        text += t(
+            lang,
+            "stress.excluded_clause",
+            coverage=pct(coverage, lang),
+            tickers=", ".join(excluded),
         )
     return text
 
@@ -120,25 +107,6 @@ def stress_explanation(
 # --- Monte Carlo simulation (MONTE_CARLO_DECISIONS.md) -----------------------
 # Frequency wording instead of probability language, subjunctive, median
 # never labeled "expected" — the fan must not read as a forecast.
-
-SIM_LESSON = (
-    "Eine Monte-Carlo-Simulation beantwortet nicht, wie es kommt, sondern "
-    "wie unterschiedlich es kommen könnte: Sie mischt die tatsächlichen "
-    "vergangenen Tagesbewegungen eines Depots zufällig neu und spielt "
-    "daraus viele tausend mögliche Verläufe durch (Bootstrap-Verfahren). "
-    "Die Bandbreite wächst mit dem Zeithorizont: Je weiter die Zukunft, "
-    "desto weniger lässt sie sich eingrenzen. Der mittlere Verlauf ist "
-    "kein Versprechen, sondern nur der Median der Simulationen. Und: Die "
-    "Simulation kennt nur die Vergangenheit. Ereignisse, die es dort "
-    "nicht gab, kann sie nicht zeigen."
-)
-
-SIM_DISCLAIMER = (
-    "Simulation auf Basis vergangener Tagesrenditen, keine Vorhersage. "
-    "Die tatsächliche Entwicklung kann außerhalb jeder gezeigten "
-    "Bandbreite liegen. Annahme: Deine heutigen Gewichte bleiben im "
-    "gesamten Zeitraum konstant."
-)
 
 
 def simulation_explanation(
@@ -150,124 +118,87 @@ def simulation_explanation(
     limiting_ticker: str | None,
     recycling_factor: float,
     thin_history: bool,
+    lang: Lang = DEFAULT_LANG,
 ) -> str:
     """Frequency-worded fan summary with mandatory data-basis transparency."""
-    year_word = "Jahr" if horizon_years == 1 else "Jahren"
-    limit_clause = f", begrenzt durch {limiting_ticker}" if limiting_ticker else ""
-    text = (
-        f"In 8 von 10 simulierten Verläufen lag der Depotwert nach "
-        f"{horizon_years} {year_word} zwischen dem {_num(final_p10)}-Fachen "
-        f"und dem {_num(final_p90)}-Fachen des heutigen Werts; der mittlere "
-        f"simulierte Verlauf endete beim {_num(final_p50)}-Fachen. "
-        f"Datenbasis: {_num1(history_years)} Jahre tägliche "
-        f"Kurshistorie{limit_clause}."
+    year_key = (
+        "simulation.year_singular" if horizon_years == 1 else "simulation.year_plural"
+    )
+    limit_clause = (
+        t(lang, "simulation.limit_clause", ticker=limiting_ticker)
+        if limiting_ticker
+        else ""
+    )
+    text = t(
+        lang,
+        "simulation.explanation",
+        horizon=str(horizon_years),
+        year_word=t(lang, year_key),
+        p10=num(final_p10, lang),
+        p50=num(final_p50, lang),
+        p90=num(final_p90, lang),
+        history_years=num(history_years, lang, 1),
+        limit_clause=limit_clause,
     )
     if thin_history:
-        text += (
-            f" Achtung, dünne Datenbasis: Für diesen Horizont wird die "
-            f"verfügbare Historie rechnerisch rund "
-            f"{_num1(recycling_factor)}-mal wiederverwendet. Seltene "
-            f"Ereignisse wie Crashs fehlen darin womöglich vollständig."
+        text += t(
+            lang, "simulation.thin_history", recycling=num(recycling_factor, lang, 1)
         )
     return text
 
 
-def _num1(value: float) -> str:
-    """7.14 -> '7,1' (German decimal comma, one decimal)."""
-    return f"{value:.1f}".replace(".", ",")
-
-
-def _pct(share: float) -> str:
-    """0.42 -> '42 %' (German spacing)."""
-    return f"{share * 100:.0f} %"
-
-
-def _num(value: float) -> str:
-    """1.34 -> '1,34' (German decimal comma)."""
-    return f"{value:.2f}".replace(".", ",")
+# --- Risk-Ampel ---------------------------------------------------------------
 
 
 def concentration_explanation(
-    status: AmpelStatus, hhi: float, weights: pd.Series
+    status: AmpelStatus,
+    hhi: float,
+    weights: pd.Series,
+    lang: Lang = DEFAULT_LANG,
 ) -> str:
     """Depot-specific text naming the concrete trigger (top position)."""
-    top_ticker = str(weights.idxmax())
-    top_share = float(weights.max())
-
-    if status == "green":
-        return (
-            f"Dein Depot ist ausgewogen verteilt (HHI {_num(hhi)}): Die "
-            f"größte Position ist {top_ticker} mit {_pct(top_share)}. Kein "
-            f"einzelner Wert dominiert die Entwicklung."
-        )
-    if status == "yellow":
-        return (
-            f"Ein spürbarer Teil deines Depots hängt an wenigen Werten: "
-            f"{top_ticker} macht {_pct(top_share)} aus (HHI {_num(hhi)})."
-        )
+    values = {
+        "ticker": str(weights.idxmax()),
+        "share": pct(float(weights.max()), lang),
+        "hhi": num(hhi, lang),
+    }
+    if status != "red":
+        return t(lang, f"concentration.{status}", **values)
     top3_clause = ""
     if len(weights) > 3:
         top3_share = float(weights.nlargest(3).sum())
-        top3_clause = (
-            f", die größten drei Positionen machen zusammen " f"{_pct(top3_share)} aus"
+        top3_clause = t(
+            lang, "concentration.top3_clause", top3_share=pct(top3_share, lang)
         )
-    return (
-        f"Dein Depot ist stark konzentriert: {_pct(top_share)} stecken "
-        f"allein in {top_ticker}{top3_clause} (HHI {_num(hhi)}). Entwickelt "
-        f"sich dieser Wert schlecht, schlägt das nahezu ungebremst auf dein "
-        f"gesamtes Depot durch."
-    )
+    return t(lang, "concentration.red", top3_clause=top3_clause, **values)
 
 
 def diversification_explanation(
-    status: AmpelStatus, ratio: float, n_positions: int
+    status: AmpelStatus,
+    ratio: float,
+    n_positions: int,
+    lang: Lang = DEFAULT_LANG,
 ) -> str:
-    if status == "green":
-        return (
-            f"Dein Depot streut gut: {n_positions} Positionen, deren "
-            f"Schwankungen sich teilweise gegenseitig ausgleichen "
-            f"(Diversification Ratio {_num(ratio)})."
-        )
-    if status == "yellow":
-        return (
-            f"Dein Depot streut nur begrenzt: {n_positions} "
-            f"{'Position' if n_positions == 1 else 'Positionen'} mit "
-            f"Diversification Ratio {_num(ratio)}. Ein Teil der "
-            f"Schwankungen gleicht sich aus, aber einzelne Werte prägen "
-            f"die Entwicklung noch deutlich."
-        )
-    if n_positions == 1:
-        return (
-            "Dein Depot besteht aus einer einzigen Position: Es gibt "
-            "keine Streuung. Die Schwankungen dieses Werts sind eins zu "
-            "eins die Schwankungen deines Depots."
-        )
-    return (
-        f"Dein Depot streut kaum: Die {n_positions} Positionen bewegen "
-        f"sich weitgehend im Gleichschritt (Diversification Ratio "
-        f"{_num(ratio)}). Schwache Phasen treffen dann meist alle Werte "
-        f"gleichzeitig."
+    if status == "red" and n_positions == 1:
+        return t(lang, "diversification.red_single")
+    position_key = (
+        "diversification.position_singular"
+        if n_positions == 1
+        else "diversification.position_plural"
+    )
+    return t(
+        lang,
+        f"diversification.{status}",
+        n=str(n_positions),
+        ratio=num(ratio, lang),
+        position_word=t(lang, position_key),
     )
 
 
-def volatility_explanation(status: AmpelStatus, annualized_vol: float) -> str:
-    if status == "green":
-        return (
-            f"Dein Depot schwankt moderat: rund {_pct(annualized_vol)} pro "
-            f"Jahr. Zwischenzeitliche Rücksetzer bleiben typischerweise "
-            f"überschaubar."
-        )
-    if status == "yellow":
-        return (
-            f"Dein Depot schwankt spürbar: rund {_pct(annualized_vol)} pro "
-            f"Jahr. In turbulenten Marktphasen sind zeitweise deutliche "
-            f"Rückgänge des Depotwerts realistisch."
-        )
-    return (
-        f"Dein Depot schwankt stark: rund {_pct(annualized_vol)} pro Jahr. "
-        f"In schwachen Marktphasen kann der Depotwert zeitweise erheblich "
-        f"einbrechen."
-    )
+def volatility_explanation(
+    status: AmpelStatus, annualized_vol: float, lang: Lang = DEFAULT_LANG
+) -> str:
+    return t(lang, f"volatility.{status}", vol=pct(annualized_vol, lang))
 
 
 # --- benchmark comparison (risk/benchmark-compare) ---------------------------
@@ -284,33 +215,38 @@ def benchmark_comparison_explanation(
     benchmark_volatility: float,
     portfolio_score: float,
     benchmark_score: float,
+    lang: Lang = DEFAULT_LANG,
 ) -> str:
     """Depot-specific comparison text: descriptive, never a recommendation,
     ticker-free (only the benchmark's own name is mentioned, never a
     position from the portfolio)."""
     vol_diff = portfolio_volatility - benchmark_volatility
     if abs(vol_diff) < BENCHMARK_VOL_SIMILAR_BAND:
-        vol_clause = f"schwankt ähnlich stark wie der {benchmark_title}"
+        vol_key = "benchmark.vol_similar"
     elif vol_diff > 0:
-        vol_clause = f"schwankt stärker als der {benchmark_title}"
+        vol_key = "benchmark.vol_higher"
     else:
-        vol_clause = f"schwankt ruhiger als der {benchmark_title}"
+        vol_key = "benchmark.vol_lower"
 
     score_diff = portfolio_score - benchmark_score
     if abs(score_diff) < BENCHMARK_SCORE_SIMILAR_BAND:
-        score_clause = "Der Risiko-Score liegt in einer ähnlichen Größenordnung."
-    elif score_diff > 0:
-        score_clause = (
-            f"Der Risiko-Score liegt {round(score_diff)} Punkte höher als "
-            f"beim {benchmark_title}."
-        )
+        score_clause = t(lang, "benchmark.score_similar")
     else:
-        score_clause = (
-            f"Der Risiko-Score liegt {round(abs(score_diff))} Punkte "
-            f"niedriger als beim {benchmark_title}."
+        score_key = (
+            "benchmark.score_higher" if score_diff > 0 else "benchmark.score_lower"
+        )
+        score_clause = t(
+            lang,
+            score_key,
+            points=str(round(abs(score_diff))),
+            title=benchmark_title,
         )
 
-    return (
-        f"Dein Depot {vol_clause}: {_pct(portfolio_volatility)} gegenüber "
-        f"{_pct(benchmark_volatility)} pro Jahr. {score_clause}"
+    return t(
+        lang,
+        "benchmark.comparison",
+        vol_clause=t(lang, vol_key, title=benchmark_title),
+        portfolio_vol=pct(portfolio_volatility, lang),
+        benchmark_vol=pct(benchmark_volatility, lang),
+        score_clause=score_clause,
     )
