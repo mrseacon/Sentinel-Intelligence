@@ -39,7 +39,7 @@ test.describe("Fehlerfall: Backend nicht erreichbar", () => {
       .filter({ hasText: "Server nicht erreichbar" });
     await expect(errorBanner).toBeVisible({ timeout: 15_000 });
     await expect(errorBanner).toContainText(
-      "Server nicht erreichbar. Läuft das Backend?",
+      "Server nicht erreichbar. Bitte in einem Moment erneut versuchen.",
     );
     const retryButton = errorBanner.getByRole("button", {
       name: "Erneut versuchen",

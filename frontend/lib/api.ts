@@ -73,7 +73,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     // Netzwerkfehler (Backend nicht erreichbar) — gleiche Behandlung
     // wie ein serverseitiges UPSTREAM_UNAVAILABLE (§3-Tabelle: Retry).
     throw new ApiError(503, {
-      detail: "Server nicht erreichbar. Läuft das Backend?",
+      detail: "Server nicht erreichbar. Bitte in einem Moment erneut versuchen.",
       code: "UPSTREAM_UNAVAILABLE",
     });
   }
@@ -204,7 +204,7 @@ export async function postReportRiskSummary(
     });
   } catch {
     throw new ApiError(503, {
-      detail: "Server nicht erreichbar. Läuft das Backend?",
+      detail: "Server nicht erreichbar. Bitte in einem Moment erneut versuchen.",
       code: "UPSTREAM_UNAVAILABLE",
     });
   }

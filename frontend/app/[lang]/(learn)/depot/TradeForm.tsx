@@ -187,7 +187,7 @@ export function TradeForm({
             />
           </label>
           <div className="flex flex-col gap-1.5">
-            <span className={fieldLabelClass}>{dict.tradeForm.showPrice}</span>
+            <span className={fieldLabelClass}>{dict.depot.table.price}</span>
             <div className="rounded-md border border-border bg-sunken px-3 py-2.5 font-mono text-sm text-soft">
               {quote ? formatCurrency(quote.price, locale) : "–"}
             </div>
