@@ -8,6 +8,27 @@ Entscheidung**: Richtung und Begründung sind hier dokumentiert, **NICHT**
 umgesetzt. Der Backend-Code (`sentinel_core`, `sentinel_api`) bleibt in
 dieser Runde vollständig unangetastet.
 
+> **Update 2026-10-16 – Frage 2 umgesetzt (Phase-2-Punkt "Erklärtexte"
+> erledigt).** Das Backend liefert alle Erklärtexte, Lernkarten,
+> Disclaimer, Preset-Titel, den Benchmark-Vergleich und den PDF-Report in
+> `de` oder `en` (Parameter `lang`, API_CONTRACT §1.4). Abweichungen von
+> der Skizze unten:
+> - Feldname `lang` statt `locale`, als `str` mit Prüfung in core
+>   (`resolve_lang` → `LANG_UNSUPPORTED`) statt `Literal`, analog zu
+>   `preset_id`. GET-Endpunkte bekommen `?lang=`.
+> - Statt f-String-Zweigen pro Funktion gibt es einen Textkatalog pro
+>   Sprache (`sentinel_core/i18n/catalog.py`) plus Formatierer
+>   (`i18n/format.py`). Die Verzweigungslogik steht weiter genau einmal
+>   in `education/explanations.py`.
+> - `lib/i18n/labels.ts` (Frage 5) und die Übergangs-Hinweise "German
+>   only" sind entfernt. Das Backend ist jetzt die einzige Quelle auch
+>   für die Titel.
+> - Fehler-`detail` bleibt bewusst deutsch, übersetzt wird über `code`
+>   (Frage 3 unverändert).
+> - Tests: `tests/test_i18n.py` (de ≠ en je Text, keine offenen
+>   Platzhalter, kein Deutsch im Englischen, Zahlenformat, Prinzip 3 in
+>   beiden Sprachen), `tests/test_api_i18n.py`, `e2e/i18n-en.spec.ts`.
+
 Feature: Englische Sprachversion des Frontends, als erster Schritt Richtung
 öffentlich nutzbares Produkt (ARCHITECTURE.md §1: "perspektivisch
 B2C-Business").
@@ -147,7 +168,7 @@ frontend/
 
 ---
 
-## 2. Wertgefüllte Erklärtexte (Backend) – Phase-2-Entscheidung, diese Runde vertagt
+## 2. Wertgefüllte Erklärtexte (Backend) – ✅ umgesetzt am 2026-10-16 (s. Update oben)
 
 **Diese Runde:** `education/explanations.py`, alle Response-Schemas und
 `errors.py` bleiben unverändert. Jeder Endpunkt liefert weiterhin
@@ -529,9 +550,8 @@ der ab dann immer Vorrang vor Accept-Language hat.**
 
 ## Offene Punkte / Wechsel-Trigger für Phase 2
 
-- **Backend-Locale-Erweiterung** für `explanations.py` (Frage 2):
-  Richtung entschieden (Weg a, Body-Feld `locale`), Umsetzung vertagt bis
-  diese Runde validiert ist.
+- ~~**Backend-Locale-Erweiterung** für `explanations.py` (Frage 2)~~ –
+  erledigt am 2026-10-16 (Weg a, Feld `lang`, s. Update oben).
 - Sobald eine dritte Sprache mit echten ICU-Pluralregeln ansteht oder
   next-intl aus anderen Gründen doch gebraucht wird: Frage 1 neu bewerten.
 - Impressum/Datenschutzerklärung: bleibt dauerhaft nur Deutsch – kein

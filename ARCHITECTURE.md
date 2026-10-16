@@ -324,6 +324,14 @@ WebSockets, mehrere Depots pro Nutzer, Benchmarks/Vergleichsindizes.
   gesetzt, aber unkalibriert; weitere Vergleichsindizes (z. B. Nasdaq,
   Stoxx Europe 600) frühestens Phase 2
 
+**Entschieden am 2026-10-16** (Details in I18N_DECISIONS.md, Update
+Frage 2): Backend-Texte zweisprachig über einen optionalen Parameter
+`lang` (`de` Default | `en`) an allen text-erzeugenden Endpunkten. Die
+Texte stehen in einem Katalog pro Sprache (`sentinel_core/i18n/`), die
+Logik bleibt einmalig in `education/explanations.py`. Fehler-`detail`
+bleibt deutsch, Clients übersetzen über `code`. Die Prinzip-3-Wächter
+laufen für beide Sprachen.
+
 **Entschieden am 2026-07-06** (Details + Trade-offs in
 STRESS_TEST_DECISIONS.md): Stress-Replay mit drei festen
 Peak-to-Trough-Presets (Finanzkrise 2007-10-09–2009-03-09, Corona

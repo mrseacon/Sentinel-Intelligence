@@ -1,4 +1,4 @@
-# HANDOVER – Sentinel ist eingefroren (2026-10-04)
+# HANDOVER – Sentinel ist eingefroren (2026-10-04, letzte Code-Session 2026-10-16)
 
 **Status: Feature-complete, nicht in aktiver Entwicklung.** Das Projekt läuft
 ohne Pflege weiter; dieses Dokument sagt, was fertig ist, was offen bleibt
@@ -13,15 +13,27 @@ Primäre Referenzen: **CLAUDE.md** (Arbeitsregeln), **ARCHITECTURE.md**
 - **Fachlogik** (`backend/src/sentinel_core`): vollständig, KNOWLEDGE_EXTRACTION
   §1–§12 portiert. Paper-Engine (Event-Sourcing), Risiko-Score/VaR/CVaR,
   Ampel, Stress-Replay, Monte-Carlo, Optimizer, CSV-Upload, optionale KI.
+- **Zweisprachige Backend-Texte** (2026-10-16): Erklärtexte, Lernkarten,
+  Disclaimer, Preset-Titel, Benchmark-Vergleich und PDF-Report kommen in
+  `de` oder `en` (Parameter `lang`, API_CONTRACT §1.4). Die Texte stehen
+  in `sentinel_core/i18n/catalog.py`, die Logik bleibt einmalig in
+  `education/explanations.py`. Fehler-`detail` bleibt deutsch, das
+  Frontend übersetzt über `code`.
 - **API** (`sentinel_api`): alle Endpunkte nach API_CONTRACT.md, einheitliches
   `{detail, code}`-Fehlerformat, Schutz-Limits (`limits.py`), **Pro-IP-Rate-
   Limit** (`rate_limit.py`, Default 120/min, F9).
 - **Frontend** (Next.js App Router, DE/EN): Landing, Depot/Trading, Ampel,
   Stress-Test, Simulation, Analyze + Benchmark, PDF-Report, Demo-Modus,
-  Sprachumschalter, Retry-Pfade (inkl. valuation), Hinweis bei Anfragen
-  >8 s (Cold-Start).
-- **Qualität:** 225 pytest-Tests, ruff + black sauber, 26 Playwright-E2E-
-  Tests (Light/Dark), Frontend-Build grün. CI: `.github/workflows/ci.yml`.
+  Sprachumschalter (ohne Reload, Demo-Modus bleibt erhalten), Retry-Pfade
+  (inkl. valuation), Hinweis bei Anfragen >8 s (Cold-Start). Jede
+  textliefernde Anfrage sendet `lang`, und die Locale steht in jedem
+  betroffenen TanStack-Query-Key.
+- **Qualität:** 413 pytest-Tests, darunter `test_i18n.py` und
+  `test_api_i18n.py`: de ≠ en je Text, keine offenen Platzhalter, kein
+  Deutsch im Englischen, Prinzip 3 in beiden Sprachen. ruff und black
+  sind sauber. 38 Playwright-E2E-Tests (19 je Light/Dark), darunter
+  `i18n-en.spec.ts`: /en ohne deutsche Marker, Sprachwechsel ohne Reload.
+  vitest läuft jetzt auch in CI. CI: `.github/workflows/ci.yml`.
 - **Reproduzierbarkeit:** alle Versionen exakt gepinnt (s. §3).
 
 ## 2. Was ist offen (bewusst nicht gebaut)
@@ -41,7 +53,28 @@ Primäre Referenzen: **CLAUDE.md** (Arbeitsregeln), **ARCHITECTURE.md**
   `eslint-config-next` warten.
 - **Stress-/Simulation-View:** deren `valuationError`-Zweig hat (noch) kein
   `onRetry` (Depot/Ampel schon).
-- **Erklärtexte nur deutsch** in der englischen UI (Backend-Templates).
+
+**Bekannt/offen aus dem Demo-Audit 2026-10-16** (bewusst nicht behoben,
+klein oder kosmetisch):
+
+- Fehlermeldungen auf /en sind generisch je `code`, nennen also z. B.
+  nicht den betroffenen Ticker oder die fehlende CSV-Spalte. Auf /de
+  steht das spezifische `detail`. Eine Lösung bräuchte strukturierte
+  Fehlerparameter im Backend.
+- Gewichtsangabe in der Trade-Vorschau ("Gewicht danach", bezogen auf
+  Depotwert inkl. Cash) und in Tabelle/Donut (bezogen aufs investierte
+  Kapital) nutzen verschiedene Basen. Beide sind korrekt, eine klarere
+  Beschriftung wäre sinnvoll.
+- Stress-Chart: Das Label "Tiefpunkt"/"Trough" wird von der Linie
+  überdeckt, die y-Achse hat keinen 0-%-Tick.
+- Depot (Desktop): leere Fläche unter dem Donut. /simulation zeigt bis
+  zur Horizont-Wahl nichts. Auf Mobile bricht "Risiko-Score" auf /analyze
+  um, und "Ø Kaufkurs" in der Positionstabelle wird abgeschnitten.
+- OG-Bild (PNG + alt-Text) und `manifest.webmanifest` sind nur deutsch.
+- PortfolioBuilder parst auf /en `1,000` als 1 (Komma als Dezimalzeichen).
+- Starlette-404/405 und die TrustedHost-400 liefern kein `{detail, code}`.
+- pydantic-Typen `string_too_long`/`string_too_short` fehlen in
+  `_PYDANTIC_REASONS` und erscheinen als "ungültiger Wert".
 - **Rate-Limit:** In-Memory pro Prozess, Annahme genau ein Proxy davor
   (ARCHITECTURE §8). Bei mehreren Workern/anderem Hosting prüfen.
 - **yfinance ist inoffiziell** – das größte Betriebsrisiko. Fällt Yahoo aus
@@ -99,7 +132,9 @@ Referenzdateien: `backend/.env.example`, `frontend/.env.local.example`.
 ### Deploy (aktueller Stand)
 
 - **Frontend:** Vercel, Root-Verzeichnis `frontend/`, Env `NEXT_PUBLIC_API_URL`
-  auf die Backend-URL. Live: sentinel-intelligence-delta.vercel.app.
+  auf die Backend-URL. Live: **sentinel-intelligence-rust.vercel.app**
+  (die frühere `-delta`-Domain liefert 404). `NEXT_PUBLIC_SITE_URL` darf
+  in Vercel nicht auf die alte Domain zeigen (Canonical/OG/Sitemap).
   `engines.node` = 22.x.
 - **Backend:** Render (Free-Tier), `render.yaml` im Repo-Root: Build
   `pip install -r requirements.txt`, Start
@@ -138,7 +173,10 @@ Referenzdateien: `backend/.env.example`, `frontend/.env.local.example`.
    und der Browser meldet nur "CORS error".
 
 **Umgebungs-Stolperfallen der Entwicklungsmaschine:** (a) macOS-Hidden-Flag
-auf `.venv`-Dateien → `PYTHONPATH=src` nutzen. (b) Kein `gh`-CLI; GitHub-API
+auf `.venv`-Dateien → `PYTHONPATH=src` nutzen. Der Desktop liegt in
+iCloud, die Dateien in `backend/.venv` werden ausgelagert (am 2026-10-16
+fehlte z. B. `pytz`). Abhilfe: ein frisches venv außerhalb des
+iCloud-Ordners mit `pip install -r requirements-dev.txt` anlegen. (b) Kein `gh`-CLI; GitHub-API
 unauthentifiziert 60 req/h – CI-Status über das Workflow-Badge prüfen, nie
 eng pollen.
 

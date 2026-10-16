@@ -55,7 +55,7 @@ Bug, einfach der Free-Tier. Danach läuft alles normal schnell.
 | Backend | Python, FastAPI, Pydantic, NumPy/SciPy/pandas |
 | Frontend | Next.js, TypeScript, TanStack Query, Recharts, Tailwind |
 | Daten | yfinance (Marktdaten), Google News RSS (optional, KI-Kontext) |
-| Tests | pytest (Backend, 190+ Tests), TypeScript strict mode |
+| Tests | pytest (Backend, 400+ Tests), vitest, Playwright-E2E (DE/EN, Light/Dark), TypeScript strict mode |
 
 ## Architektur
 
@@ -148,9 +148,6 @@ Pro-IP-Rate-Limit (Default 120 Anfragen/Minute).
   kann sie jederzeit ändern oder sperren. Dann liefern die Endpunkte einen
   freundlichen Fehler (`UPSTREAM_UNAVAILABLE`), Rechnen mit Kursdaten geht
   nicht mehr, bis die Datenquelle ersetzt ist.
-- **Erklärtexte sind in der englischen Oberfläche noch deutsch.** UI, Labels
-  und Fehlermeldungen sind übersetzt, die vom Backend erzeugten Erklärtexte
-  (Ampel, Stress-Test, Simulation, Lernkarten) nur auf Deutsch.
 - **Cold-Start auf dem Free-Tier.** Das Backend schläft nach Inaktivität ein;
   der erste Aufruf braucht 30–60 Sekunden. Die App zeigt nach ca. 8 Sekunden
   einen Hinweis dazu.

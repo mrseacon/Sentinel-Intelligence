@@ -1,9 +1,10 @@
 # API-Vertrag sentinel_api (v1)
 
-Status: **Entwurf, wartet auf Feedback** · Datum: 2026-07-09
+Status: **Implementiert (v1)** · Entwurf 2026-07-09 · zuletzt aktualisiert
+2026-10-16 (Sprachparameter `lang`, fehlende Endpunkte §2.13–§2.16 nachgetragen)
 Grundlage: ARCHITECTURE.md §6 + alle Ergebnismodelle in `sentinel_core/`.
-Noch keine Implementierung – dieses Dokument IST der Vertrag, den
-`sentinel_api/schemas/` und `frontend/lib/types.ts` anschließend spiegeln.
+Dieses Dokument IST der Vertrag, den `sentinel_api/schemas/` und
+`frontend/lib/types.ts` spiegeln.
 
 ---
 
@@ -15,7 +16,7 @@ Jede Fehlerantwort hat exakt dieses Schema:
 
 ```python
 class ErrorResponse(BaseModel):
-    detail: str   # deutsche, sprechende Meldung – direkt anzeigbar
+    detail: str   # deutsche, sprechende Meldung (IMMER deutsch, auch bei lang="en")
     code: str     # stabiler, maschinenlesbarer Code (SCREAMING_SNAKE)
 ```
 
@@ -27,7 +28,7 @@ class ErrorResponse(BaseModel):
 | 422 | Fachlicher `SentinelError` aus sentinel_core | spezifischer Code, s.u. |
 | 413 | Request-Body über der globalen Grenze (s. §1.5 Limits) | `PAYLOAD_TOO_LARGE` |
 | 429 | Pro-IP-Rate-Limit überschritten (F9, `Retry-After`-Header, Default 120/min) | `RATE_LIMITED` |
-| 503 | Kursdatenquelle nicht erreichbar (Netzwerk/yfinance) | `UPSTREAM_UNAVAILABLE` |
+| 503 | Kursdatenquelle nicht erreichbar (Netzwerk/yfinance: `ConnectionError`, `TimeoutError`, `requests.RequestException`) | `UPSTREAM_UNAVAILABLE` |
 | 500 | Unerwarteter Fehler (inkl. fremder Bibliotheks-Exceptions) | `INTERNAL_ERROR` (detail generisch, keine Interna) |
 
 **Mapping-Konvention für interne `ValueError`s:** sentinel_core wirft
@@ -50,10 +51,13 @@ der API-Schicht:
 | "Zeithorizont muss" | `SIM_HORIZON_INVALID` |
 | "Zu wenig Kurshistorie" | `SIM_INSUFFICIENT_HISTORY` |
 | "…nicht konvergiert" | `OPTIMIZER_NO_CONVERGENCE` |
+| "Unbekannter Vergleichsindex" | `BENCHMARK_UNKNOWN` |
+| "Korrelationsmatrix benötigt mindestens 2 Assets" (VOR der allgemeinen Zeile darunter) | `CORRELATION_INVALID_INPUT` |
 | "…enthalten Lücken" / "degeneriert" / "mindestens 2 Assets" / "Zu wenige Datenpunkte" | `OPTIMIZER_INVALID_INPUT` |
 | "Die CSV" / "Pflichtspalten fehlen" / "Leere Ticker" / "Leere Gewichtswerte" / "Ungültiger Gewichtswert" / "Nur CSV-Dateien" | `UPLOAD_INVALID` |
 | "Ungültiges Tickersymbol" | `TICKER_INVALID` |
-| alles andere | `DOMAIN_ERROR` (Fallback) |
+| "Nicht unterstützte Sprache" (§1.4) | `LANG_UNSUPPORTED` |
+| "Konfidenzniveau" (explizit) / alles andere | `DOMAIN_ERROR` (Fallback) |
 
 **Stand nach dem Sicherheits-Audit:** Die `SentinelError(ValueError)`-
 Basisklasse ist umgesetzt (`sentinel_core/errors.py`); der 422-Handler
@@ -65,8 +69,21 @@ spätere Ausbaustufe: `code`-Attribut direkt an `SentinelError`.
 
 pydantic-`ValidationError`s (englisch) werden NICHT durchgereicht:
 die API-Schicht übersetzt sie zu einem deutschen `detail`
-("Ungültige Eingabe im Feld 'quantity': ganze Zahl größer 0 erwartet.")
-mit code `VALIDATION_ERROR`.
+("Ungültige Eingabe im Feld 'quantity': ganze Zahl erwartet.") mit code
+`VALIDATION_ERROR`. Gemeldet wird nur der erste Fehler; Query-Parameter
+erscheinen als `query.<name>`. Ein ungültiger Ticker in einem
+Schema-Validator (`PortfolioIn`, `OptimizeIn`, Paper-Schemas) kommt
+deshalb als `VALIDATION_ERROR` (mit dem deutschen Ticker-Text), nicht
+als `TICKER_INVALID`; Letzteres liefern Loader, CSV-Upload und
+`/news/headlines`.
+
+**Lokalisierung von Fehlern:** `detail` bleibt bewusst deutsch, auch bei
+`lang="en"` – die Registry oben matcht auf deutsche Fragmente, und
+Fehler entstehen teils, bevor ein Request-Body gelesen ist (413, 429,
+Validierung). Clients übersetzen über `code`
+(`frontend/lib/i18n/error-messages.en.ts`, Vollständigkeitstest in
+vitest); das deutsche `detail` wird nur auf deutschsprachigen Seiten
+angezeigt.
 
 ### 1.2 Zahlen-Konventionen
 
@@ -99,11 +116,32 @@ mit code `VALIDATION_ERROR`.
 
 ### 1.4 Sprach-Konvention
 
-Maschinenlesbares englisch (`id`, `status`-Enums wie `green|yellow|red`,
-`label` wie `Low|Moderate`, `side` `BUY|SELL`, Feldnamen), nutzerlesbare
-Inhalte deutsch (`title`, `explanation`, `lesson`, `disclaimer`,
-`detail`). Texte kommen fertig formatiert vom Backend (deutsche
-Zahlenformate in Sätzen); rohe Zahlenfelder sind unformatiert.
+Maschinenlesbares bleibt englisch und sprachunabhängig (`id`,
+`status`-Enums wie `green|yellow|red`, `label` wie `Low|Moderate`,
+Faktor-IDs wie `var_95`, `side` `BUY|SELL`, Feldnamen). Nutzerlesbare
+Texte (`title`, `explanation`, `lesson`, `disclaimer`, `comparison`,
+PDF-Inhalt) kommen in der angefragten Sprache:
+
+- **Parameter `lang`:** `"de"` (Default) oder `"en"`. Optional und
+  rückwärtskompatibel – ohne `lang` ist alles wie bisher deutsch. Bei
+  POST als Body-Feld (Stil wie `period`), bei GET als Query-Parameter
+  (`?lang=en`). Bewusst `str` statt `Literal`: geprüft wird in core
+  (`sentinel_core.i18n.resolve_lang`, Muster wie `preset_id`); ein
+  unbekannter Wert liefert 422 `LANG_UNSUPPORTED`.
+- **Endpunkte mit `lang`:** `risk/ampel`, `risk/benchmark-compare`,
+  `risk/benchmarks`, `stress/replay`, `stress/presets`,
+  `simulation/monte-carlo`, `portfolio/optimize`, `news/headlines`,
+  `reports/risk-summary`. Endpunkte ohne Text (`risk/analyze`,
+  `risk/correlation`, `paper/*`, `portfolio/upload`) haben keinen.
+- **Zahlen in Sätzen** folgen der Sprache: de `42 %`, `0,38`,
+  `1.234,5 %`; en `42%`, `0.38`, `1,234.5%`. Datumsangaben im PDF:
+  de `09.10.2007`, en `10/09/2007`. Rohe Zahlenfelder bleiben
+  unformatiert.
+- **Quelle der Texte:** ein Katalog pro Sprache
+  (`sentinel_core/i18n/catalog.py`), Verzweigungslogik einmalig in
+  `education/explanations.py`. Benchmark-Titel sind Eigennamen und in
+  beiden Sprachen gleich.
+- **Fehler** (`detail`) bleiben deutsch, siehe §1.1.
 
 ### 1.5 Einheitliche Eingabe-Bausteine
 
@@ -136,9 +174,8 @@ class TransactionIO(BaseModel):             # 1:1 core ledger.Transaction;
     executed_at: datetime                   # tz-aware Pflicht (AwareDatetime)
 ```
 
-Ausnahme GET-Endpunkte: `tickers` als komma-separierter Query-Parameter
-(`?tickers=AAPL,MSFT`), serverseitig gesplittet – REST-üblich, einzige
-Abweichung vom `PortfolioIn`-Muster (GET hat keinen Body).
+GET-Endpunkte haben keinen Body; ihre Optionen (`ticker`, `lang`) sind
+Query-Parameter.
 
 **Schutz-Limits (Sicherheits-Audit F1/F2/F5, `sentinel_api/limits.py`):**
 
@@ -162,34 +199,12 @@ Tempo-Legende: ⚡ schnell (reine Rechnung/Konstanten) · 🐢 langsam
 
 Response 200: `{"status": "ok"}` (existiert bereits, unverändert).
 
-### 2.2 `GET /prices/{ticker}` 🐢
+### 2.2 / 2.3 `GET /prices/*` – nicht implementiert
 
-Letzter (verzögerter) Kurs. Wrapper um `loader.LatestPrice` (+ Ticker):
-
-```python
-class PriceOut(BaseModel):
-    ticker: str
-    price: float
-    asof: datetime
-```
-
-Fehler: 422 `TICKER_NOT_FOUND`, 503 `UPSTREAM_UNAVAILABLE`.
-
-### 2.3 `GET /prices/history?tickers=&period=` 🐢
-
-```python
-class PriceHistoryOut(BaseModel):
-    period: Period
-    dates: list[date]                       # gemeinsame Zeitachse
-    prices: dict[str, list[float | None]]   # Ticker → Kursreihe;
-                                            # None = Tag ohne Kurs
-                                            # (kürzere Historie)
-```
-
-`None` statt Zeilen-Dropping: `dropna(how="all")`-Verhalten des Loaders
-bleibt sichtbar, das Frontend entscheidet über Lücken-Darstellung.
-Fehler: 422 `TICKER_NOT_FOUND` / `VALIDATION_ERROR` (unbekannte period),
-503 `UPSTREAM_UNAVAILABLE`.
+Ursprünglich als Kurs-Endpunkte geplant (`/prices/{ticker}`,
+`/prices/history`), aber nie gebaut: Kein Frontend-Flow braucht sie,
+Kurse kommen über `paper/quote` und `paper/valuation`. Bewusst nicht
+nachgezogen (Freeze); bei Bedarf hier neu spezifizieren.
 
 ### 2.4 `POST /risk/analyze` 🐢
 
@@ -233,11 +248,12 @@ gemappt, s. §3).
 class RiskAmpelIn(BaseModel):
     portfolio: PortfolioIn
     period: Period = "1y"
+    lang: str = "de"                 # §1.4
 
 class AmpelOut(BaseModel):
     id: str                          # concentration|diversification|volatility
                                      # (API-Umbenennung von core "name", s. §3)
-    title: str                       # deutsch: "Klumpenrisiko" …
+    title: str                       # "Klumpenrisiko" / "Concentration risk" …
     status: Literal["green", "yellow", "red"]
     value: float
     explanation: str
@@ -247,7 +263,7 @@ class RiskAmpelOut(BaseModel):
     ampeln: list[AmpelOut]           # immer genau 3, feste Reihenfolge
 ```
 
-Fehler wie 2.4.
+Fehler wie 2.4, zusätzlich 422 `LANG_UNSUPPORTED`.
 
 ### 2.6 `POST /portfolio/optimize` 🐢
 
@@ -256,16 +272,18 @@ class OptimizeIn(BaseModel):
     tickers: list[str]               # BEWUSST keine Gewichte: der Optimizer
     period: Period = "1y"            # bestimmt sie neu; Eingabegewichte
                                      # würden Bedeutung suggerieren
+    lang: str = "de"                 # §1.4 (Sprache des Disclaimers)
 
 class OptimizeOut(BaseModel):        # core OptimizationResult + disclaimer
     weights: dict[str, float]
     expected_return: float           # annualisiert, Dezimalbruch
     volatility: float
     sharpe: float
-    disclaimer: str                  # NEU, Pflicht (Prinzip 3!): "Rechnerische
+    disclaimer: str                  # Pflicht (Prinzip 3!): "Rechnerische
                                      # Max-Sharpe-Gewichtung der eingegebenen
-                                     # Titel auf Basis vergangener Kurse –
-                                     # keine Empfehlung, Vergangenheit ≠ Zukunft."
+                                     # Titel auf Basis vergangener Kurse. Keine
+                                     # Empfehlung, Vergangenheit ist keine
+                                     # Garantie für die Zukunft." (en analog)
 ```
 
 Der Optimizer ist der Prinzip-3-heikelste Endpunkt: Das Ergebnis ist
@@ -273,7 +291,7 @@ eine **Eigenschaft der eingegebenen Tickermenge**, keine Kauf-Liste.
 Der Pflicht-Disclaimer im Response-Objekt (statt nur in der UI) stellt
 sicher, dass kein API-Konsument ihn "vergessen" kann.
 Fehler: 422 `OPTIMIZER_INVALID_INPUT` / `OPTIMIZER_NO_CONVERGENCE` /
-`TICKER_NOT_FOUND`, 503.
+`TICKER_NOT_FOUND` / `LANG_UNSUPPORTED`, 503.
 
 ### 2.7 `POST /paper/quote` 🐢
 
@@ -281,7 +299,7 @@ Fehler: 422 `OPTIMIZER_INVALID_INPUT` / `OPTIMIZER_NO_CONVERGENCE` /
 class PaperQuoteIn(BaseModel):
     ticker: str
     side: Side
-    quantity: int                    # > 0
+    quantity: int                    # > 0 (geprüft in core → PAPER_INVALID_QUANTITY)
 
 class QuoteOut(BaseModel):           # 1:1 core engine.Quote
     ticker: str
@@ -348,6 +366,7 @@ Fehler: 422 `LEDGER_INCONSISTENT` / `TICKER_NOT_FOUND`, 503.
 class StressReplayIn(BaseModel):
     portfolio: PortfolioIn
     preset_id: str                   # gfc_2008|covid_2020|rates_2022
+    lang: str = "de"                 # §1.4
 
 class StressReplayOut(BaseModel):    # 1:1 core StressReplayResult
     preset_id: str
@@ -368,7 +387,7 @@ class StressReplayOut(BaseModel):    # 1:1 core StressReplayResult
 ```
 
 Fehler: 422 `STRESS_UNKNOWN_PRESET` / `STRESS_INSUFFICIENT_COVERAGE` /
-`PORTFOLIO_INVALID`, 503.
+`PORTFOLIO_INVALID` / `LANG_UNSUPPORTED`, 503.
 
 ### 2.11 `POST /simulation/monte-carlo` 🐢 (+~1 s Rechnung)
 
@@ -376,6 +395,7 @@ Fehler: 422 `STRESS_UNKNOWN_PRESET` / `STRESS_INSUFFICIENT_COVERAGE` /
 class MonteCarloIn(BaseModel):
     portfolio: PortfolioIn
     horizon_years: Literal[1, 5, 10]
+    lang: str = "de"                 # §1.4
 
 class MonteCarloOut(BaseModel):      # 1:1 core MonteCarloResult
     horizon_years: int
@@ -398,8 +418,10 @@ class MonteCarloOut(BaseModel):      # 1:1 core MonteCarloResult
     disclaimer: str
 ```
 
-Fehler: 422 `SIM_HORIZON_INVALID` / `SIM_INSUFFICIENT_HISTORY` /
-`PORTFOLIO_INVALID` / `TICKER_NOT_FOUND`, 503.
+Fehler: 422 `SIM_INSUFFICIENT_HISTORY` / `PORTFOLIO_INVALID` /
+`TICKER_NOT_FOUND` / `LANG_UNSUPPORTED` / `VALIDATION_ERROR` (unzulässiger
+Horizont – das Literal greift vor core, `SIM_HORIZON_INVALID` ist über
+HTTP daher nicht erreichbar), 503.
 
 ### 2.12a `POST /portfolio/upload` ⚡
 
@@ -422,20 +444,103 @@ Duplikate in der CSV werden per Summe aggregiert (§10-Legacy-Verhalten,
 getestet). Fehler: 422 `UPLOAD_INVALID` (Format) / `PORTFOLIO_INVALID`
 (negative Gewichte, Nullsumme).
 
-### 2.12 `GET /stress/presets` ⚡
+### 2.12 `GET /stress/presets?lang=` ⚡
 
 ```python
 class ScenarioPresetOut(BaseModel):  # 1:1 core stress.ScenarioPreset
     id: str
-    title: str
-    start: date
+    title: str                       # in `lang`: "Finanzkrise 2008/09" /
+    start: date                      # "Financial crisis 2008/09"
     end: date
 
 class StressPresetsOut(BaseModel):
     presets: list[ScenarioPresetOut]
 ```
 
-Keine Fehlerfälle außer 500.
+Fehler: 422 `LANG_UNSUPPORTED`, sonst nur 500.
+
+### 2.13 `GET /risk/benchmarks?lang=` ⚡ · `POST /risk/benchmark-compare` 🐢
+
+```python
+class BenchmarkOptionOut(BaseModel):
+    id: str                          # msci_world|sp500 (feste Liste, constants.py)
+    title: str                       # Eigenname, sprachunabhängig: "MSCI World (URTH)"
+
+class BenchmarksOut(BaseModel):
+    benchmarks: list[BenchmarkOptionOut]
+
+class BenchmarkCompareIn(BaseModel):
+    portfolio: PortfolioIn
+    benchmark_id: str                # in core geprüft → BENCHMARK_UNKNOWN
+    period: Period = "1y"
+    lang: str = "de"                 # §1.4
+
+class RiskProfileOut(BaseModel):     # wie RiskAnalyzeOut, ohne risk_contribution
+    metrics: RiskMetricsOut
+    score: RiskScoreOut
+
+class BenchmarkCompareOut(BaseModel):
+    portfolio: RiskProfileOut
+    benchmark_id: str
+    benchmark_title: str
+    benchmark: RiskProfileOut
+    comparison: str                  # beschreibender Vergleich (Vol + Score), in `lang`
+```
+
+Fehler: 422 `BENCHMARK_UNKNOWN` / `PORTFOLIO_INVALID` / `TICKER_NOT_FOUND`
+/ `LANG_UNSUPPORTED` / `VALIDATION_ERROR`, 503.
+
+### 2.14 `POST /risk/correlation` 🐢
+
+```python
+class CorrelationIn(BaseModel):
+    portfolio: PortfolioIn
+    period: Period = "1y"
+
+class CorrelationOut(BaseModel):
+    tickers: list[str]               # alphabetisch sortiert
+    matrix: list[list[float]]        # matrix[i][j], Diagonale 1.0
+```
+
+Kein Text, daher kein `lang`. Fehler: 422 `CORRELATION_INVALID_INPUT`
+(< 2 Assets) / `TICKER_NOT_FOUND` / `VALIDATION_ERROR`, 503.
+
+### 2.15 `GET /news/headlines?ticker=&lang=` 🐢
+
+Reiner RSS-Abruf (Google News), ohne LLM/AI-Gate. `lang` wählt die
+Ausgabe: de `hl=de&gl=DE`, Suchbegriff `"TICKER" Aktie`; en
+`hl=en-US&gl=US`, `"TICKER" stock`.
+
+```python
+class NewsHeadlineOut(BaseModel):
+    title: str                       # Fremdinhalt, unverändert
+    source: str
+    link: str
+    published: datetime | None
+
+class NewsHeadlinesOut(BaseModel):
+    ticker: str
+    headlines: list[NewsHeadlineOut] # max. 4; Feed-Ausfall → [] (nie Fehler)
+```
+
+Fehler: 422 `TICKER_INVALID` / `LANG_UNSUPPORTED` / `VALIDATION_ERROR`
+(fehlender oder zu langer `ticker`).
+
+### 2.16 `POST /reports/risk-summary` 🐢
+
+```python
+class ReportRiskSummaryIn(BaseModel):
+    portfolio: PortfolioIn
+    lang: str = "de"                 # §1.4: ganzer Report in dieser Sprache
+```
+
+Response 200: `application/pdf`, `Content-Disposition: attachment;
+filename="sentinel-risiko-report-YYYY-MM-DD.pdf"` (en:
+`sentinel-risk-report-…`). Inhalt: Gewichte, Risiko-Score (Einstufung
+und Faktoren als lesbare Labels), drei Ampeln mit Erklärung und
+Lernkarte, Stress-Test `covid_2020` (best effort, fehlt bei
+unzureichender Abdeckung), Disclaimer. Fester Zeitraum `1y`, Zeitstempel
+in UTC. Fehler: wie 2.5 (`{detail, code}` als JSON).
 
 ---
 
