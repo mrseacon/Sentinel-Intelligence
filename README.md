@@ -2,7 +2,7 @@
 
 **Portfolio-Risiko verstehen, nicht nur berechnen.**
 
-🔗 **Live-Demo: [sentinel-intelligence-delta.vercel.app](https://sentinel-intelligence-delta.vercel.app)**
+🔗 **Live-Demo: [sentinel-intelligence-rust.vercel.app](https://sentinel-intelligence-rust.vercel.app)**
 (Der Backend-Kaltstart kann beim ersten Aufruf bis zu einer Minute dauern, s.
 [Bekannte Einschränkungen](#bekannte-einschränkungen).)
 

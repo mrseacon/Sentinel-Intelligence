@@ -13,7 +13,7 @@ import { DEFAULT_LOCALE, LOCALES, type Locale } from "./config";
 // Für einen abweichenden Deploy (eigene Domain, Preview-Branch) per
 // NEXT_PUBLIC_SITE_URL in den Vercel-Projekteinstellungen überschreiben.
 export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://sentinel-intelligence-delta.vercel.app";
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://sentinel-intelligence-rust.vercel.app";
 
 export const OG_LOCALE: Record<Locale, string> = {
   de: "de_DE",
