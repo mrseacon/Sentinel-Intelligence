@@ -22,8 +22,8 @@ test.describe("Ampel-Flow", () => {
       page.getByText("Beispieldaten – nicht dein echtes Depot."),
     ).toBeVisible();
 
-    // Die drei Ampeln sind Backend-Titel (education/ampel.py), auf
-    // Deutsch stabil und unübersetzt durchgereicht.
+    // Die drei Ampeln sind Backend-Titel (i18n-Katalog), auf /de
+    // deutsch (lang=de); /en prüft e2e/i18n-en.spec.ts.
     for (const title of ["Klumpenrisiko", "Diversifikation", "Volatilität"]) {
       await expect(
         page.getByRole("heading", { name: title, exact: true }),
