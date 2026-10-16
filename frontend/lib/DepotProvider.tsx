@@ -99,3 +99,10 @@ export function useDepot(): DepotContextValue {
   }
   return ctx;
 }
+
+/** Demo-Status auch AUSSERHALB des Providers lesbar (Landing, /analyze
+ * nutzen den Sprachumschalter ohne DepotProvider) — dort einfach `false`
+ * statt des Entwickler-Fehlers von useDepot(). */
+export function useIsDemoMode(): boolean {
+  return useContext(DepotContext)?.isDemoMode ?? false;
+}
