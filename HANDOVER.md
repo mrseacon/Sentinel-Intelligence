@@ -81,8 +81,9 @@ klein oder kosmetisch):
   oder ändert das Format, liefern alle kursabhängigen Endpunkte
   `UPSTREAM_UNAVAILABLE`; Abhilfe wäre eine andere Datenquelle hinter
   `sentinel_core/data/loader.py`.
-- Dependabot ist weiter aktiv (`.github/dependabot.yml`) und wird neue PRs
-  öffnen; bei Bedarf abschalten, wenn niemand sie bearbeitet.
+- Dependabot ist weiter aktiv (`.github/dependabot.yml`), seit Oktober 2026
+  aber nur noch monatlich und gruppiert (s. §6); bei Bedarf abschalten,
+  wenn niemand die PRs bearbeitet.
 - Lizenz: MIT (LICENSE). Namensschutz "Sentinel" ungeprüft (ARCH §10).
 
 ## 3. Neu starten (nach Monaten)
@@ -187,3 +188,37 @@ eng pollen.
 - **STRESS_TEST_DECISIONS.md** / **MONTE_CARLO_DECISIONS.md** /
   **FRONTEND_DECISIONS.md** / **I18N_DECISIONS.md** – Feature-Entscheidungen
 - **KNOWLEDGE_EXTRACTION.md** – Altprojekt-Wissen (read-only, vollständig portiert)
+
+## 6. Notizen nach dem Freeze, Oktober 2026
+
+Reine Betriebs-/Doku-Notizen, kein Anwendungscode geändert, Pins unverändert.
+
+- **Desktop-Layout:** Auf breiten Bildschirmen bleibt links und rechts viel
+  Leerraum. Beim Wiederaufnehmen prüfen: `max-width` des Layout-Containers,
+  ggf. zweispaltig (Chart neben Erklärbox). Mobile ist unauffällig, nicht
+  anfassen.
+- **Rate-Limit auf Render:** Ein Test mit 200 parallelen Anfragen ergab nie
+  ein 429. Vor Render steht Cloudflare; die IP-Bestimmung (rechtester
+  `X-Forwarded-For`-Eintrag) liefert vermutlich Knoten-IPs statt Client-IPs.
+  Daher ist `SENTINEL_RATE_LIMIT_PER_MINUTE=600` in Render gesetzt.
+  **Ungeprüft:** der tatsächliche Header-Inhalt auf Render.
+- **Render:** Der Service wurde manuell angelegt, `render.yaml` greift nicht
+  automatisch (§3 "Deploy" beschreibt die Soll-Konfiguration). Build Command
+  im Dashboard: `pip install -r requirements.txt`. `PYTHON_VERSION=3.11.9`
+  ist gesetzt. `TRUSTED_HOSTS` ist nicht gesetzt (Default `*`). Backend-Host:
+  `sentinel-intelligence-u9vm.onrender.com`.
+- **Vercel:** `NEXT_PUBLIC_API_URL` ist als Secret gespeichert (nicht
+  lesbar/änderbar); zum Ändern löschen und neu anlegen (danach Redeploy).
+- **Monitoring:** UptimeRobot prüft `/health` alle 5 Minuten.
+- **Lokal:** Das Repo liegt unter `~/Developer` (nicht mehr in iCloud, damit
+  entfällt die Stolperfalle (a) aus §4 weitgehend). Lokal Python 3.13, CI und
+  Render 3.11. Venv aktivieren, bevor pytest läuft, und mit
+  `python -m pytest` starten.
+- **Dependabot:** Version-Updates für npm (`/frontend`), pip (`/backend`) und
+  github-actions (`/`) laufen jetzt monatlich statt wöchentlich; npm und pip
+  fassen Minor/Patch in der Gruppe `minor-and-patch` zu einem PR zusammen.
+  Security-Updates sind davon unabhängig und unverändert.
+- **Branches:** Der alte Branch `claude/determined-clarke-ede946` wurde
+  gelöscht (er enthielt nur einen überholten Next-16.2.12-Commit).
+- **README-Screenshots:** liegen unter `docs/screenshots/`, Erzeugung siehe
+  dortige `README.md` (nicht in der CI).
