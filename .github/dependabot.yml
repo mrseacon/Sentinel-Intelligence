@@ -1,15 +1,28 @@
 # .github/dependabot.yml
+# Version updates run monthly and are grouped (project is frozen, see
+# HANDOVER.md). Security updates are configured separately by GitHub and
+# are not affected by this file.
 version: 2
 updates:
   - package-ecosystem: "npm"
     directory: "/frontend"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+    groups:
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
   - package-ecosystem: "pip"
     directory: "/backend"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+    groups:
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
