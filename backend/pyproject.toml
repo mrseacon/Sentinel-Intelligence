@@ -11,7 +11,7 @@ requires-python = ">=3.11"
 # rebuild months from now must resolve to the same tree. Transitive
 # dependencies are pinned in requirements.txt / requirements-dev.txt.
 dependencies = [
-    "fastapi==0.142.2",
+    "fastapi==0.143.1",
     "uvicorn==0.54.0",
     # Price data source per ARCHITECTURE.md §2; pandas is used directly
     # by sentinel_core (returns/covariance work on DataFrames).
@@ -46,8 +46,8 @@ dependencies = [
 dev = [
     "pytest==9.1.1",
     "httpx==0.28.1",
-    "ruff==0.16.10",
-    "black==26.10.0",
+    "ruff==0.17.0",
+    "black==26.10.1",
 ]
 
 [tool.setuptools.packages.find]
