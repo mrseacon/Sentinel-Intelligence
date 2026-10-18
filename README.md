@@ -29,6 +29,23 @@ Bug, einfach der Free-Tier. Danach läuft alles normal schnell.
 
 ---
 
+## Screenshots
+
+Englische Demo (`?demo=1`, Beispieldepot), Light und Dark.
+
+| Risk traffic light (light) | Historical stress test (light) |
+|---|---|
+| ![Risk traffic light with three explained lights and a correlation heatmap, light theme](docs/screenshots/traffic-light-light.png) | ![Historical stress test replaying the 2008/09 financial crisis on a sample portfolio, light theme](docs/screenshots/stress-test-light.png) |
+
+| Stress test (dark) | Simulation (dark) |
+|---|---|
+| ![Historical stress test, dark theme](docs/screenshots/stress-test-dark.png) | ![Monte Carlo future simulation with percentile fan over five years, dark theme](docs/screenshots/simulation-dark.png) |
+
+Alle Screenshots (inkl. Depot) und das Erzeugungs-Script:
+[`docs/screenshots/`](./docs/screenshots/).
+
+---
+
 ## Was Sentinel kann
 
 - 📈 **Paper-Trading** – Depot mit virtuellem Startkapital, Trades zu echten
